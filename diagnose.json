@@ -1,11 +1,11 @@
 [
   {
     "file": "cien años de soledad.pdf",
-    "ms": 1032.4000000003725,
+    "ms": 981.8000000007451,
     "title": "García Márquez - Cien años de soledad",
     "author": "Patricio",
     "pageCount": 173,
-    "blocks": 865,
+    "blocks": 855,
     "headings": 22,
     "figures": 0,
     "chapters": 22,
@@ -40,12 +40,12 @@
     },
     "signals": {
       "lowerStart": 3,
-      "lowerStartPct": 0.3558718861209964,
-      "veryLong": 97,
+      "lowerStartPct": 0.36014405762304924,
+      "veryLong": 98,
       "veryShort": 33,
       "dangling": 0,
       "corrupt": 0,
-      "medianLength": 422,
+      "medianLength": 434,
       "repeated": [],
       "repeatedTotal": 0
     },
@@ -57,10 +57,10 @@
         "p.2    [p] y María Luisa Elio"
       ],
       "medio": [
+        "p.73   [p] -Perdone -se excusó ante la petición de Úrsula-. Es que esta guerra ha acabado con todo.",
         "p.73   [p] En los días siguientes se ocupó de destruir todo rastro de su paso por el mundo. Simplificó el taller de platería hasta sólo dejar los objetos impersonales, regaló sus ropas a los ordenanzas…",
         "p.73   [p] -Préndalo con esto -le dijo él, entregándole el primer rollo de papeles amarillento-. Arde mejor, porque son cosas muy viejas.",
-        "p.73   [p] Santa Sofía de la Piedad, la silenciosa, la condescendiente, la que nunca contrarió ni a sus propios hijos, tuvo la impresión de que aquel era un acto prohibido.",
-        "p.73   [p] -Son papeles importantes -dijo."
+        "p.73   [p] Santa Sofía de la Piedad, la silenciosa, la condescendiente, la que nunca contrarió ni a sus propios hijos, tuvo la impresión de que aquel era un acto prohibido."
       ],
       "final": [
         "p.171  [p] Nigromanta lo rescató de un charco de vómito y de lágrimas. Lo llevó a su cuarto, lo limpió, le hizo tomar una taza de caldo. Creyendo que eso lo consolaba, tachó con una raya de carbón los …",
@@ -72,11 +72,11 @@
   },
   {
     "file": "Libro_El_Tunel.pdf",
-    "ms": 393,
+    "ms": 378.59999999962747,
     "title": "EL TÚNEL",
     "author": "Gerson O. Su.rez",
     "pageCount": 95,
-    "blocks": 860,
+    "blocks": 824,
     "headings": 41,
     "figures": 4,
     "chapters": 42,
@@ -110,13 +110,13 @@
       "why": "es texto corrido"
     },
     "signals": {
-      "lowerStart": 41,
-      "lowerStartPct": 5.030674846625767,
+      "lowerStart": 22,
+      "lowerStartPct": 2.8241335044929397,
       "veryLong": 2,
-      "veryShort": 79,
+      "veryShort": 68,
       "dangling": 0,
       "corrupt": 0,
-      "medianLength": 100,
+      "medianLength": 116,
       "repeated": [],
       "repeatedTotal": 0
     },
@@ -128,26 +128,26 @@
         "p.2    [p] I ..................................................................................................................................... 5 II .................................................…"
       ],
       "medio": [
-        "p.47   [p] —Es una costumbre de familia —me respondió, abandonando la sonrisa.",
-        "p.47   [p] —Sin embargo —aduje—, la primera vez que hablé a tu casa y pregunté por la \"señorita Iribarne\" la mucama vaciló un instante antes de responderme.",
-        "p.47   [p] —Te habrá parecido.",
-        "p.48   [p] —Puede ser. Pero ¿por qué no me corrigió?"
+        "p.48   [p] —Ah... no me di cuenta de que era eso lo que te sorprendía. Bueno, no es lo acostumbrado y quizá eso explica la vacilación de la mucama.",
+        "p.48   [p] Se quedó pensativa, como si por primera vez advirtiese el problema.",
+        "p.48   [p] —Y sin embargo no me corrigió —insistí.",
+        "p.48   [p] —¿Quién? —preguntó ella, como volviendo a la conciencia."
       ],
       "final": [
+        "p.95   [T] XXXIX",
         "p.95   [p] EN ESTOS MESES de encierro he intentado muchas veces razonar la última palabra del ciego, la palabra insensato. Un cansancio muy grande, o quizá oscuro instinto, me lo impide reiteradamente.…",
         "p.95   [p] Al menos puedo pintar, aunque sospecho que los médicos se ríen a mis espaldas, como sospecho que se rieron durante el proceso cuando mencioné la escena de la ventana.",
-        "p.95   [p] Sólo existió un ser que entendía mi pintura. Mientras tanto, estos cuadros deben de confirmarlos cada vez más en su estúpido punto de vista. Y los muros de este infierno serán, así, cada día…",
-        "p.95   [p] FIN"
+        "p.95   [p] Sólo existió un ser que entendía mi pintura. Mientras tanto, estos cuadros deben de confirmarlos cada vez más en su estúpido punto de vista. Y los muros de este infierno serán, así, cada día…"
       ]
     }
   },
   {
     "file": "paper-resnet.pdf",
-    "ms": 216.29999999981374,
+    "ms": 210.80000000074506,
     "title": "Deep Residual Learning for Image Recognition",
     "author": "",
     "pageCount": 12,
-    "blocks": 414,
+    "blocks": 261,
     "headings": 12,
     "figures": 7,
     "chapters": 12,
@@ -161,60 +161,35 @@
       "3. Deep Residual Learning",
       "4. Experiments"
     ],
-    "words": 9500,
+    "words": 9479,
     "style": "indent",
     "bodySize": 10,
     "stats": {
       "paragraphStyle": "indent",
       "figures": 7,
-      "columnPages": 10,
+      "columnPages": 11,
       "bodySize": 10,
       "bodyLeft": 50,
       "bodyRight": 545,
       "leading": 12,
-      "words": 9500
+      "words": 9479
     },
     "detected": {
       "mode": "page",
       "figures": 0.5833333333333334,
-      "columns": 0.8333333333333334,
+      "columns": 0.9166666666666666,
       "why": "el texto va en columnas"
     },
     "signals": {
-      "lowerStart": 115,
-      "lowerStartPct": 29.11392405063291,
-      "veryLong": 0,
-      "veryShort": 140,
-      "dangling": 19,
+      "lowerStart": 63,
+      "lowerStartPct": 26.033057851239672,
+      "veryLong": 1,
+      "veryShort": 40,
+      "dangling": 2,
       "corrupt": 1,
-      "medianLength": 44,
-      "repeated": [
-        {
-          "text": "#x# conv, #",
-          "n": 27
-        },
-        {
-          "text": "#-layer",
-          "n": 7
-        },
-        {
-          "text": "plain-#",
-          "n": 7
-        },
-        {
-          "text": "resnet-#",
-          "n": 7
-        },
-        {
-          "text": "resnet # #.#m #.#",
-          "n": 5
-        },
-        {
-          "text": "     ",
-          "n": 4
-        }
-      ],
-      "repeatedTotal": 10
+      "medianLength": 142,
+      "repeated": [],
+      "repeatedTotal": 0
     },
     "samples": {
       "inicio": [
@@ -224,10 +199,10 @@
         "p.1    [p] {kahe, v-xiangz, v-shren, jiansun}@microsoft.com"
       ],
       "medio": [
-        "p.7    [p] The plain/residual architectures follow the form in Fig. 3 (middle/right). The network inputs are 32×32 images, with the per-pixel mean subtracted. The first layer is 3×3 convolutions. Then …",
-        "p.7    [p] output map size 32×32 16×16 8×8",
-        "p.7    [p] # layers 1+2n 2n 2n",
-        "p.7    [p] # filters 16 32 64"
+        "p.8    [p] 56-layer",
+        "p.8    [p] 10 10 20-layer 5 plain-20 5 plain-32 plain-44 plain-56 0 0 0 1 2 3 4 5 6 0 1 iter. (1e4)",
+        "p.8    [p] of plain-110 is higher than 60% and not displayed. Middle: ResNets.",
+        "p.8    [p] plain-20"
       ],
       "final": [
         "p.12   [p] ports a center-crop error of 33.1% (Table 13) using ground truth classes. Under the same setting, our RPN method using ResNet-101 net significantly reduces the center-crop error to 13.3%. Th…",
@@ -239,11 +214,11 @@
   },
   {
     "file": "Fisica_biologica.pdf",
-    "ms": 381.69999999925494,
+    "ms": 349,
     "title": "Física biológica",
     "author": "",
     "pageCount": 58,
-    "blocks": 764,
+    "blocks": 469,
     "headings": 91,
     "figures": 29,
     "chapters": 91,
@@ -257,44 +232,44 @@
       "con la colaboración de Marko Radosavljevic y S…",
       "EDITORIAL REVERTÉ, S. A."
     ],
-    "words": 18979,
+    "words": 18940,
     "style": "indent",
     "bodySize": 10.5,
     "stats": {
       "paragraphStyle": "indent",
       "figures": 29,
-      "columnPages": 1,
+      "columnPages": 2,
       "bodySize": 10.5,
       "bodyLeft": 52,
       "bodyRight": 541,
       "leading": 12.9,
-      "words": 18979
+      "words": 18940
     },
     "detected": {
       "mode": "page",
       "figures": 0.5,
-      "columns": 0.017241379310344827,
+      "columns": 0.034482758620689655,
       "why": "tiene figuras en casi todas las páginas"
     },
     "signals": {
-      "lowerStart": 214,
-      "lowerStartPct": 33.22981366459628,
+      "lowerStart": 91,
+      "lowerStartPct": 26.07449856733524,
       "veryLong": 0,
-      "veryShort": 69,
-      "dangling": 57,
+      "veryShort": 32,
+      "dangling": 18,
       "corrupt": 0,
-      "medianLength": 84,
+      "medianLength": 203,
       "repeated": [
         {
           "text": "# capítulo # qué hay en el interior de las células",
           "n": 10
         },
         {
-          "text": "#.# lista de los constituyentes moleculares #",
-          "n": 5
+          "text": "#.#.# #.#.#",
+          "n": 7
         },
         {
-          "text": "#.# calor #",
+          "text": "#.# lista de los constituyentes moleculares #",
           "n": 4
         }
       ],
@@ -308,16 +283,208 @@
         "p.2    [T] Energía, información, vida"
       ],
       "medio": [
-        "p.24   [p] Cada capítulo del libro se abre con una pregunta de tipo biológico y un conciso enunciado que sintetiza una idea física relevante para el tratamiento de dicha cuestión. Reflexione sobre ella…",
-        "p.24   [T] 1.1 CALOR",
-        "p.24   [p] Los organismos vivos se alimentan, crecen, se reproducen y calculan. Las maneras en que hacen todas estas cosas parecen completamente diferentes de las máquinas artificiales. Una diferencia …",
-        "p.24   [T] 3"
+        "p.30   [p] Supongamos ahora que tiramos fuertemente del émbolo izquierdo, como en la figura 1.3b. Esta vez, un desplazamiento del émbolo hacia la derecha aumentaría tanto la",
+        "p.31   [p] 1.3 Excursión: comercio, filosofía, pragmática 17",
+        "p.31   [p] Las citas anteriores fueron escogidas para ilustrar una tensión fructífera entre estas dos culturas:",
+        "p.31   [p] • El impulso de los físicos es contemplar el bosque, y no los árboles, para ver lo que de"
       ],
       "final": [
         "p.58   [p] correspondiente monómero aminoácido (residuo) que debe ser añadido a la cadena po-",
         "p.58   [p] lipeptídica en formación (figura 2.24).",
         "p.58   [p] ",
         "p.58   [p] Figura 2.24: (Dibujo, basado en datos estructurales) La información del RNA mensajero es traducida a una secuencia de aminoácidos que forman una nueva proteína por la acción combinada de una…"
+      ]
+    }
+  },
+  {
+    "file": "1998-Greene-48leyes_poder.pdf",
+    "ms": 3368.5999999996275,
+    "title": "Las 48 leyes del poder",
+    "author": "Robert Greene",
+    "pageCount": 835,
+    "blocks": 5457,
+    "headings": 1353,
+    "figures": 0,
+    "chapters": 54,
+    "chapterTitles": [
+      "Comienzo",
+      "Las 48 leyes del poder",
+      "Reconocimientos",
+      "Prefacio",
+      "Ley n.º 1. Nunca le haga sombra a su amo",
+      "Ley n.º 2. Nunca confíe demasiado en sus amigo…",
+      "Ley n.º 3. Disimule sus intenciones",
+      "Ley n.º 4. Diga siempre menos de lo necesario"
+    ],
+    "words": 238593,
+    "style": "indent",
+    "bodySize": 15,
+    "stats": {
+      "paragraphStyle": "indent",
+      "figures": 0,
+      "columnPages": 205,
+      "bodySize": 15,
+      "bodyLeft": 76,
+      "bodyRight": 535,
+      "leading": 18.7,
+      "words": 238593
+    },
+    "detected": {
+      "mode": "flow",
+      "figures": 0,
+      "columns": 0.24550898203592814,
+      "why": "es texto corrido"
+    },
+    "signals": {
+      "lowerStart": 1264,
+      "lowerStartPct": 30.79922027290448,
+      "veryLong": 1,
+      "veryShort": 310,
+      "dangling": 0,
+      "corrupt": 0,
+      "medianLength": 237,
+      "repeated": [
+        {
+          "text": "interpretación",
+          "n": 120
+        },
+        {
+          "text": "ley n.º #",
+          "n": 48
+        },
+        {
+          "text": "criterio",
+          "n": 48
+        },
+        {
+          "text": "claves para alcanzar el poder",
+          "n": 46
+        },
+        {
+          "text": "invalidación",
+          "n": 46
+        },
+        {
+          "text": "observancia de la ley",
+          "n": 34
+        }
+      ],
+      "repeatedTotal": 18
+    },
+    "samples": {
+      "inicio": [
+        "p.2    [p] Una guía diseñada para mostrarle al lector cuáles son las cualidades personales que se deben de tener para alcanzar el poder en términos sociológicos, un método práctico para todo aquel que …",
+        "p.2    [p] Para explicar sus leyes y cómo estas se deben de ejecutar, el autor utiliza como ejemplo las estrategias, los aciertos y desaciertos de personajes históricos famosos como Julio César, Haile …",
+        "p.3    [T] Robert Greene",
+        "p.3    [T] Las 48 leyes del poder"
+      ],
+      "medio": [
+        "p.429  [p] al lugar y acostarse en la gran cama de cuatro metros,",
+        "p.429  [p] el «Gran Lecho Celestial»",
+        "p.429  [p] que supuestamente curaba",
+        "p.429  [p] cualquier enfermedad… Dicha cama, según Ennemoser, «estaba ubicada en una habitación espléndida, en la cual"
+      ],
+      "final": [
+        "p.835  [p] Robert Greene (Los Ángeles, EE. UU., 14-5-1959) es un escritor y psicólogo de origen judío, conocido por sus libros en materia de estrategia, poder y seducción. Greene ha escrito cinco",
+        "p.835  [p] Estudió en las universidades de California, Berkeley y Wisconsis-Madison, donde se graduó en estudios clásicos. Ha trabajado como editor y escritor de varias revistas en la Ciudad de Nueva Y…",
+        "p.835  [p] Nicolás Maquiavelo en su obra llamada que el primero se dirige a las masas y no a la nobleza. En",
+        "p.835  [p] Byron y analiza los métodos de seducción."
+      ]
+    }
+  },
+  {
+    "file": "Fisica-Universitaria-Sears-Zemansky-12ava-Edicion-Vol1.pdf",
+    "ms": 11722.099999999627,
+    "title": "Fisica Universitaria Vol.1",
+    "author": "Sears",
+    "pageCount": 763,
+    "blocks": 16233,
+    "headings": 2918,
+    "figures": 812,
+    "chapters": 32,
+    "chapterTitles": [
+      "Física Universitaria Volumen 1",
+      "Contenido Breve",
+      "Prefacio",
+      "Contenido",
+      "1. Unidades, Cantidades Físicas y Vectores",
+      "2. Movimiento en Línea Recta",
+      "3. Movimiento en Dos o en Tres Dimensiones",
+      "4. Leyes del Movimiento de Newton"
+    ],
+    "words": 604062,
+    "style": "indent",
+    "bodySize": 7.5,
+    "stats": {
+      "paragraphStyle": "indent",
+      "figures": 812,
+      "columnPages": 417,
+      "bodySize": 7.5,
+      "bodyLeft": 80,
+      "bodyRight": 532,
+      "leading": 9.2,
+      "words": 604062
+    },
+    "detected": {
+      "mode": "page",
+      "figures": 1.0642201834862386,
+      "columns": 0.546526867627785,
+      "why": "el texto va en columnas"
+    },
+    "signals": {
+      "lowerStart": 4499,
+      "lowerStartPct": 35.98336399264176,
+      "veryLong": 137,
+      "veryShort": 2767,
+      "dangling": 211,
+      "corrupt": 82,
+      "medianLength": 78,
+      "repeated": [
+        {
+          "text": "#.#",
+          "n": 188
+        },
+        {
+          "text": "figura #.# problema #.#.",
+          "n": 64
+        },
+        {
+          "text": "definición de, #",
+          "n": 44
+        },
+        {
+          "text": "figura #.# ejercicio #.#.",
+          "n": 42
+        },
+        {
+          "text": "continúa",
+          "n": 40
+        },
+        {
+          "text": "solución",
+          "n": 39
+        }
+      ],
+      "repeatedTotal": 117
+    },
+    "samples": {
+      "inicio": [
+        "p.1    [T] YOUNG • FREEDMAN",
+        "p.1    [T] SEARS • ZEMANSKY",
+        "p.1    [T] Física",
+        "p.1    [p] universitariaVolumen 1"
+      ],
+      "medio": [
+        "p.408  [p] G 5 6.6742 1 10 2 3 10211 N # m2/kg2",
+        "p.408  [p] Con tres cifras significativas, G 5 6.67 3 10211 N # m2/kg2. Como 1 N 5 1 kg # m/s2, las unidades de G también pueden expresarse (en unidades fundamentales del SI) comom3/ 1 kg # s2 2 .",
+        "p.408  [p] Las fuerzas gravitacionales se combinan vectorialmente. Si se tienen dos masas, cada una ellas ejerce una fuerza sobre una tercera, la fuerza total que actúa sobre ésta es la resultante de l…",
+        "p.408  [p] 12.4 Principio de la balanza de Cavendish, empleada para determinar el valor de G. El ángulo de desviación se exageró por claridad."
+      ],
+      "final": [
+        "p.759  [T] Notas",
+        "p.760  [T] Notas",
+        "p.761  [T] Notas",
+        "p.762  [T] Notas"
       ]
     }
   }

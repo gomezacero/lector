@@ -172,6 +172,33 @@ describe('buildBlocks', () => {
     ])
   })
 
+  it('no toma por sangria un salto enorme: eso es otra zona de la pagina', () => {
+    // Una nota al margen en x=300 con el cuerpo en x=78. Sin techo, sus 4
+    // renglones salian como 4 parrafos: es lo que rompia "Fisica Universitaria".
+    const lines = [
+      ...column(['cuerpo de la pagina', 'que sigue aqui']),
+      ...column(['nota al margen', 'que continua', 'y termina'], { top: 200, x: 300, width: 90 })
+    ]
+    const blocks = buildBlocks(lines, measureBody(lines), 'indent')
+
+    expect(blocks.map(b => b.text)).toContain('nota al margen que continua y termina')
+  })
+
+  it('la sangria es un escalon: no se repite dos renglones seguidos', () => {
+    // Los renglones de continuacion de una lista cuelgan todos a la misma
+    // altura; solo el primero es un escalon respecto al anterior.
+    const lines = [
+      line('abre el parrafo', { y: 120 }),
+      line('sangrado, abre otro', { y: 136.4, x: 96 }),
+      line('cuelga igual que el anterior', { y: 152.8, x: 96 }),
+      line('y este tambien', { y: 169.2, x: 96 })
+    ]
+    const blocks = buildBlocks(lines, measureBody(lines), 'indent')
+
+    expect(blocks).toHaveLength(2)
+    expect(blocks[1].text).toBe('sangrado, abre otro cuelga igual que el anterior y este tambien')
+  })
+
   it('separa por el hueco vertical sea cual sea el estilo', () => {
     const lines = [...column(['uno', 'dos']), ...column(['lejos'], { top: 220 })]
     const blocks = buildBlocks(lines, measureBody(lines), 'indent')
@@ -255,5 +282,64 @@ describe('toBlocks', () => {
     expect(blocks[1].text).toBe('pagina 1, segundo parrafo y su continuacion')
     expect(blocks.at(-1).text).toBe('pagina 4, segundo parrafo y su continuacion')
     expect(blocks.some(b => /TITULILLO/.test(b.text))).toBe(false)
+  })
+})
+
+describe('palabra partida al final del renglon', () => {
+  it('no corta el parrafo si el renglon lleno acaba con una palabra partida', () => {
+    // Un renglon que llega al margen y acaba en guion continua, aunque el
+    // siguiente arranque sangrado por un ajuste optico.
+    const lines = [
+      line('el maquetador partio la pala-', { y: 120, width: 430 }),
+      line('bra justo aqui y sigue', { y: 136.4, x: 90 })
+    ]
+    const blocks = buildBlocks(lines, measureBody(lines), 'indent')
+
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0].text).toBe('el maquetador partio la palabra justo aqui y sigue')
+  })
+
+  it('si el renglon acabo corto, el guion no basta para unir', () => {
+    // Un guion al final de un renglon que no llega al margen es un final de
+    // parrafo con un compuesto, no una palabra partida.
+    const lines = [
+      line('un final corto con guion-', { y: 120, width: 150 }),
+      line('Otro parrafo distinto', { y: 136.4, x: 96, width: 430 })
+    ]
+    const blocks = buildBlocks(lines, measureBody(lines), 'indent')
+
+    expect(blocks).toHaveLength(2)
+  })
+})
+
+describe('dialogos y listas, que se parecen pero no son lo mismo', () => {
+  it('separa los turnos de un dialogo aunque esten sangrados igual', () => {
+    // Cada intervencion es un parrafo y todas arrancan a la misma altura: lo
+    // que las separa es que la anterior acabo corta.
+    const lines = [
+      // Cuerpo del libro, que fija el margen en 78.
+      ...column(['prosa que llena la medida del libro', 'y continua en el renglon siguiente']),
+      line('-Es su hermana.', { y: 160, x: 96, width: 90 }),
+      line('-No me importa -replico.', { y: 176.4, x: 96, width: 130 }),
+      line('Pietro se enjugo la frente.', { y: 192.8, x: 96, width: 160 })
+    ]
+    const blocks = buildBlocks(lines, measureBody(lines), 'indent')
+
+    // El parrafo de prosa mas los tres turnos.
+    expect(blocks).toHaveLength(4)
+  })
+
+  it('une la continuacion colgante de una lista', () => {
+    // Aqui los renglones llenan la medida, asi que continuan.
+    const lines = [
+      ...column(['prosa que llena la medida del libro', 'y continua en el renglon siguiente']),
+      line('primer punto de la lista que llena', { y: 160, x: 96, width: 412 }),
+      line('la medida y sigue en el siguiente', { y: 176.4, x: 96, width: 412 }),
+      line('renglon hasta acabar.', { y: 192.8, x: 96, width: 120 })
+    ]
+    const blocks = buildBlocks(lines, measureBody(lines), 'indent')
+
+    // El parrafo de prosa y la lista entera, sin trocear.
+    expect(blocks).toHaveLength(2)
   })
 })

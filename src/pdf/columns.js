@@ -16,8 +16,16 @@
 // se puede exigir, porque es corrientisimo que la cita ocupe unos renglones y
 // luego el texto siga a todo lo ancho cruzandolo.
 
-const MIN_GAP_RATIO = 0.022 // ancho minimo del corredor, respecto a la pagina
-const MIN_GAP_EMS = 0.9 // y respecto al cuerpo de letra
+// Ancho minimo del corredor, medido SOLO en cuerpos de letra. El ancho de la
+// pagina no dice nada sobre cuanto separa un maquetador dos columnas, y atarlo
+// a el descartaba los corredores de verdad: en "Fisica Universitaria", de
+// pagina pequena (558pt) y cuerpo pequeno (7.5pt), la regla del 2.2% exigia
+// 12.3pt y ganaba siempre a los 6.7pt del cuerpo, asi que sus columnas se
+// fundian renglon a renglon.
+//
+// El liston sale de los canales medidos: el de "Las 48 leyes del poder" mide
+// 1.13em, asi que 0.9 lo respeta con holgura; a 1.1 ese libro ya empeora.
+const MIN_GAP_EMS = 0.9
 // El corredor no tiene por que estar vacio: si la cita ocupa media pagina y
 // luego el texto sigue a todo lo ancho, por el pasan bastantes renglones. Se es
 // generoso aqui y se filtra despues con isRealChannel, que es mas fiable.
@@ -61,7 +69,7 @@ export function findChannels (rows, pageWidth, drawings = []) {
   const last = findLastIndex(bins, count => count > valleyMax)
   if (first === -1 || last <= first) return []
 
-  const minGap = Math.max(pageWidth * MIN_GAP_RATIO, em * MIN_GAP_EMS)
+  const minGap = em * MIN_GAP_EMS
 
   // Corredores dentro de la mancha de texto, nunca los margenes de la pagina.
   const channels = []

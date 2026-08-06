@@ -152,6 +152,40 @@ function isHeading (line, metrics) {
   return bigger && short && line.text.length < 120
 }
 
+// Una sangria de primera linea mide uno o dos cuerpos de letra. Por encima de
+// este techo ya no es una sangria: es otra zona de la pagina.
+const MAX_INDENT_EMS = 2.5
+
+/**
+ * Si esta linea abre parrafo por sangria.
+ *
+ * Son dos preguntas, y antes solo se hacia la primera a medias:
+ *
+ *  1. El salto tiene tamano de sangria? Sin techo, una nota al margen a 220pt
+ *     del cuerpo pasaba por sangrada y cada uno de sus renglones abria parrafo.
+ *  2. Es un escalon? Una sangria no se repite dos renglones seguidos. Si el
+ *     anterior arranca a la misma altura, no hay escalon y el parrafo sigue.
+ */
+function isIndentStep (line, prev, metrics) {
+  const step = metrics.bodySize * 0.55
+  const delta = line.x - leftOf(line, metrics)
+  if (delta <= step || delta > metrics.bodySize * MAX_INDENT_EMS) return false
+
+  // Escalon claro respecto al renglon anterior: sangria sin discusion.
+  if (Math.abs(line.x - prev.x) > step) return true
+
+  // Arranca a la misma altura que el anterior. Eso lo mismo son dos parrafos
+  // cortos seguidos —los turnos de un dialogo, todos sangrados igual— que la
+  // continuacion colgante de una lista. Los separa el renglon anterior: si
+  // acabo corto, cerro parrafo; si llego al margen, sigue.
+  return prev.xEnd < rightOf(prev, metrics) - metrics.bodySize * 1.6
+}
+
+/** Si el renglon anterior llego al margen y dejo una palabra a medias. */
+const endsMidWord = (prev, metrics) =>
+  /[-‐­]$/.test(prev.text) &&
+  prev.xEnd >= rightOf(prev, metrics) - metrics.bodySize * 1.6
+
 function startsParagraph (line, prev, metrics, style) {
   if (!prev) return true
 
@@ -163,8 +197,12 @@ function startsParagraph (line, prev, metrics, style) {
   // Cambiar de columna siempre empieza algo nuevo.
   if (line.columnLeft !== prev.columnLeft) return true
 
-  const indented = line.x - leftOf(line, metrics) > metrics.bodySize * 0.55
-  if (style === 'indent') return indented
+  // Un renglon que llena la medida y ademas acaba con una palabra partida no
+  // puede ser el final de un parrafo, diga lo que diga la sangria. Sin este
+  // veto quedaban 830 guiones colgando solo en "Fisica Universitaria".
+  if (samePage && endsMidWord(prev, metrics)) return false
+
+  if (style === 'indent') return isIndentStep(line, prev, metrics)
 
   // Sin sangrias, la senal es que la linea anterior no llego al margen.
   const prevEndedShort = prev.xEnd < rightOf(prev, metrics) - metrics.bodySize * 1.6
