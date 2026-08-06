@@ -13,6 +13,7 @@ import { createNotesView } from '/src/notes/notesView.js'
 import { percent } from '/src/ui/dom.js'
 import { resolveMode, MODES } from '/src/reader/mode.js'
 import { createBookSheet } from '/src/library/bookSheet.js'
+import { makeCover } from '/src/pdf/pageRender.js'
 
 const $ = id => document.getElementById(id)
 const HUD_IDLE_MS = 2200
@@ -114,6 +115,11 @@ async function openLoaded (loaded, entry, { sheet = false } = {}) {
     showLoading('Abriendo el libro…')
     const book = await loadOrBuild(loaded)
 
+    // Abrir por el dialogo un libro que ya esta en la biblioteca no trae su
+    // ficha: sin recuperarla aqui, el progreso y el modo se sobrescribirian y
+    // se perderia por donde iba la lectura.
+    const known = entry ?? entries.find(e => e.id === loaded.id)
+
     // Un PDF escaneado es una imagen por pagina: no hay texto que extraer y
     // abrirlo dejaria la pantalla en blanco sin explicar por que.
     if (!book.blocks.length) {
@@ -128,11 +134,11 @@ async function openLoaded (loaded, entry, { sheet = false } = {}) {
       title: book.title,
       author: book.author,
       pageCount: book.pageCount,
-      addedAt: entry?.addedAt ?? Date.now(),
+      addedAt: known?.addedAt ?? Date.now(),
       lastOpenedAt: Date.now(),
-      progress: entry?.progress ?? null,
-      readingMode: entry?.readingMode ?? null,
-      reading: entry?.reading ?? {},
+      progress: known?.progress ?? null,
+      readingMode: known?.readingMode ?? null,
+      reading: known?.reading ?? {},
       missing: false
     }
     entries = await window.lector.library.upsert(current)
@@ -140,6 +146,7 @@ async function openLoaded (loaded, entry, { sheet = false } = {}) {
     notes = createNotesStore(loaded.id)
     await notes.load()
     openedBook = { book, path: loaded.path, bytes: loaded.bytes }
+
 
     // La ficha solo aparece la primera vez: reabrir un libro conocido lleva
     // directo al punto de lectura, que es lo que se quiere casi siempre.
@@ -160,6 +167,25 @@ async function openLoaded (loaded, entry, { sheet = false } = {}) {
   }
 }
 
+/**
+ * Dibuja la portada del libro que se acaba de cerrar.
+ *
+ * Se hace al salir y no al entrar porque solo hace falta en la estanteria, y
+ * porque dibujarla mientras se abre el libro compite con las paginas del propio
+ * lector: la vista de pagina llegaba a quedarse sin dibujar.
+ *
+ * Los bytes van en una copia propia: pdf.js los transfiere al worker y los deja
+ * inservibles para quien venga detras.
+ */
+async function drawCoverOf (book) {
+  if (!book?.bytes || !current) return
+  try {
+    await makeCover(new Uint8Array(book.bytes), current.id)
+  } catch (err) {
+    console.warn('no se pudo dibujar la portada:', err.message)
+  }
+}
+
 async function loadOrBuild (loaded) {
   const cached = await window.lector.book.readCache(loaded.id)
   if (cached?.version === CACHE_VERSION) return cached
@@ -177,6 +203,8 @@ async function backToLibrary () {
   // El cierre guarda el punto de lectura; sin esperarlo, la estanteria se
   // repinta con los datos de antes y el progreso parece no haberse movido.
   await pendingSave
+  // Con el lector ya cerrado, el hilo esta libre para dibujar la portada.
+  await drawCoverOf(openedBook)
   openedBook = null
   // Fuera de un libro mandan los ajustes globales otra vez.
   settings.useBook({})
@@ -195,12 +223,19 @@ async function enterReader () {
   const { book, bytes } = openedBook
   settings.useBook(current.reading)
 
-  el.body.dataset.view = 'reader'
-  // El maquetado necesita que la vista ya este visible para medir bien.
-  await nextFrame()
-  await applyMode(resolveMode(book, current.readingMode), book, current.progress, bytes)
-  notesView.render(notes.all, book)
-  wakeHud()
+  try {
+    el.body.dataset.view = 'reader'
+    // El maquetado necesita que la vista ya este visible para medir bien.
+    await nextFrame()
+    await applyMode(resolveMode(book, current.readingMode), book, current.progress, bytes)
+    notesView.render(notes.all, book)
+    wakeHud()
+  } catch (err) {
+    // Sin esto, un fallo al abrir deja la pantalla en blanco sin decir nada.
+    console.error(err)
+    toast(`No se pudo abrir el libro: ${err.message}`, 6000)
+    el.body.dataset.view = 'library'
+  }
 }
 
 // --- Modos de lectura ------------------------------------------------------

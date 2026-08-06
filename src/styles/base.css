@@ -131,101 +131,223 @@ body[data-view='sheet']   .view-sheet   { display: block; overflow-y: auto; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 40px 48px 28px;
+  padding: 40px 48px 24px;
   flex-shrink: 0;
 }
 .library-head h1 {
   margin: 0;
   font-size: 26px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
 }
 
 .library-grid {
   flex: 1;
   overflow-y: auto;
-  padding: 0 48px 48px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 18px;
-  align-content: start;
+  padding: 0 48px 56px;
 }
 
-.book-card {
+/* Portada: la unica imagen real que tiene un PDF. Mientras se dibuja, o si el
+   archivo falta, quedan las iniciales para que la retícula no baile. */
+.cover {
   position: relative;
-  text-align: left;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 20px 20px 16px;
-  cursor: pointer;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 3 / 4;
+  border-radius: 8px;
   overflow: hidden;
-  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
-}
-.book-card:hover {
-  border-color: var(--border-strong);
   background: var(--surface-hover);
-  transform: translateY(-2px);
+  box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.5);
 }
-
-.book-card-title {
-  font-size: 16px;
+.cover-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cover-fallback {
+  font-size: 22px;
   font-weight: 600;
-  line-height: 1.35;
-  margin: 0 0 6px;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
+  color: var(--fg-muted);
+  letter-spacing: 0.04em;
+}
+.cover-lg { width: 150px; aspect-ratio: 3 / 4; }
+
+.progress-bar {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
   overflow: hidden;
 }
-.book-card-author { font-size: 13px; color: var(--fg-muted); margin: 0 0 20px; }
-.book-card-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: 12px;
-  color: var(--fg-muted);
-  font-variant-numeric: tabular-nums;
-}
-.book-card-missing { color: var(--warning); }
-
-.book-card-bar {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: 3px;
-  background: var(--border);
-}
-/* La barra se escala en vez de cambiar de ancho: transform se compone en la
-   GPU y no obliga a recalcular el layout de la tarjeta. --p va de 0 a 1. */
-.book-card-bar > i {
+/* Se escala en vez de cambiar de ancho: transform se compone en la GPU y no
+   obliga a recalcular el layout. --p va de 0 a 1. */
+.progress-bar > i {
   display: block;
   width: 100%;
   height: 100%;
   background: var(--accent);
   transform: scaleX(var(--p, 0));
   transform-origin: left center;
-  transition: transform 200ms ease;
+  transition: transform 240ms cubic-bezier(0.33, 1, 0.68, 1);
 }
 
-.book-card-remove {
+/* --- Seguir leyendo ------------------------------------------------------ */
+
+.resume {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  padding: 26px 28px;
+  margin-bottom: 44px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.resume-cover {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 200ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+.resume-cover:hover { transform: translateY(-3px); }
+
+.resume-info { min-width: 0; flex: 1; }
+
+.resume-eyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+.resume-title {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+}
+.resume-author { margin: 5px 0 0; color: var(--fg-muted); font-size: 14px; }
+
+.resume-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 8px;
+}
+.resume-progress .progress-bar { flex: 1; max-width: 320px; }
+.resume-percent {
+  font-size: 12.5px;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.resume-meta { margin: 0; font-size: 12.5px; color: var(--fg-muted); }
+.resume-go { margin-top: 20px; }
+
+/* --- Estanteria ---------------------------------------------------------- */
+
+.shelf-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+.shelf-title { margin: 0; font-size: 15px; font-weight: 600; }
+
+.shelf-order { display: flex; gap: 2px; }
+.shelf-order button {
+  border: none;
+  background: none;
+  color: var(--fg-muted);
+  font-size: 12.5px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.shelf-order button:hover { background: var(--surface); color: var(--fg); }
+.shelf-order button.is-on { color: var(--accent); }
+
+.shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 28px 22px;
+  align-content: start;
+}
+
+.book { cursor: pointer; min-width: 0; }
+.book-cover { position: relative; }
+.book .cover {
+  transition: transform 200ms cubic-bezier(0.33, 1, 0.68, 1),
+              box-shadow 200ms ease;
+}
+.book:hover .cover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 26px -10px rgba(0, 0, 0, 0.6);
+}
+.book:focus-visible { outline: none; }
+.book:focus-visible .cover { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.book-cover .progress-bar { margin-top: 8px; }
+
+.book-title {
+  margin: 10px 0 3px;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.book-meta {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+.book-meta .is-missing { color: var(--warning); }
+
+.book-remove {
   position: absolute;
-  top: 10px; right: 10px;
+  top: 8px; right: 8px;
+  display: grid;
+  place-items: center;
   width: 26px; height: 26px;
   border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--fg-muted);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  color: var(--fg);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 120ms ease, background 120ms ease;
-  line-height: 1;
+  backdrop-filter: blur(6px);
+  transition: opacity 140ms ease, background 140ms ease;
 }
-.book-card:hover .book-card-remove { opacity: 1; }
-.book-card-remove:hover { background: var(--danger); color: #fff; }
+.book:hover .book-remove { opacity: 1; }
+.book-remove:hover { background: var(--danger); color: #fff; }
+
+.book-mode {
+  margin-top: 7px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg-muted);
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+.book-mode:hover { border-color: var(--accent); color: var(--accent); }
 
 .library-empty {
-  margin: auto;
-  padding-bottom: 12vh;
+  margin: 0;
+  padding: 18vh 0 0;
+  text-align: center;
   color: var(--fg-muted);
   font-size: 15px;
 }
@@ -285,21 +407,3 @@ body[data-view='sheet']   .view-sheet   { display: block; overflow-y: auto; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 5px; border: 3px solid var(--bg); }
 ::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); }
-
-/* Como se lee cada libro, visible desde la estanteria. */
-.book-card-mode {
-  position: absolute;
-  bottom: 14px;
-  right: 16px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--fg-muted);
-  font-size: 11px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 120ms ease, border-color 120ms ease, color 120ms ease;
-}
-.book-card:hover .book-card-mode { opacity: 1; }
-.book-card-mode:hover { border-color: var(--accent); color: var(--accent); }

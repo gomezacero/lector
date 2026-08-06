@@ -75,7 +75,26 @@ export async function removeLibraryEntry (id) {
   await writeJson(path.join(userData(), 'library.json'), list)
   await fs.rm(path.join(booksDir(), `${id}.json`), { force: true })
   await fs.rm(path.join(booksDir(), `${id}.notes.json`), { force: true })
+  await fs.rm(coverPath(id), { force: true })
   return list
+}
+
+const coversDir = () => path.join(userData(), 'covers')
+export const coverPath = id => path.join(coversDir(), `${id}.jpg`)
+
+/** Guarda la portada ya dibujada. Llega como bytes crudos desde el renderer. */
+export async function writeCover (id, bytes) {
+  await fs.mkdir(coversDir(), { recursive: true })
+  await fs.writeFile(coverPath(id), Buffer.from(bytes))
+}
+
+export async function hasCover (id) {
+  try {
+    await fs.access(coverPath(id))
+    return true
+  } catch {
+    return false
+  }
 }
 
 export const readBookCache = id => readJson(path.join(booksDir(), `${id}.json`), null)

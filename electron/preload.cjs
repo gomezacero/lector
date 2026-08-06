@@ -19,7 +19,9 @@ contextBridge.exposeInMainWorld('lector', {
   },
   book: {
     readCache: id => ipcRenderer.invoke('book:readCache', id),
-    writeCache: (id, book) => ipcRenderer.invoke('book:writeCache', id, book)
+    writeCache: (id, book) => ipcRenderer.invoke('book:writeCache', id, book),
+    hasCover: id => ipcRenderer.invoke('book:hasCover', id),
+    writeCover: (id, bytes) => ipcRenderer.invoke('book:writeCover', id, bytes)
   },
   notes: {
     read: id => ipcRenderer.invoke('notes:read', id),

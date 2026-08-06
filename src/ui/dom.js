@@ -1,8 +1,15 @@
 // Ayudas minimas para construir DOM sin innerHTML.
 // El texto de los libros viene de archivos ajenos: siempre textContent.
 
+// Los elementos de SVG viven en otro espacio de nombres: creados con
+// createElement se insertan pero no dibujan nada.
+const SVG_TAGS = new Set(['svg', 'path', 'circle', 'rect', 'line', 'g', 'polyline'])
+const SVG_NS = 'http://www.w3.org/2000/svg'
+
 export function h (tag, props = {}, ...children) {
-  const el = document.createElement(tag)
+  const el = SVG_TAGS.has(tag)
+    ? document.createElementNS(SVG_NS, tag)
+    : document.createElement(tag)
 
   for (const [key, value] of Object.entries(props)) {
     if (value === null || value === undefined || value === false) continue

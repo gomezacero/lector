@@ -7,7 +7,7 @@
 // Modulo puro: entra el resultado de extractPage(), sale una lista de lineas.
 
 import { findChannels, splitRow, rowsInColumnMode } from './columns.js'
-import { marginLeft, percentile } from './metrics.js'
+import { marginLeft, percentile, median } from './metrics.js'
 
 /** Dos items estan en el mismo renglon si sus lineas base casi coinciden. */
 function sameLine (a, b) {
@@ -23,11 +23,16 @@ function sameLine (a, b) {
 export function buildLines (page, pageIndex = 0) {
   const figures = significantFigures(page)
 
-  const items = page.items
-    .filter(it => !it.rotated && it.text.trim() !== '')
+  const visible = page.items.filter(it => !it.rotated && it.text.trim() !== '')
+  // Un rotulo nunca es mas grande que el texto de su pagina. Sin esta medida se
+  // perderia el titulo de una portada, que suele ir dentro de un recuadro: en
+  // "El Tunel" el libro pasaba a llamarse "INDICE", que es el siguiente titulo.
+  const bodyish = median(visible.map(it => it.h)) * 1.1
+
+  const items = visible
     // Los rotulos de los ejes y las leyendas de dentro de una figura no son
     // prosa: leerlos corta el texto con fragmentos sin sentido.
-    .filter(it => !insideAny(figures, it))
+    .filter(it => !(it.h <= bodyish && insideAny(figures, it)))
     .sort((a, b) => a.y - b.y || a.x - b.x)
 
   const rows = groupRows(items)

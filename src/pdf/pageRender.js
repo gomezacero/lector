@@ -12,6 +12,40 @@ import { openDocument, closeDocument } from './extract.js'
 
 const CACHE_SIZE = 6 // paginas dibujadas que se conservan
 
+const COVER_WIDTH = 420 // suficiente para la estanteria en pantallas densas
+
+/**
+ * Dibuja la primera pagina y la guarda como portada del libro.
+ *
+ * Se hace una sola vez, al conocer el libro: es la unica imagen real que tiene
+ * un PDF, y una estanteria sin portadas son fichas de archivo.
+ */
+export async function makeCover (bytes, id) {
+  if (await window.lector.book.hasCover(id)) return
+
+  const doc = await openDocument(bytes)
+  try {
+    const page = await doc.getPage(1)
+    const base = page.getViewport({ scale: 1 })
+    const viewport = page.getViewport({ scale: COVER_WIDTH / base.width })
+
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(viewport.width)
+    canvas.height = Math.round(viewport.height)
+
+    const ctx = canvas.getContext('2d', { alpha: false })
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    await page.render({ canvasContext: ctx, viewport }).promise
+    page.cleanup()
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.82))
+    await window.lector.book.writeCover(id, new Uint8Array(await blob.arrayBuffer()))
+  } finally {
+    await closeDocument(doc)
+  }
+}
+
 export function createPageRenderer () {
   let doc = null
   const cache = new Map() // pageNumber -> { url, width, height }

@@ -28,10 +28,17 @@ const MIME = {
 function registerAppProtocol () {
   protocol.handle('app', async request => {
     const { pathname } = new URL(request.url)
-    const target = path.join(projectRoot, decodeURIComponent(pathname))
+    const decoded = decodeURIComponent(pathname)
+
+    // Las portadas no viven en el proyecto sino junto a la biblioteca, asi que
+    // tienen su propia rama; el resto sale del codigo empaquetado.
+    const cover = decoded.match(/^\/covers\/([a-f0-9]{8,64})\.jpg$/)
+    const target = cover
+      ? store.coverPath(cover[1])
+      : path.join(projectRoot, decoded)
 
     // Nada fuera de la raiz del proyecto, pase lo que pase con la URL.
-    if (!target.startsWith(projectRoot + path.sep)) {
+    if (!cover && !target.startsWith(projectRoot + path.sep)) {
       return new Response('Forbidden', { status: 403 })
     }
     try {
@@ -74,7 +81,7 @@ function createWindow () {
     webPreferences: {
       preload: path.join(projectRoot, 'electron', 'preload.cjs'),
       // Las tareas de desarrollo abren un PDF concreto sin pasar por el dialogo.
-      additionalArguments: devTask === 'read' ? [`--lector-dev-open=${devTaskArg}`] : [],
+      additionalArguments: (devTask === 'read' || devTask === 'home') && devTaskArg ? [`--lector-dev-open=${devTaskArg}`] : [],
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -86,7 +93,7 @@ function createWindow () {
     if (!devTask) return mainWindow.show()
     // Una ventana oculta no se compone: capturePage devolveria un fotograma
     // viejo. Se muestra sin robar el foco solo cuando la tarea hace capturas.
-    if (devTask === 'read') mainWindow.showInactive()
+    if (devTask === 'read' || devTask === 'home') mainWindow.showInactive()
   })
   mainWindow.loadURL(startUrlFor(devTask, devTaskArg))
 
@@ -173,6 +180,8 @@ function registerIpc () {
 
   ipcMain.handle('book:readCache', (_e, id) => store.readBookCache(id))
   ipcMain.handle('book:writeCache', (_e, id, book) => store.writeBookCache(id, book))
+  ipcMain.handle('book:hasCover', (_e, id) => store.hasCover(id))
+  ipcMain.handle('book:writeCover', (_e, id, bytes) => store.writeCover(id, bytes))
 
   ipcMain.handle('notes:read', (_e, id) => store.readNotes(id))
   ipcMain.handle('notes:write', (_e, id, notes) => store.writeNotes(id, notes))

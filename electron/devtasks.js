@@ -32,6 +32,7 @@ export function startUrlFor (task, arg) {
     return `app://lector/src/dev/ingest.html?pdf=${encodeURIComponent(arg ?? '')}`
   }
   if (task === 'icon') return 'app://lector/src/dev/icon.html'
+  if (task === 'home') return 'app://lector/src/index.html'
   if (task === 'diagnose') {
     // "archivo.pdf#12" vuelca las lineas de la pagina 12 en vez del informe.
     const [pdfs, page] = (arg ?? '').split('#')
@@ -45,8 +46,46 @@ const TASKS = {
   ingest: ingestTask,
   diagnose: diagnoseTask,
   read: readTask,
+  home: homeTask,
   icon: iconTask,
   smoke: smokeTask
+}
+
+/** Captura la estanteria tal y como queda con los libros ya en la biblioteca. */
+async function homeTask (win, projectRoot) {
+  const js = expression => win.webContents.executeJavaScript(expression)
+  await poll(win, '["library", "sheet", "reader"].includes(document.body.dataset.view) || null', 60_000)
+  await poll(win, 'document.getElementById("loading").hidden || null', 90_000)
+
+  // Si arranco abriendo un libro, se vuelve a la estanteria para retratarla.
+  await js('document.body.dataset.view === "library" || document.getElementById("hud-library")?.click() || document.querySelector(".sheet-back")?.click()')
+  await wait(1500)
+
+  const shotDir = path.join(projectRoot, 'test', 'screenshots')
+  await fs.mkdir(shotDir, { recursive: true })
+  const image = await win.webContents.capturePage()
+  await fs.writeFile(path.join(shotDir, 'home.png'), image.toPNG())
+
+  const state = await js(`
+    (() => ({
+      view: document.body.dataset.view,
+      resume: document.querySelector('.resume-title')?.textContent ?? null,
+      books: document.querySelectorAll('.book').length,
+      covers: [...document.querySelectorAll('.cover-image')]
+        .filter(img => img.complete && img.naturalWidth > 0).length,
+      orders: [...document.querySelectorAll('.shelf-order button')].map(b => b.textContent)
+    }))()
+  `)
+
+  console.log('\nESTANTERIA')
+  console.log(`  vista           : ${state.view}`)
+  console.log(`  seguir leyendo  : ${state.resume ?? '(ninguno)'}`)
+  console.log(`  libros          : ${state.books}`)
+  console.log(`  portadas listas : ${state.covers}`)
+  console.log(`  ordenaciones    : ${state.orders.join(', ')}`)
+  console.log('  captura en test/screenshots/home.png')
+
+  return state.view === 'library' ? 0 : 1
 }
 
 export function runDevTask (app, win, projectRoot, task, arg) {
@@ -194,6 +233,14 @@ async function readTask (win, projectRoot) {
   `)
 
   await wheel(14)
+  // La vista de pagina tiene que dibujar la pagina antes de poder medirla.
+  await poll(win, `
+    (() => {
+      if (document.body.dataset.mode !== 'page') return true
+      const img = document.querySelector('#content-sharp img')
+      return (img && img.complete && img.naturalWidth > 0) || null
+    })()
+  `, 30_000)
   await wait(500)
   await shoot('02-leyendo')
 
@@ -289,29 +336,32 @@ async function readTask (win, projectRoot) {
   await wait(700)
   await shoot('05-biblioteca')
 
+  // El libro que se acaba de leer ocupa la franja de arriba, no la estanteria.
   const library = await js(`
     (() => ({
       view: document.body.dataset.view,
-      cards: document.querySelectorAll('.book-card').length,
-      title: document.querySelector('.book-card-title')?.textContent ?? '',
-      meta: document.querySelector('.book-card-meta span')?.textContent ?? '',
+      title: document.querySelector('.resume-title')?.textContent ?? '',
+      percent: document.querySelector('.resume-percent')?.textContent ?? '',
+      mode: document.querySelector('.resume-meta')?.textContent ?? '',
+      action: document.querySelector('.resume-go')?.textContent ?? '',
       // Ancho real pintado de la barra frente al de su carril.
       barRatio: (() => {
-        const bar = document.querySelector('.book-card-bar > i')
+        const bar = document.querySelector('.resume-progress .progress-bar > i')
         if (!bar) return null
         return bar.getBoundingClientRect().width / bar.parentElement.getBoundingClientRect().width
       })()
     }))()
   `)
   check(library.view === 'library', 'no se volvio a la biblioteca')
-  check(library.cards === 1, `deberia haber un libro en la estanteria, hay ${library.cards}`)
-  check(/leído/.test(library.meta), `la tarjeta no muestra progreso: "${library.meta}"`)
-  // La barra debe dibujar lo mismo que dice el texto, sea 0% o 90%.
-  const shown = Number(library.meta.match(/(\d+)%/)?.[1] ?? -1) / 100
-  check(shown >= 0 && Math.abs(library.barRatio - shown) < 0.02,
-    `la barra (${library.barRatio.toFixed(3)}) no concuerda con el texto (${shown})`)
+  check(Boolean(library.title), 'la franja de seguir leyendo esta vacia')
+  check(/^Seguir/.test(library.action), `el boton no invita a retomar: "${library.action}"`)
 
-  await js(`document.querySelector('.book-card').click()`)
+  // La barra debe dibujar lo mismo que dice el texto, sea 0% o 90%.
+  const shown = Number(library.percent.match(/(\d+)%/)?.[1] ?? -1) / 100
+  check(shown >= 0 && library.barRatio !== null && Math.abs(library.barRatio - shown) < 0.02,
+    `la barra (${library.barRatio}) no concuerda con el texto (${library.percent})`)
+
+  await js(`document.querySelector('.resume-go').click()`)
   await wait(1500)
   await shoot('06-reabierto')
 
@@ -330,7 +380,7 @@ async function readTask (win, projectRoot) {
   console.log(`  mascara          : a=${a} b=${b} c=${c} d=${d} (pantalla ${afterWheel.stageHeight}px)`)
   console.log(`  cambio de cuerpo : ${afterResize.fontSize}px, offset ${afterResize.offset}`)
   console.log(`  notas            : ${notes.count} · ${notes.quote.slice(0, 70)}…`)
-  console.log(`  biblioteca       : "${library.title}" · ${library.meta}`)
+  console.log(`  biblioteca       : "${library.title}" · ${library.percent} · ${library.mode}`)
   console.log(`  al reabrir       : offset ${reopened.offset}`)
   console.log(`  capturas en test/screenshots/`)
 
