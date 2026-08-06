@@ -7,12 +7,20 @@
 
 import { h, segmented } from '../ui/dom.js'
 import { FONTS, THEMES } from './settings.js'
+import { MODES, isFlowMode } from '../reader/mode.js'
 
 const READING_MODES = [
   { id: 'auto', label: 'Automático' },
   { id: 'flow', label: 'Línea a línea' },
+  { id: 'sentence', label: 'Frase a frase' },
   { id: 'page', label: 'Párrafo a párrafo' }
 ]
+
+const MODE_NOTES = {
+  flow: 'El texto se re-maqueta a tu medida y se resalta una línea cada vez.',
+  sentence: 'Como línea a línea, pero avanzando por frases enteras: la unidad es el sentido y no donde cortó el maquetador.',
+  page: 'Se muestra la página original y se resalta un párrafo o una figura cada vez.'
+}
 
 const SLIDERS = {
   flow: [
@@ -89,17 +97,15 @@ export function createSettingsPanel ({ settings, currentMode, onReadingMode, onC
           onReadingMode(id)
         }),
         chosen === 'auto'
-          ? `Elegido para este documento: ${mode === 'page' ? 'párrafo a párrafo' : 'línea a línea'}.`
-          : mode === 'page'
-            ? 'Se muestra la página original y se resalta un párrafo o una figura cada vez.'
-            : 'El texto se re-maqueta a tu medida y se resalta una línea cada vez.'
+          ? `Elegido para este documento: ${MODES[mode]?.label.toLowerCase() ?? mode}.`
+          : MODE_NOTES[chosen]
       ),
 
       field('Tema', segmented(THEMES, settings.get('theme'),
         id => { settings.update({ theme: id }); render() })),
 
       // La tipografia y la alineacion no pintan nada sobre la pagina original.
-      mode === 'flow'
+      isFlowMode(mode)
         ? field('Tipografía', h('select', {
             onchange: event => settings.update({ fontFamily: event.target.value })
           }, FONTS.map(font => h('option', {
@@ -109,19 +115,19 @@ export function createSettingsPanel ({ settings, currentMode, onReadingMode, onC
           }))))
         : null,
 
-      mode === 'flow'
+      isFlowMode(mode)
         ? field('Alineación', segmented(
             [{ id: 'left', label: 'Izquierda' }, { id: 'justify', label: 'Justificado' }],
             settings.get('textAlign'),
             id => { settings.update({ textAlign: id }); render() }))
         : null,
 
-      ...SLIDERS[mode].map(slider),
+      ...SLIDERS[isFlowMode(mode) ? 'flow' : 'page'].map(slider),
       ...SLIDERS.both.map(slider),
 
       h('p', { class: 'panel-hint' },
         'Rueda del ratón o ', h('kbd', { text: '↓' }), ' ', h('kbd', { text: '↑' }),
-        mode === 'page' ? ' para pasar de región. ' : ' para avanzar línea a línea. ',
+        mode === 'page' ? ' para pasar de región. ' : mode === 'sentence' ? ' para avanzar frase a frase. ' : ' para avanzar línea a línea. ',
         h('kbd', { text: '←' }), ' ', h('kbd', { text: '→' }), ' cambia de capítulo, ',
         h('kbd', { text: 'M' }), ' marca donde estás y ',
         h('kbd', { text: 'V' }), ' cambia de vista.'

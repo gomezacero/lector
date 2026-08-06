@@ -42,8 +42,8 @@ export function createBookSheet ({ onStart, onCancel }) {
 
       h('h2', { class: 'sheet-label', text: 'Cómo quieres leerlo' }),
       h('div', { class: 'sheet-modes' },
-        modeCard('flow', chosen === 'flow', () => { chosen = 'flow'; paint() }),
-        modeCard('page', chosen === 'page', () => { chosen = 'page'; paint() })
+        ...['flow', 'sentence', 'page'].map(id =>
+          modeCard(id, chosen === id, () => { chosen = id; paint() }))
       ),
 
       h('p', { class: 'sheet-why' },
@@ -89,12 +89,22 @@ function modeCard (id, active, onPick) {
 function art (id) {
   const line = (width, state) => h('i', { class: `art-line is-${state}`, style: { width } })
 
-  return id === 'flow'
-    ? h('span', { class: 'art art-flow' },
-        line('90%', 'dim'), line('80%', 'dim'),
-        line('95%', 'sharp'),
-        line('85%', 'dim'), line('70%', 'dim'))
-    : h('span', { class: 'art art-page' },
-        h('span', { class: 'art-col' }, line('100%', 'sharp'), line('100%', 'sharp'), line('60%', 'sharp')),
-        h('span', { class: 'art-col' }, line('100%', 'dim'), line('100%', 'dim'), line('80%', 'dim')))
+  if (id === 'flow') {
+    return h('span', { class: 'art' },
+      line('90%', 'dim'), line('80%', 'dim'),
+      line('95%', 'sharp'),
+      line('85%', 'dim'), line('70%', 'dim'))
+  }
+
+  // La frase abarca varios renglones seguidos, no uno suelto.
+  if (id === 'sentence') {
+    return h('span', { class: 'art' },
+      line('90%', 'dim'),
+      line('95%', 'sharp'), line('88%', 'sharp'), line('55%', 'sharp'),
+      line('70%', 'dim'))
+  }
+
+  return h('span', { class: 'art art-page' },
+    h('span', { class: 'art-col' }, line('100%', 'sharp'), line('100%', 'sharp'), line('60%', 'sharp')),
+    h('span', { class: 'art-col' }, line('100%', 'dim'), line('100%', 'dim'), line('80%', 'dim')))
 }

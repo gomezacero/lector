@@ -60,7 +60,7 @@ body[data-view='sheet']   .view-sheet   { display: block; overflow-y: auto; }
 
 .sheet-label { margin: 0 0 14px; font-size: 14px; font-weight: 600; }
 
-.sheet-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.sheet-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 
 .mode-card {
   display: flex;

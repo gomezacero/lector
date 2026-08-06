@@ -8,6 +8,7 @@ import { renderChapter, setBlockMarked } from './layout.js'
 import { buildLineIndex, offsetOfLine } from './lineIndex.js'
 import { createFocusController } from './focus.js'
 import { makeProgress, chapterAtOffset, lineForOffset, percentAt } from './progress.js'
+import { toSentenceUnits } from './sentences.js'
 
 const SAVE_DELAY = 900
 
@@ -19,6 +20,7 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
   let notes = null
   let chapterIndex = 0
   let saveTimer = null
+  let unit = 'line' // 'line' o 'sentence': por que avanza el foco
 
   // Donde esta leyendo, en caracteres. Es el dato canonico: la linea es solo su
   // representacion con los ajustes de ahora. Solo cambia cuando el lector se
@@ -30,7 +32,17 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
     const chapter = book.chapters[chapterIndex]
     if (!chapter) return
     renderChapter(book, chapter, layers, notes?.markedBlocks ?? new Set())
-    focus.setLines(buildLineIndex(contentSharp))
+    measure()
+  }
+
+  /**
+   * Unidades por las que avanza el foco. Con frases, cada una abarca los
+   * renglones que ocupa: el renglon es una unidad del maquetador y la frase lo
+   * es del sentido, pero recortar a media linea cansaria la vista.
+   */
+  function measure () {
+    const lines = buildLineIndex(contentSharp)
+    focus.setLines(unit === 'sentence' ? toSentenceUnits(lines, book.blocks) : lines)
   }
 
   function currentOffset () {
@@ -117,9 +129,11 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
   }
 
   return {
-    async open (nextBook, progress, notesStore) {
+    /** @param {'line'|'sentence'} [readingUnit] por que avanza el foco */
+    async open (nextBook, progress, notesStore, _bytes, readingUnit = 'line') {
       book = nextBook
       notes = notesStore
+      unit = readingUnit
       anchor = progress?.offset ?? 0
       chapterIndex = chapterAtOffset(book, anchor)
       renderCurrentChapter()
@@ -153,7 +167,7 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
      */
     relayout () {
       if (!book || !focus.lineCount) return
-      focus.setLines(buildLineIndex(contentSharp))
+      measure()
       focus.moveTo(lineForOffset(book, focus.lines, anchor), { animate: false })
       emitStatus()
     },

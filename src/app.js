@@ -11,7 +11,7 @@ import { createLibraryView } from '/src/library/libraryView.js'
 import { createNotesStore } from '/src/notes/notesStore.js'
 import { createNotesView } from '/src/notes/notesView.js'
 import { percent } from '/src/ui/dom.js'
-import { resolveMode, MODES } from '/src/reader/mode.js'
+import { resolveMode, MODES, isFlowMode } from '/src/reader/mode.js'
 import { createBookSheet } from '/src/library/bookSheet.js'
 import { makeCover } from '/src/pdf/pageRender.js'
 
@@ -243,13 +243,14 @@ async function enterReader () {
 async function applyMode (mode, book, progress, bytes) {
   if (reader?.isOpen) reader.close()
 
-  reader = readers[mode]
+  // Linea y frase comparten lector: solo cambia por que avanza el foco.
+  reader = isFlowMode(mode) ? readers.flow : readers.page
   el.body.dataset.mode = mode
   el.hudMode.textContent = MODES[mode].label
   el.hudMode.title = `${MODES[mode].hint}. Pulsa o usa V para cambiar de vista.`
 
   reader.setFocusShape(settings.all)
-  await reader.open(book, progress, notes, bytes)
+  await reader.open(book, progress, notes, bytes, mode === 'sentence' ? 'sentence' : 'line')
   settingsPanel?.refresh()
 }
 
@@ -269,7 +270,7 @@ async function switchMode (next) {
 }
 
 async function toggleMode () {
-  const next = el.body.dataset.mode === 'page' ? 'flow' : 'page'
+  const next = el.body.dataset.mode === 'page' ? 'flow' : 'page' // V alterna entre re-maquetado y pagina
   // El modo es del libro, no de la aplicacion: cambiarlo aqui no toca los demas.
   settings.update({ readingMode: next })
   await switchMode(next)

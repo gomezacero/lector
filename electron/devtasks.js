@@ -265,7 +265,7 @@ async function readTask (win, projectRoot) {
   }
 
   // --- Cambiar el cuerpo de letra sin perder el sitio ----------------------
-  const before = afterWheel.offset
+  let before = afterWheel.offset
 
   // Coste de volver a medir: se paga en cada pixel del deslizador de tamano.
   const cost = await js(`
@@ -311,6 +311,44 @@ async function readTask (win, projectRoot) {
   await setSlider(isPageMode ? 1 : 20)
   await js(`document.getElementById('hud-settings').click()`)
   await wait(400)
+
+  // --- Frase a frase -------------------------------------------------------
+  // Solo aplica al texto re-maquetado: sobre la pagina original la unidad ya es
+  // la region entera.
+  if (!isPageMode) {
+    await js(`
+      (() => {
+        document.getElementById('hud-settings').click()
+        const field = [...document.querySelectorAll('.panel .field')]
+          .find(f => f.textContent.includes('Tipo de lectura'))
+        const button = [...field.querySelectorAll('button')]
+          .find(b => b.textContent.includes('Frase'))
+        if (!button) throw new Error('no esta la opcion de frase a frase')
+        button.click()
+      })()
+    `)
+    await wait(1200)
+    await js(`document.getElementById('hud-settings').click()`)
+    await wait(300)
+
+    const wasAt = await readState(js)
+    await wheel(1)
+    await wait(400)
+    const after = await readState(js)
+    await shoot('07-frase')
+
+    // Una frase abarca varios renglones, asi que un paso adelanta mas texto que
+    // en linea a linea y la banda resaltada es mas alta.
+    const band = after.mask.c - after.mask.b
+    console.log(`\nFRASE A FRASE\n  banda de ${band.toFixed(0)}px, avance de ${after.offset - wasAt.offset} caracteres`)
+    check(after.mode === 'sentence', `no se aplico el modo: ${after.mode}`)
+    check(after.offset > wasAt.offset, 'el foco no avanzo de frase')
+    check(band > 20, `la banda de la frase es demasiado baja: ${band}px`)
+
+    // Cambiar de unidad recoloca el foco al principio de la frase, asi que de
+    // aqui en adelante el punto de referencia es este.
+    before = after.offset
+  }
 
   // --- Marcar la linea actual ---------------------------------------------
   await js(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }))`)

@@ -10,8 +10,12 @@
 
 export const MODES = {
   flow: { id: 'flow', label: 'Línea a línea', hint: 'Texto re-maquetado' },
+  sentence: { id: 'sentence', label: 'Frase a frase', hint: 'Texto re-maquetado' },
   page: { id: 'page', label: 'Párrafo a párrafo', hint: 'Página original' }
 }
+
+/** Los dos primeros re-maquetan el texto y comparten lector. */
+export const isFlowMode = mode => mode === 'flow' || mode === 'sentence'
 
 // Un libro ilustrado trae figuras sueltas; uno tecnico, en casi todas las
 // paginas. Y las columnas son una senal aun mas clara: la prosa no las usa.
