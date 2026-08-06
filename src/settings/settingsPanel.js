@@ -85,6 +85,7 @@ export function createSettingsPanel ({ settings, currentMode, onReadingMode, onC
   function render () {
     const mode = currentMode()
     const chosen = settings.get('readingMode')
+    const guided = settings.get('focusEnabled') !== false
 
     // replaceChildren convierte en texto lo que no sea un nodo, asi que un
     // campo omitido escribiria literalmente "null" en el panel.
@@ -100,6 +101,12 @@ export function createSettingsPanel ({ settings, currentMode, onReadingMode, onC
           ? `Elegido para este documento: ${MODES[mode]?.label.toLowerCase() ?? mode}.`
           : MODE_NOTES[chosen]
       ),
+
+      field('Guía de lectura', segmented(
+        [{ id: 'on', label: 'Activada' }, { id: 'off', label: 'Desactivada' }],
+        guided ? 'on' : 'off',
+        id => { settings.update({ focusEnabled: id === 'on' }); render() }),
+      guided ? null : 'El texto se ve entero y sin desenfoque. Sigues avanzando con la rueda.'),
 
       field('Tema', segmented(THEMES, settings.get('theme'),
         id => { settings.update({ theme: id }); render() })),
@@ -122,8 +129,12 @@ export function createSettingsPanel ({ settings, currentMode, onReadingMode, onC
             id => { settings.update({ textAlign: id }); render() }))
         : null,
 
-      ...SLIDERS[isFlowMode(mode) ? 'flow' : 'page'].map(slider),
-      ...SLIDERS.both.map(slider),
+      ...SLIDERS[isFlowMode(mode) ? 'flow' : 'page']
+        // Las lineas en foco no pintan nada con la guia apagada.
+        .filter(spec => guided || spec.key !== 'focusLines')
+        .map(slider),
+      // Y estos tres son el efecto en si.
+      ...(guided ? SLIDERS.both.map(slider) : []),
 
       h('p', { class: 'panel-hint' },
         'Rueda del ratón o ', h('kbd', { text: '↓' }), ' ', h('kbd', { text: '↑' }),

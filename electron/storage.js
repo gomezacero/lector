@@ -30,6 +30,8 @@ export const DEFAULT_SETTINGS = {
   lineHeight: 1.75,
   columnWidth: 640,
 
+  // Apagarla deja el texto entero y sin desenfoque, para leer de corrido.
+  focusEnabled: true,
   theme: 'dark',
   fontFamily: 'Sitka Text',
   blurAmount: 2.4,

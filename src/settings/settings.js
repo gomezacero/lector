@@ -53,8 +53,11 @@ export function createSettings (initial, { onLayoutChange, onChange, onBookChang
     style.setProperty('--read-leading', String(current.lineHeight))
     style.setProperty('--read-width', `${current.columnWidth}px`)
     style.setProperty('--read-align', current.textAlign)
-    style.setProperty('--blur', `${current.blurAmount}px`)
-    style.setProperty('--dim', String(current.dimOpacity))
+    // Con la guia apagada, la capa de fondo queda igual que la nitida y el
+    // efecto desaparece: se lee el texto entero, sin tocar nada mas.
+    const guided = current.focusEnabled !== false
+    style.setProperty('--blur', `${guided ? current.blurAmount : 0}px`)
+    style.setProperty('--dim', String(guided ? current.dimOpacity : 1))
   }
 
   // Arrastrar un deslizador dispara decenas de cambios por segundo: se aplican

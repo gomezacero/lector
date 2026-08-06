@@ -350,6 +350,42 @@ async function readTask (win, projectRoot) {
     before = after.offset
   }
 
+  // --- Apagar la guia de lectura -------------------------------------------
+  const guideOff = await js(`
+    (() => {
+      document.getElementById('hud-settings').click()
+      const field = [...document.querySelectorAll('.panel .field')]
+        .find(f => f.textContent.includes('Guía de lectura'))
+      if (!field) throw new Error('no esta el interruptor de guia')
+      const off = [...field.querySelectorAll('button')].find(b => b.textContent.includes('Desactivada'))
+      off.click()
+      const style = getComputedStyle(document.body)
+      return {
+        blur: style.getPropertyValue('--blur').trim(),
+        dim: style.getPropertyValue('--dim').trim(),
+        // Con la guia apagada, sus deslizadores no deben seguir ahi.
+        sliders: [...document.querySelectorAll('.panel .field')]
+          .map(f => f.textContent).filter(t => /Desenfoque|atenuado|Difuminado/.test(t)).length
+      }
+    })()
+  `)
+  await wait(400)
+  console.log(`\nGUIA APAGADA\n  --blur ${guideOff.blur} · --dim ${guideOff.dim} · deslizadores de foco visibles: ${guideOff.sliders}`)
+  check(guideOff.blur === '0px', `el desenfoque no se apago: ${guideOff.blur}`)
+  check(guideOff.dim === '1', `el texto sigue atenuado: ${guideOff.dim}`)
+  check(guideOff.sliders === 0, 'siguen a la vista deslizadores que ya no hacen nada')
+
+  // Volver a encenderla y cerrar el panel.
+  await js(`
+    (() => {
+      const field = [...document.querySelectorAll('.panel .field')]
+        .find(f => f.textContent.includes('Guía de lectura'))
+      ;[...field.querySelectorAll('button')].find(b => b.textContent.includes('Activada')).click()
+      document.getElementById('hud-settings').click()
+    })()
+  `)
+  await wait(400)
+
   // --- Marcar la linea actual ---------------------------------------------
   await js(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }))`)
   await wait(300)
