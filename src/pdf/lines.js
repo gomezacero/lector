@@ -36,7 +36,12 @@ export function buildLines (page, pageIndex = 0) {
   // que antes se mira si la pagina lleva columnas.
   const channels = findChannels(rows, page.width, figures)
   if (!channels.length) {
-    return placeFigures(compose(rows, pageIndex), figures, pageIndex, channels)
+    // Aunque no haya columnas, el margen se anota por pagina: en un libro con
+    // preliminares, laminas o encartes, unas paginas empiezan mas adentro que
+    // otras, y medir la sangria contra el margen del libro entero haria que en
+    // esas paginas cada renglon pareciera sangrado y abriera parrafo.
+    return placeFigures(
+      withColumnMargins(compose(rows, pageIndex)), figures, pageIndex, channels)
   }
 
   // Cada columna se lee entera antes de pasar a la siguiente, y el texto que
@@ -60,12 +65,12 @@ export function buildLines (page, pageIndex = 0) {
   reclaimWideLines(composed)
 
   const columns = composed.slice(0, -1)
-    .map(withColumnMargins)
+    .map(lines => withColumnMargins(lines, true))
     .map(lines => placeFigures(lines, figures, pageIndex, channels))
     .filter(lines => lines.length)
 
   const wide = placeFigures(
-    withColumnMargins(composed.at(-1)), figures, pageIndex, channels, true)
+    withColumnMargins(composed.at(-1), true), figures, pageIndex, channels, true)
 
   return orderGroups(columns, wide).flat()
 }
@@ -195,7 +200,7 @@ function reclaimWideLines (groups) {
  * margen del libro haria que la columna de la derecha pareciera sangrada entera
  * y cada renglon abriria parrafo.
  */
-function withColumnMargins (lines) {
+function withColumnMargins (lines, columned = false) {
   if (!lines.length) return lines
 
   // Margen predominante, no el minimo: la ultima linea de un parrafo del texto
@@ -206,6 +211,9 @@ function withColumnMargins (lines) {
   for (const line of lines) {
     line.columnLeft = left
     line.columnRight = right
+    // Marca aparte del margen: el margen se anota siempre, pero solo estas
+    // paginas van de verdad a varias columnas, y es lo que decide la vista.
+    if (columned) line.columned = true
   }
   return lines
 }

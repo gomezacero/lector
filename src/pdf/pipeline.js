@@ -56,7 +56,7 @@ export async function buildBook (bytes, { fileName = '', onProgress } = {}) {
         // Con que se decide si el libro se lee re-maquetado o sobre la pagina
         // original: la prosa corriente no trae ni figuras ni columnas.
         figures: blocks.filter(b => b.type === 'figure').length,
-        columnPages: pages.filter(p => p.lines.some(l => l.columnLeft !== undefined)).length,
+        columnPages: pages.filter(p => p.lines.some(l => l.columned)).length,
         bodySize: Math.round(metrics.bodySize * 10) / 10,
         // Las medidas con las que se decide donde empieza cada parrafo. Se
         // guardan porque son lo primero que hay que mirar cuando un libro sale

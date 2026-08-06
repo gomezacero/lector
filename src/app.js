@@ -11,6 +11,7 @@ import { createLibraryView } from '/src/library/libraryView.js'
 import { createNotesStore } from '/src/notes/notesStore.js'
 import { createNotesView } from '/src/notes/notesView.js'
 import { percent } from '/src/ui/dom.js'
+import { resolveMode, MODES } from '/src/reader/mode.js'
 
 const $ = id => document.getElementById(id)
 const HUD_IDLE_MS = 2200
@@ -172,44 +173,25 @@ async function backToLibrary () {
 
 // --- Modos de lectura ------------------------------------------------------
 
-/**
- * Con que vista se lee este libro.
- *
- * La prosa gana mucho re-maquetada: el texto se adapta a la pantalla y se lee
- * linea a linea. Un documento tecnico pierde con eso —las formulas, las tablas
- * y las graficas se desmontan—, asi que se muestra tal y como esta compuesto y
- * lo que se resalta es la region entera.
- */
-function chooseMode (book) {
-  const preference = settings.get('readingMode')
-  if (preference !== 'auto') return preference
-
-  const pages = Math.max(1, book.pageCount)
-  const hasFigures = (book.stats.figures ?? 0) / pages > 0.15
-  const hasColumns = (book.stats.columnPages ?? 0) / pages > 0.3
-  return hasFigures || hasColumns ? 'page' : 'flow'
-}
+const chooseMode = book => resolveMode(book, settings.get('readingMode'))
 
 async function applyMode (mode, book, progress, bytes) {
   if (reader?.isOpen) reader.close()
 
   reader = readers[mode]
   el.body.dataset.mode = mode
-  el.hudMode.textContent = mode === 'page' ? 'Página' : 'Flujo'
-  el.hudMode.title = mode === 'page'
-    ? 'Leyendo sobre la página original, región a región. Pulsa para re-maquetar el texto.'
-    : 'Leyendo el texto re-maquetado, línea a línea. Pulsa para ver la página original.'
+  el.hudMode.textContent = MODES[mode].label
+  el.hudMode.title = `${MODES[mode].hint}. Pulsa o usa V para cambiar de vista.`
 
   reader.setFocusShape(settings.all)
   await reader.open(book, progress, notes, bytes)
+  settingsPanel?.refresh()
 }
 
-async function toggleMode () {
-  if (!reader?.isOpen || !openedBook) return
-  const next = el.body.dataset.mode === 'page' ? 'flow' : 'page'
+/** Cambia de vista sin perder el punto de lectura. */
+async function switchMode (next) {
+  if (!reader?.isOpen || !openedBook || next === el.body.dataset.mode) return
 
-  // La eleccion manual manda a partir de ahora, tambien en los proximos libros.
-  settings.update({ readingMode: next })
   showLoading('Cambiando de vista…')
   try {
     // La vista de pagina necesita el PDF para dibujarlo, no solo su texto.
@@ -219,6 +201,13 @@ async function toggleMode () {
   } finally {
     hideLoading()
   }
+}
+
+async function toggleMode () {
+  const next = el.body.dataset.mode === 'page' ? 'flow' : 'page'
+  // La eleccion manual manda a partir de ahora, tambien en los proximos libros.
+  settings.update({ readingMode: next })
+  await switchMode(next)
 }
 
 // --- HUD -------------------------------------------------------------------
@@ -302,7 +291,12 @@ async function start () {
   readers = { flow: createReader(wiring), page: createRegionReader(wiring) }
   reader = readers.flow
 
-  settingsPanel = createSettingsPanel({ settings, onClose: () => showPanel(null) })
+  settingsPanel = createSettingsPanel({
+    settings,
+    currentMode: () => el.body.dataset.mode ?? 'flow',
+    onReadingMode: choice => switchMode(resolveMode(openedBook?.book, choice)),
+    onClose: () => showPanel(null)
+  })
   notesView = createNotesView({
     onClose: () => showPanel(null),
     onGo: note => { reader.goToOffset(note.offset); wakeHud() },

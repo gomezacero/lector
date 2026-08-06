@@ -1,74 +1,95 @@
 [
   {
-    "file": "Libro_El_Tunel.pdf",
-    "ms": 460.3000000002794,
-    "title": "ÍNDICE",
-    "author": "Gerson O. Su.rez",
-    "pageCount": 95,
-    "blocks": 838,
-    "headings": 40,
-    "figures": 3,
-    "chapters": 40,
+    "file": "Fisica_biologica.pdf",
+    "ms": 506,
+    "title": "Física biológica",
+    "author": "",
+    "pageCount": 58,
+    "blocks": 749,
+    "headings": 89,
+    "figures": 29,
+    "chapters": 89,
     "chapterTitles": [
-      "ÍNDICE",
-      "I",
-      "II",
-      "III",
-      "IV",
-      "V",
-      "VI",
-      "VII"
+      "Física biológica",
+      "Energía, información, vida",
+      "Física biológica",
+      "Energía, información, vida",
+      "Philip Nelson",
+      "University of Pennsylvania",
+      "con la colaboración de Marko Radosavljevic y S…",
+      "EDITORIAL REVERTÉ, S. A."
     ],
-    "words": 31776,
+    "words": 18690,
     "style": "indent",
-    "bodySize": 11.5,
+    "bodySize": 10.5,
     "stats": {
       "paragraphStyle": "indent",
-      "bodySize": 11.5,
-      "bodyLeft": 92,
-      "bodyRight": 519,
-      "leading": 19.5,
-      "words": 31776
+      "figures": 29,
+      "columnPages": 1,
+      "bodySize": 10.5,
+      "bodyLeft": 52,
+      "bodyRight": 541,
+      "leading": 12.9,
+      "words": 18690
+    },
+    "detected": {
+      "mode": "page",
+      "figures": 0.5,
+      "columns": 0.017241379310344827,
+      "why": "tiene figuras en casi todas las páginas"
     },
     "signals": {
-      "lowerStart": 25,
-      "lowerStartPct": 3.1446540880503147,
-      "veryLong": 2,
-      "veryShort": 79,
-      "dangling": 0,
+      "lowerStart": 201,
+      "lowerStartPct": 31.85419968304279,
+      "veryLong": 0,
+      "veryShort": 56,
+      "dangling": 57,
       "corrupt": 0,
-      "medianLength": 95,
-      "repeated": [],
-      "repeatedTotal": 0
+      "medianLength": 84,
+      "repeated": [
+        {
+          "text": "# capítulo # qué hay en el interior de las células",
+          "n": 10
+        },
+        {
+          "text": "#.# lista de los constituyentes moleculares #",
+          "n": 5
+        },
+        {
+          "text": "#.# calor #",
+          "n": 4
+        }
+      ],
+      "repeatedTotal": 3
     },
     "samples": {
       "inicio": [
-        "p.2    [T] ÍNDICE",
-        "p.2    [p] I ..................................................................................................................................... 5 II .................................................…",
-        "p.4    [p] \"...en todo caso, había un solo túnel, oscuro y solitario: el mío\".",
-        "p.4    [p] A la amistad de Rogelio Frigerio que ha resistido todas las asperezas y vicisitudes de"
+        "p.1    [T] Física biológica",
+        "p.1    [T] Energía, información, vida",
+        "p.2    [T] Física biológica",
+        "p.2    [T] Energía, información, vida"
       ],
       "medio": [
-        "p.47   [T] XVIII",
-        "p.47   [p] MIS INTERROGATORIOS, cada día más frecuentes y retorcidos, eran a propósito de sus silencios, sus miradas, sus palabras perdidas, algún viaje a la estancia, sus amores. Una vez le pregunté p…",
-        "p.47   [p] —¡Qué niño sos! ¿Qué importancia puede tener eso?",
-        "p.47   [p] —Para mí tiene mucha importancia —respondí examinando sus ojos."
+        "p.24   [p] Ley de la termodinámica, la influencia de la experiencia",
+        "p.24   [p] profesional de Joule en la tecnología de la fabricación de",
+        "p.24   [p] cerveza sobre su trabajo científico resulta claramente",
+        "p.24   [p] discernible."
       ],
       "final": [
-        "p.95   [p] EN ESTOS MESES de encierro he intentado muchas veces razonar la última palabra del ciego, la palabra insensato. Un cansancio muy grande, o quizá oscuro instinto, me lo impide reiteradamente.…",
-        "p.95   [p] Al menos puedo pintar, aunque sospecho que los médicos se ríen a mis espaldas, como sospecho que se rieron durante el proceso cuando mencioné la escena de la ventana.",
-        "p.95   [p] Sólo existió un ser que entendía mi pintura. Mientras tanto, estos cuadros deben de confirmarlos cada vez más en su estúpido punto de vista. Y los muros de este infierno serán, así, cada día…",
-        "p.95   [p] FIN"
+        "p.58   [p] correspondiente monómero aminoácido (residuo) que debe ser añadido a la cadena po-",
+        "p.58   [p] lipeptídica en formación (figura 2.24).",
+        "p.58   [p] ",
+        "p.58   [p] Figura 2.24: (Dibujo, basado en datos estructurales) La información del RNA mensajero es traducida a una secuencia de aminoácidos que forman una nueva proteína por la acción combinada de una…"
       ]
     }
   },
   {
     "file": "cien años de soledad.pdf",
-    "ms": 1264.6000000000931,
+    "ms": 1247.1999999999534,
     "title": "García Márquez - Cien años de soledad",
     "author": "Patricio",
     "pageCount": 173,
-    "blocks": 884,
+    "blocks": 865,
     "headings": 22,
     "figures": 0,
     "chapters": 22,
@@ -87,20 +108,28 @@
     "bodySize": 10,
     "stats": {
       "paragraphStyle": "indent",
+      "figures": 0,
+      "columnPages": 0,
       "bodySize": 10,
       "bodyLeft": 50,
       "bodyRight": 546,
       "leading": 12.1,
       "words": 137846
     },
+    "detected": {
+      "mode": "flow",
+      "figures": 0,
+      "columns": 0,
+      "why": "es texto corrido"
+    },
     "signals": {
       "lowerStart": 3,
-      "lowerStartPct": 0.34802784222737815,
-      "veryLong": 96,
+      "lowerStartPct": 0.3558718861209964,
+      "veryLong": 97,
       "veryShort": 33,
       "dangling": 0,
       "corrupt": 0,
-      "medianLength": 365,
+      "medianLength": 422,
       "repeated": [],
       "repeatedTotal": 0
     },
@@ -112,105 +141,93 @@
         "p.2    [p] y María Luisa Elio"
       ],
       "medio": [
-        "p.74   [p] El acto se celebró a veinte kilómetros de Macondo, a la sombra de una ceiba gigantesca en torno a la cual había de fundarse más tarde el pueblo de Neerlandia. Los delegados del gobierno y lo…",
-        "p.74   [p] El acto duró apenas el tiempo indispensable para que se estamparan las firmas. En torno de la rústica mesa colocada en el centro de una remendada carpa de circo, donde se sentaron los delega…",
-        "p.74   [p] -Coronel -dijo-, háganos el favor de no ser el primero en firmar.",
-        "p.74   [p] El coronel Aureliano Buendía accedió. Cuando el documento dio la vuelta completa a la mesa, en medio de un silencio tan nítido que habrían podido descifrarse las firmas por el garrapateo de …"
+        "p.73   [p] En los días siguientes se ocupó de destruir todo rastro de su paso por el mundo. Simplificó el taller de platería hasta sólo dejar los objetos impersonales, regaló sus ropas a los ordenanzas…",
+        "p.73   [p] -Préndalo con esto -le dijo él, entregándole el primer rollo de papeles amarillento-. Arde mejor, porque son cosas muy viejas.",
+        "p.73   [p] Santa Sofía de la Piedad, la silenciosa, la condescendiente, la que nunca contrarió ni a sus propios hijos, tuvo la impresión de que aquel era un acto prohibido.",
+        "p.73   [p] -Son papeles importantes -dijo."
       ],
       "final": [
-        "p.173  [p] XVII .............................................................................................................................. 138",
-        "p.173  [p] XVIII............................................................................................................................. 147",
-        "p.173  [p] XIX............................................................................................................................... 156",
-        "p.173  [p] XX ................................................................................................................................ 165"
+        "p.171  [p] Nigromanta lo rescató de un charco de vómito y de lágrimas. Lo llevó a su cuarto, lo limpió, le hizo tomar una taza de caldo. Creyendo que eso lo consolaba, tachó con una raya de carbón los …",
+        "p.171  [p] No lo encontró en la canastilla. Al primer impacto experimentó una deflagración de alegría, creyendo que Amaranta Úrsula había despertado de la muerte para ocuparse del niño. Pero el cadáver…",
+        "p.171  [p] Aureliano no había sido más lúcido en ningún acto de su vida que cuando olvidó sus muertos y el dolor de sus muertos, y volvió a clavar las puertas y las ventanas con las crucetas de Fernand…",
+        "p.173  [p] I .......................................................................................................................................3 II ................................................…"
       ]
     }
   },
   {
-    "file": "_OceanofPDF.com_La_tregua_-_Mario_Benedetti.pdf",
-    "ms": 783.3999999999069,
-    "title": "La tregua",
-    "author": "Mario Benedetti",
-    "pageCount": 182,
-    "blocks": 367,
-    "headings": 2,
-    "figures": 0,
-    "chapters": 3,
+    "file": "Libro_El_Tunel.pdf",
+    "ms": 508.5,
+    "title": "ÍNDICE",
+    "author": "Gerson O. Su.rez",
+    "pageCount": 95,
+    "blocks": 858,
+    "headings": 40,
+    "figures": 3,
+    "chapters": 40,
     "chapterTitles": [
-      "Comienzo",
-      "Mario Benedetti",
-      "La tregua"
+      "ÍNDICE",
+      "I",
+      "II",
+      "III",
+      "IV",
+      "V",
+      "VI",
+      "VII"
     ],
-    "words": 51487,
-    "style": "spacing",
-    "bodySize": 15,
+    "words": 31776,
+    "style": "indent",
+    "bodySize": 11.5,
     "stats": {
-      "paragraphStyle": "spacing",
-      "bodySize": 15,
-      "bodyLeft": 76,
-      "bodyRight": 535,
+      "paragraphStyle": "indent",
+      "figures": 3,
+      "columnPages": 0,
+      "bodySize": 11.5,
+      "bodyLeft": 92,
+      "bodyRight": 519,
       "leading": 19.5,
-      "words": 51487
+      "words": 31776
+    },
+    "detected": {
+      "mode": "flow",
+      "figures": 0.031578947368421054,
+      "columns": 0,
+      "why": "es texto corrido"
     },
     "signals": {
-      "lowerStart": 1,
-      "lowerStartPct": 0.273972602739726,
-      "veryLong": 46,
-      "veryShort": 176,
+      "lowerStart": 41,
+      "lowerStartPct": 5.030674846625767,
+      "veryLong": 2,
+      "veryShort": 79,
       "dangling": 0,
       "corrupt": 0,
-      "medianLength": 48,
-      "repeated": [
-        {
-          "text": "jueves # de febrero",
-          "n": 6
-        },
-        {
-          "text": "lunes # de febrero",
-          "n": 5
-        },
-        {
-          "text": "domingo # de junio",
-          "n": 5
-        },
-        {
-          "text": "viernes # de febrero",
-          "n": 4
-        },
-        {
-          "text": "viernes # de marzo",
-          "n": 4
-        },
-        {
-          "text": "martes # de abril",
-          "n": 4
-        }
-      ],
-      "repeatedTotal": 13
+      "medianLength": 100,
+      "repeated": [],
+      "repeatedTotal": 0
     },
     "samples": {
       "inicio": [
-        "p.2    [p] Publicada en 1960, La tregua es la obra de Mario Benedetti que ha alcanzado mayor éxito de público. La cotidianidad gris y rutinaria, marcada por la frustración y la ausencia de perspectivas…",
-        "p.3    [T] Mario Benedetti",
-        "p.3    [T] La tregua",
-        "p.3    [p] ePUB v1.1 Narukei 20.06.12"
+        "p.2    [T] ÍNDICE",
+        "p.2    [p] I ..................................................................................................................................... 5 II .................................................…",
+        "p.4    [p] \"...en todo caso, había un solo túnel, oscuro y solitario: el mío\".",
+        "p.4    [p] A la amistad de Rogelio Frigerio que ha resistido todas las asperezas y vicisitudes de"
       ],
       "medio": [
-        "p.96   [p] Esteban está enfermo. Dice el médico que puede ser algo serio. Esperemos que no. Pleuritis o algo pulmonar. No sabe. ¿Cuándo sabrán los médicos? Después de almorzar, entré a su cuarto a ver …",
-        "p.98   [p] Martes 25 de junio",
-        "p.98   [p] Un trabajo bárbaro. Será para mañana.",
-        "p.98   [p] Miércoles 26 de junio"
+        "p.47   [p] —Sin embargo —aduje—, la primera vez que hablé a tu casa y pregunté por la \"señorita Iribarne\" la mucama vaciló un instante antes de responderme.",
+        "p.47   [p] —Te habrá parecido.",
+        "p.48   [p] —Puede ser. Pero ¿por qué no me corrigió?",
+        "p.48   [p] María volvió a sonreír, esta vez con mayor intensidad."
       ],
       "final": [
-        "p.181  [p] En la oficina me quisieron dar una despedida y no acepté. Para no incurrir en grosería, armé una excusa muy verosímil, a base de problemas familiares. La verdad es que no puedo imaginarme co…",
-        "p.181  [p] Viernes 28 de febrero",
-        "p.181  [p] Ultimo día de trabajo. Nada de trabajo, claro. Me lo pasé dando apretones de manos, recibiendo abrazos. Creo que el gerente desbordaba de satisfacción y que Muñoz estaba realmente conmovido.…",
-        "p.182  [p] Montevideo, enero a mayo de 1959. OceanofPDF.com"
+        "p.95   [p] EN ESTOS MESES de encierro he intentado muchas veces razonar la última palabra del ciego, la palabra insensato. Un cansancio muy grande, o quizá oscuro instinto, me lo impide reiteradamente.…",
+        "p.95   [p] Al menos puedo pintar, aunque sospecho que los médicos se ríen a mis espaldas, como sospecho que se rieron durante el proceso cuando mencioné la escena de la ventana.",
+        "p.95   [p] Sólo existió un ser que entendía mi pintura. Mientras tanto, estos cuadros deben de confirmarlos cada vez más en su estúpido punto de vista. Y los muros de este infierno serán, así, cada día…",
+        "p.95   [p] FIN"
       ]
     }
   },
   {
     "file": "paper-resnet.pdf",
-    "ms": 344.5,
+    "ms": 265.5999999998603,
     "title": "Deep Residual Learning for Image Recognition",
     "author": "",
     "pageCount": 12,
@@ -233,11 +250,19 @@
     "bodySize": 10,
     "stats": {
       "paragraphStyle": "indent",
+      "figures": 7,
+      "columnPages": 10,
       "bodySize": 10,
       "bodyLeft": 50,
       "bodyRight": 545,
       "leading": 12,
       "words": 9385
+    },
+    "detected": {
+      "mode": "page",
+      "figures": 0.5833333333333334,
+      "columns": 0.8333333333333334,
+      "why": "el texto va en columnas"
     },
     "signals": {
       "lowerStart": 113,
@@ -297,90 +322,98 @@
     }
   },
   {
-    "file": "Fisica_biologica.pdf",
-    "ms": 660.4000000003725,
-    "title": "Física biológica",
-    "author": "",
-    "pageCount": 58,
-    "blocks": 1389,
-    "headings": 91,
+    "file": "1998-Greene-48leyes_poder.pdf",
+    "ms": 4397.40000000014,
+    "title": "Las 48 leyes del poder",
+    "author": "Robert Greene",
+    "pageCount": 835,
+    "blocks": 7934,
+    "headings": 1353,
     "figures": 0,
-    "chapters": 91,
+    "chapters": 54,
     "chapterTitles": [
-      "Física biológica",
-      "Energía, información, vida",
-      "Física biológica",
-      "Energía, información, vida",
-      "Philip Nelson",
-      "University of Pennsylvania",
-      "con la colaboración de Marko Radosavljevic y S…",
-      "EDITORIAL REVERTÉ, S. A."
+      "Comienzo",
+      "Las 48 leyes del poder",
+      "Reconocimientos",
+      "Prefacio",
+      "Ley n.º 1. Nunca le haga sombra a su amo",
+      "Ley n.º 2. Nunca confíe demasiado en sus amigo…",
+      "Ley n.º 3. Disimule sus intenciones",
+      "Ley n.º 4. Diga siempre menos de lo necesario"
     ],
-    "words": 19178,
+    "words": 238533,
     "style": "indent",
-    "bodySize": 10.5,
+    "bodySize": 15,
     "stats": {
       "paragraphStyle": "indent",
-      "bodySize": 10.5,
-      "bodyLeft": 52,
-      "bodyRight": 541,
-      "leading": 12.9,
-      "words": 19178
+      "figures": 0,
+      "columnPages": 205,
+      "bodySize": 15,
+      "bodyLeft": 76,
+      "bodyRight": 535,
+      "leading": 18.7,
+      "words": 238533
+    },
+    "detected": {
+      "mode": "flow",
+      "figures": 0,
+      "columns": 0.24550898203592814,
+      "why": "es texto corrido"
     },
     "signals": {
-      "lowerStart": 748,
-      "lowerStartPct": 57.6271186440678,
-      "veryLong": 0,
-      "veryShort": 244,
-      "dangling": 202,
+      "lowerStart": 3233,
+      "lowerStartPct": 49.12627260294788,
+      "veryLong": 1,
+      "veryShort": 1215,
+      "dangling": 0,
       "corrupt": 0,
-      "medianLength": 84,
+      "medianLength": 60,
       "repeated": [
         {
-          "text": "problemas #",
-          "n": 6
+          "text": "interpretación",
+          "n": 120
         },
         {
-          "text": "visión de conjunto #",
-          "n": 5
+          "text": "ley n.º#",
+          "n": 48
         },
         {
-          "text": "vía # #",
-          "n": 5
+          "text": "criterio",
+          "n": 48
         },
         {
-          "text": "# nm",
-          "n": 5
+          "text": "claves para alcanzar el poder",
+          "n": 46
         },
         {
-          "text": "#.# lista de los constituyentes moleculares #",
-          "n": 5
+          "text": "invalidación",
+          "n": 46
         },
         {
-          "text": "#.# calor #",
-          "n": 4
+          "text": "observancia de la ley",
+          "n": 34
         }
       ],
-      "repeatedTotal": 7
+      "repeatedTotal": 21
     },
     "samples": {
       "inicio": [
-        "p.1    [T] Física biológica",
-        "p.1    [T] Energía, información, vida",
-        "p.2    [T] Física biológica",
-        "p.2    [T] Energía, información, vida"
+        "p.2    [p] Una guía diseñada para mostrarle al lector cuáles son las cualidades personales que se deben de tener para alcanzar el poder en términos sociológicos, un método práctico para todo aquel que …",
+        "p.2    [p] Para explicar sus leyes y cómo estas se deben de ejecutar, el autor utiliza como ejemplo las estrategias, los aciertos y desaciertos de personajes históricos famosos como Julio César, Haile …",
+        "p.3    [T] Robert Greene",
+        "p.3    [T] Las 48 leyes del poder"
       ],
       "medio": [
-        "p.30   [p] Figura 1.3: (Esquema) Máquina que transduce energía libre. Un cilindro lleno de agua está dividido en dos cámaras mediante una membrana semipermeable. La membrana está fijada en el cilindro.…",
-        "p.30   [p] mucha energía térmica en el mundo exterior. El flujo osmótico sacrifica orden molecular para organizar movimiento térmico aleatorio en movimiento mecánico a gran escala contra un peso.",
-        "p.30   [p] Podemos expresar el argumento anterior aplicando el lenguaje introducido en la sección 1.1.3. En la idea 1.5 introdujimos la idea de que la máquina osmótica se desplazará espontáneamente en …",
-        "p.30   [p] Supongamos ahora que tiramos fuertemente del émbolo izquierdo, como en la figura 1.3b. Esta vez, un desplazamiento del émbolo hacia la derecha aumentaría tanto la"
+        "p.433  [T] INTERPRETACIÓN",
+        "p.434  [p] Schüppach había comenzado su carrera como médico de pueblo común y corriente. A veces utilizaba en su práctica algunos de los remedios caseros comunes en la aldea, con los que se había criad…",
+        "p.434  [p] El caso del Doctor de las Montañas nos enseña una valiosa lección en lo relativo a los seguidores devotos. En primer lugar, usted deberá encontrar la forma de atraer la voluntad de la gente …",
+        "p.434  [p] En segundo lugar, Schüppach nos enseña el perenne poder de la fe en la naturaleza y en la sencillez. La naturaleza, en realidad, abunda en elementos aterradores: plantas venenosas, animales …"
       ],
       "final": [
-        "p.58   [p] nueva",
-        "p.58   [p] proteína",
-        "p.58   [p] mRNA",
-        "p.58   [p] Figura 2.24: (Dibujo, basado en datos estructurales) La información del RNA mensajero es traducida a una secuencia de aminoácidos que forman una nueva proteína por la acción combinada de una…"
+        "p.835  [p] Robert Greene (Los Ángeles, EE. UU., 14-5-1959) es un escritor y psicólogo de origen judío, conocido por sus libros en materia de estrategia, poder y seducción. Greene ha escrito cinco",
+        "p.835  [p] Estudió en las universidades de California, Berkeley y Wisconsis-Madison, donde se graduó en estudios clásicos. Ha trabajado como editor y escritor de varias revistas en la Ciudad de Nueva Y…",
+        "p.835  [p] Nicolás Maquiavelo en su obra llamada que el primero se dirige a las masas y no a la nobleza. En",
+        "p.835  [p] Byron y analiza los métodos de seducción."
       ]
     }
   }

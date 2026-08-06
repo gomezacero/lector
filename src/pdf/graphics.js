@@ -91,11 +91,18 @@ export function extractDrawings (operatorList, baseTransform, OPS) {
  * @param {Array} drawings
  * @param {number} tolerance holgura para considerar que dos cajas se tocan
  */
-export function mergeDrawings (drawings, tolerance = 10) {
+export function mergeDrawings (drawings, tolerance = 10, pageArea = Infinity) {
   // `parts` cuenta los trazados fundidos: una grafica trae decenas, mientras
   // que un marco o el filete de un encabezado traen uno. Es lo que despues
   // permite no confundir el recuadro de una pagina con una figura.
-  const boxes = drawings.map(d => ({ ...d, parts: 1 }))
+  //
+  // Los trazos que cubren casi toda la pagina —un fondo, un marco— se apartan
+  // antes de fundir nada. Si se dejaran, tocarian todo lo demas y acabarian
+  // absorbiendolo: una pagina con una fotografia y un marco daria una sola
+  // caja del tamano de la pagina, y la fotografia se perderia dentro.
+  const boxes = drawings
+    .filter(d => d.w * d.h < pageArea * 0.85)
+    .map(d => ({ ...d, parts: 1 }))
   let merged = true
 
   while (merged) {

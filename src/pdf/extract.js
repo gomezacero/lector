@@ -43,7 +43,7 @@ export async function extractPage (doc, pageNumber, { withDrawings = false } = {
   // Solo se piden los dibujos cuando hacen falta: la lista de operaciones es
   // bastante mas cara de obtener que el texto.
   const drawings = withDrawings
-    ? mergeDrawings(extractDrawings(await page.getOperatorList(), viewport.transform, pdfjsLib.OPS))
+    ? mergeDrawings(extractDrawings(await page.getOperatorList(), viewport.transform, pdfjsLib.OPS), 10, viewport.width * viewport.height)
     : []
 
   const items = []

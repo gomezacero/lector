@@ -209,33 +209,35 @@ async function readTask (win, projectRoot) {
   console.log(`\nMEDIDA: ${cost.lines} lineas en ${cost.ms.toFixed(1)}ms ` +
               `(${(cost.ms / cost.lines).toFixed(2)}ms por linea)`)
 
-  await js(`
+  // Cada vista tiene sus propios ajustes: se mueve el que corresponda.
+  const knob = isPageMode ? 'Ampliación' : 'Tamaño'
+  const setSlider = value => js(`
     (() => {
-      document.getElementById('hud-settings').click()
-      const slider = [...document.querySelectorAll('.panel input[type=range]')]
-        .find(input => Number(input.max) === 34)
-      slider.value = '28'
+      const field = [...document.querySelectorAll('.panel .field')]
+        .find(f => f.textContent.includes(${JSON.stringify(knob)}))
+      if (!field) throw new Error('no esta el ajuste ${knob}')
+      const slider = field.querySelector('input[type=range]')
+      slider.value = '${value}'
       slider.dispatchEvent(new Event('input', { bubbles: true }))
     })()
   `)
-  await wait(600)
+
+  await js(`document.getElementById('hud-settings').click()`)
+  await wait(300)
+  await setSlider(isPageMode ? 1.6 : 28)
+  await wait(700)
   await shoot('03-ajustes')
 
   const afterResize = await readState(js)
   check(afterResize.offset === before,
-    `al cambiar el cuerpo se perdio el sitio: ${before} -> ${afterResize.offset}`)
-  check(afterResize.fontSize === 28, `el cuerpo no se aplico: ${afterResize.fontSize}px`)
+    `al cambiar el ajuste se perdio el sitio: ${before} -> ${afterResize.offset}`)
+  if (!isPageMode) {
+    check(afterResize.fontSize === 28, `el cuerpo no se aplico: ${afterResize.fontSize}px`)
+  }
 
-  // Devolver el cuerpo original y cerrar el panel.
-  await js(`
-    (() => {
-      const slider = [...document.querySelectorAll('.panel input[type=range]')]
-        .find(input => Number(input.max) === 34)
-      slider.value = '20'
-      slider.dispatchEvent(new Event('input', { bubbles: true }))
-      document.getElementById('hud-settings').click()
-    })()
-  `)
+  // Dejarlo como estaba y cerrar el panel.
+  await setSlider(isPageMode ? 1 : 20)
+  await js(`document.getElementById('hud-settings').click()`)
   await wait(400)
 
   // --- Marcar la linea actual ---------------------------------------------
@@ -395,6 +397,11 @@ async function diagnoseTask (win, outRoot) {
     console.log(`  bloques   : ${r.blocks} (${r.headings} titulos, ${r.figures} figuras)   parrafo mediano: ${r.signals.medianLength} car.`)
     console.log(`  estilo    : ${r.style}, cuerpo ${r.bodySize}pt, margenes ${r.stats.bodyLeft}-${r.stats.bodyRight}, interlineado ${r.stats.leading}`)
     console.log(`  capitulos : ${r.chapters} -> ${r.chapterTitles.join(' | ')}`)
+    if (r.detected) {
+      const d = r.detected
+      console.log(`  VISTA     : ${d.mode === 'page' ? 'PÁRRAFO A PÁRRAFO (pagina original)' : 'LINEA A LINEA (re-maquetado)'}` +
+                  `  — ${d.why}  [figuras ${(d.figures * 100).toFixed(0)}% de paginas, columnas ${(d.columns * 100).toFixed(0)}%]`)
+    }
 
     const s = r.signals
     console.log(`\n  SENALES`)

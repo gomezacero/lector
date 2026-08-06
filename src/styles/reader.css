@@ -236,6 +236,14 @@ body.has-panel .hud { right: 336px; }
 }
 .field-value { font-variant-numeric: tabular-nums; color: var(--fg); }
 
+/* Explica en una linea que hace la opcion elegida, para no tener que probarla. */
+.field-note {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--fg-muted);
+}
+
 .field select {
   width: 100%;
   padding: 8px 10px;
