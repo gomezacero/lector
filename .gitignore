@@ -1,0 +1,14 @@
+node_modules/
+
+# Ejecutables empaquetados
+dist/
+
+# Generados por las tareas de desarrollo
+dev-report.txt
+test/screenshots/
+test/fixtures/libro-prueba.pdf
+test/fixtures/libro-grande.pdf
+test/fixtures/ingest-*.json
+
+# Cache de herramientas
+.impeccable/

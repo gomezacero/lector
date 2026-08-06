@@ -1,0 +1,27 @@
+{
+  "name": "lector-pdf",
+  "version": "0.1.0",
+  "description": "Lector de PDF de escritorio con foco linea a linea",
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "fixtures": "node test/fixtures/make-pdf.mjs && node scripts/run-electron-task.mjs ingest test/fixtures/libro-prueba.pdf",
+    "smoke": "node scripts/run-electron-task.mjs smoke",
+    "verify": "npm run fixtures && npm test",
+    "icon": "node scripts/run-electron-task.mjs icon",
+    "build": "electron-builder"
+  },
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.3",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^6.2.108"
+  }
+}

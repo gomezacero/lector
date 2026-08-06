@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self';">
+  <title>Lector</title>
+  <link rel="stylesheet" href="/src/styles/base.css">
+  <link rel="stylesheet" href="/src/styles/themes.css">
+  <link rel="stylesheet" href="/src/styles/reader.css">
+</head>
+<body data-view="library">
+
+  <!-- Biblioteca -->
+  <section class="view view-library" id="view-library">
+    <header class="library-head">
+      <h1>Tu biblioteca</h1>
+      <button class="btn btn-primary" id="btn-open">Abrir un PDF</button>
+    </header>
+    <div class="library-grid" id="library-grid"></div>
+    <p class="library-empty" id="library-empty" hidden>
+      Todavía no hay libros. Abre un PDF para empezar.
+    </p>
+  </section>
+
+  <!-- Lector -->
+  <section class="view view-reader" id="view-reader">
+    <div class="stage" id="stage">
+      <!-- Dos capas con contenido identico: al compartir layout se alinean solas.
+           El blur vive en la capa (alta como la pantalla), no en el texto completo. -->
+      <div class="page-layer page-layer-dim" id="layer-dim" aria-hidden="true">
+        <div class="page-content" id="content-dim"></div>
+      </div>
+      <div class="page-layer page-layer-sharp" id="layer-sharp">
+        <div class="page-content" id="content-sharp"></div>
+      </div>
+    </div>
+
+    <div class="hud" id="hud">
+      <button class="hud-btn" id="hud-library" title="Biblioteca (Ctrl+L)">Biblioteca</button>
+      <span class="hud-chapter" id="hud-chapter"></span>
+      <span class="hud-progress" id="hud-progress"></span>
+      <button class="hud-btn" id="hud-bookmark" title="Marcar esta línea (M)">Marcar</button>
+      <button class="hud-btn" id="hud-notes" title="Notas (Ctrl+B)">Notas</button>
+      <button class="hud-btn" id="hud-settings" title="Ajustes (Ctrl+,)">Ajustes</button>
+    </div>
+  </section>
+
+  <!-- Estado de carga -->
+  <div class="loading" id="loading" hidden>
+    <div class="loading-inner">
+      <div class="spinner"></div>
+      <p id="loading-text">Procesando el libro…</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>

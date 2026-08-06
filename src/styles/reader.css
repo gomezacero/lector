@@ -1,0 +1,312 @@
+/* El lector: dos capas superpuestas, una difuminada y otra nitida recortada
+   a la banda de la linea activa. Las variables --mask-* y --content-y las
+   actualiza focus.js en cada movimiento del foco. */
+
+/* Registradas como longitudes para poder transicionarlas: una custom property
+   sin tipo no se anima, y el foco saltaria en seco de una linea a otra. */
+@property --mask-a { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --mask-b { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --mask-c { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --mask-d { syntax: '<length>'; inherits: true; initial-value: 0px; }
+
+.view-reader { position: relative; height: 100%; }
+
+.stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  contain: strict;
+}
+
+.page-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  will-change: transform;
+}
+
+/* Todo lo que no es la linea activa: atenuado y fuera de foco. */
+.page-layer-dim {
+  filter: blur(var(--blur, 2.4px));
+  opacity: var(--dim, 0.34);
+  /* Sin este desvanecido, el recorte del contenedor deja un borde duro que
+     el blur convierte en una franja sucia arriba y abajo. */
+  mask-image: linear-gradient(to bottom, transparent 0, #000 70px, #000 calc(100% - 90px), transparent 100%);
+}
+
+/* La misma pagina, nitida, visible solo en la banda del foco. */
+.page-layer-sharp {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent var(--mask-a),
+    #000 var(--mask-b),
+    #000 var(--mask-c),
+    transparent var(--mask-d)
+  );
+  transition:
+    --mask-a var(--focus-ms, 150ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-b var(--focus-ms, 150ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-c var(--focus-ms, 150ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-d var(--focus-ms, 150ms) cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+/* Al recolocar tras un cambio de ajustes no debe animarse nada. */
+.stage.is-instant .page-layer-sharp,
+.stage.is-instant .page-content { transition: none; }
+
+.page-content {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(var(--read-width, 640px), calc(100% - 96px));
+  padding-top: 38vh;
+  padding-bottom: 60vh;
+  transform: translate(calc(-50% - var(--panel-shift, 0px)), var(--content-y, 0px));
+  transition: transform var(--scroll-ms, 260ms) cubic-bezier(0.33, 1, 0.68, 1);
+
+  font-family: var(--read-font, 'Sitka Text'), Georgia, serif;
+  font-size: var(--read-size, 20px);
+  line-height: var(--read-leading, 1.75);
+  color: var(--read-fg);
+  text-align: var(--read-align, left);
+  text-wrap: pretty;
+  hyphens: none;
+}
+
+.page-content p {
+  margin: 0 0 0.85em;
+  orphans: 2;
+  widows: 2;
+}
+
+.page-content h2 {
+  font-size: 1.32em;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 2.2em 0 1.1em;
+  letter-spacing: -0.01em;
+}
+.page-content h2:first-child { margin-top: 0; }
+
+/* Un marcador se ve como una barra discreta al margen del parrafo. */
+.page-content p[data-marked] {
+  box-shadow: -14px 0 0 -11px var(--accent);
+}
+
+/* --- HUD ----------------------------------------------------------------- */
+
+.hud {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  font-size: 12.5px;
+  color: var(--fg-muted);
+  background: linear-gradient(to top, var(--bg) 42%, transparent);
+  opacity: 1;
+  transition: opacity 320ms ease, right 220ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+/* Se aparta sola mientras se lee y vuelve al mover el raton. */
+.hud.is-idle { opacity: 0; pointer-events: none; }
+
+.hud-btn {
+  border: none;
+  background: transparent;
+  color: var(--fg-muted);
+  padding: 7px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.hud-btn:hover { background: var(--surface); color: var(--fg); }
+.hud-btn.is-on { color: var(--accent); }
+
+.hud-chapter {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  padding: 0 8px;
+}
+.hud-progress { font-variant-numeric: tabular-nums; }
+
+/* --- Paneles laterales (ajustes y notas) --------------------------------- */
+
+.panel {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 336px;
+  background: var(--surface-raised);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 220ms cubic-bezier(0.33, 1, 0.68, 1);
+  z-index: 30;
+}
+.panel.is-open { transform: translateX(0); }
+
+/* Con un panel abierto la columna se aparta en vez de quedar tapada. Es un
+   desplazamiento, no un cambio de ancho: los saltos de linea no se tocan y no
+   hay que volver a medir. Nunca tanto como para salirse por la izquierda. */
+body.has-panel {
+  --panel-shift: min(168px, max(0px, (100vw - var(--read-width, 640px)) / 2 - 24px));
+}
+body.has-panel .hud { right: 336px; }
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.panel-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.panel-close {
+  border: none; background: transparent; color: var(--fg-muted);
+  width: 28px; height: 28px; border-radius: 6px; cursor: pointer; line-height: 1;
+}
+.panel-close:hover { background: var(--surface-hover); color: var(--fg); }
+
+.panel-body { flex: 1; overflow-y: auto; padding: 18px 20px 28px; }
+
+/* --- Controles de ajustes ------------------------------------------------ */
+
+.field { margin-bottom: 20px; }
+.field-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12.5px;
+  color: var(--fg-muted);
+  margin-bottom: 8px;
+}
+.field-value { font-variant-numeric: tabular-nums; color: var(--fg); }
+
+.field select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.field input[type='range'] {
+  width: 100%;
+  height: 22px;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.field input[type='range']::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border-strong);
+}
+.field input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 15px; height: 15px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+}
+
+.seg { display: flex; gap: 6px; }
+.seg button {
+  flex: 1;
+  padding: 8px 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12.5px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.seg button:hover { background: var(--surface-hover); }
+.seg button.is-on { border-color: var(--accent); color: var(--accent); }
+
+.panel-hint {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--fg-muted);
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-top: 8px;
+}
+.panel-hint kbd {
+  font-family: inherit;
+  font-size: 11px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* --- Notas --------------------------------------------------------------- */
+
+.note {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.note:hover { border-color: var(--border-strong); background: var(--surface-hover); }
+.note-quote {
+  font-family: var(--read-font, 'Sitka Text'), Georgia, serif;
+  font-size: 13.5px;
+  line-height: 1.55;
+  margin: 0 0 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.note-text {
+  font-size: 12.5px;
+  color: var(--fg-muted);
+  line-height: 1.5;
+  margin: 0 0 8px;
+  white-space: pre-wrap;
+}
+.note-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--fg-muted);
+}
+.note-del {
+  border: none; background: transparent; color: var(--fg-muted);
+  cursor: pointer; padding: 2px 6px; border-radius: 5px;
+}
+.note-del:hover { background: var(--danger); color: #fff; }
+
+.notes-empty { color: var(--fg-muted); font-size: 13px; line-height: 1.6; }
+
+.note-editor textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--fg);
+  border-radius: 8px;
+  padding: 10px;
+  font: inherit;
+  font-size: 13px;
+  user-select: text;
+}
+.note-editor textarea:focus { outline: none; border-color: var(--accent); }
+.note-editor-actions { display: flex; gap: 8px; margin-top: 10px; }

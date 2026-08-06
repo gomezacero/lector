@@ -1,0 +1,212 @@
+/* Reset y chrome de la aplicacion. Los colores viven en themes.css. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+
+button { font: inherit; color: inherit; }
+
+/* --- Vistas -------------------------------------------------------------- */
+
+.view { display: none; height: 100%; }
+body[data-view='library'] .view-library { display: flex; flex-direction: column; }
+body[data-view='reader']  .view-reader  { display: block; }
+
+/* --- Botones ------------------------------------------------------------- */
+
+.btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+.btn:hover { background: var(--surface-hover); border-color: var(--border-strong); }
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+.btn-primary:hover { background: var(--accent-hover); border-color: transparent; }
+
+.btn-ghost { background: transparent; border-color: transparent; color: var(--fg-muted); }
+.btn-ghost:hover { background: var(--surface); color: var(--fg); }
+
+/* --- Biblioteca ---------------------------------------------------------- */
+
+.library-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 40px 48px 28px;
+  flex-shrink: 0;
+}
+.library-head h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.library-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 48px 48px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 18px;
+  align-content: start;
+}
+
+.book-card {
+  position: relative;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 20px 20px 16px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+.book-card:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  transform: translateY(-2px);
+}
+
+.book-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0 0 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.book-card-author { font-size: 13px; color: var(--fg-muted); margin: 0 0 20px; }
+.book-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+.book-card-missing { color: var(--warning); }
+
+.book-card-bar {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+  background: var(--border);
+}
+/* La barra se escala en vez de cambiar de ancho: transform se compone en la
+   GPU y no obliga a recalcular el layout de la tarjeta. --p va de 0 a 1. */
+.book-card-bar > i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(var(--p, 0));
+  transform-origin: left center;
+  transition: transform 200ms ease;
+}
+
+.book-card-remove {
+  position: absolute;
+  top: 10px; right: 10px;
+  width: 26px; height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease;
+  line-height: 1;
+}
+.book-card:hover .book-card-remove { opacity: 1; }
+.book-card-remove:hover { background: var(--danger); color: #fff; }
+
+.library-empty {
+  margin: auto;
+  padding-bottom: 12vh;
+  color: var(--fg-muted);
+  font-size: 15px;
+}
+
+/* --- Carga y avisos ------------------------------------------------------ */
+
+.loading {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(3px);
+  z-index: 50;
+}
+.loading[hidden] { display: none; }
+.loading-inner { text-align: center; color: var(--fg-muted); }
+
+.spinner {
+  width: 30px; height: 30px;
+  margin: 0 auto 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast {
+  position: fixed;
+  bottom: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--fg);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  z-index: 60;
+  box-shadow: var(--shadow);
+  animation: toast-in 180ms ease;
+}
+.toast[hidden] { display: none; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* --- Scrollbars ---------------------------------------------------------- */
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 5px; border: 3px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); }

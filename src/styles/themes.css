@@ -1,0 +1,68 @@
+/* Tres temas de lectura. El tema se fija con data-theme en <body>. */
+
+body[data-theme='dark'] {
+  --bg: #14161a;
+  --surface: #1c1f25;
+  --surface-hover: #232730;
+  --surface-raised: #262a33;
+  --border: #2b303a;
+  --border-strong: #3a4150;
+
+  --fg: #e6e3dc;
+  --fg-muted: #8b93a1;
+
+  --accent: #7aa2f7;
+  --accent-hover: #93b4ff;
+  --accent-fg: #10131a;
+
+  --danger: #c0504a;
+  --warning: #d8a657;
+
+  /* Color del texto del libro: algo mas calido que el de la interfaz. */
+  --read-fg: #ddd8ce;
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+body[data-theme='light'] {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --surface-hover: #f0eeea;
+  --surface-raised: #ffffff;
+  --border: #e2ded6;
+  --border-strong: #cbc5b9;
+
+  --fg: #23211d;
+  --fg-muted: #77726a;
+
+  --accent: #3b5bdb;
+  --accent-hover: #2f4bc4;
+  --accent-fg: #ffffff;
+
+  --danger: #b03a34;
+  --warning: #a9761f;
+
+  --read-fg: #1f1d1a;
+  --shadow: 0 12px 32px rgba(40, 35, 25, 0.14);
+}
+
+body[data-theme='sepia'] {
+  --bg: #efe4d0;
+  --surface: #f7eedd;
+  --surface-hover: #eee2cc;
+  --surface-raised: #f9f1e2;
+  --border: #ddceb2;
+  --border-strong: #c6b294;
+
+  --fg: #3a3129;
+  --fg-muted: #837260;
+
+  --accent: #9a6b3f;
+  --accent-hover: #85592f;
+  --accent-fg: #fdf7ec;
+
+  --danger: #a4453d;
+  --warning: #966a17;
+
+  --read-fg: #362d24;
+  --shadow: 0 12px 32px rgba(90, 70, 40, 0.18);
+}

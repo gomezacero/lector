@@ -1,0 +1,35 @@
+appId: com.lector.app
+productName: Lector
+copyright: ''
+
+directories:
+  output: dist
+  buildResources: build
+
+# Lista explicita: sin ella se empaquetarian tambien las pruebas, los fixtures y
+# las 267 dependencias de desarrollo del empaquetador.
+# electron-builder mete siempre las dependencias de produccion enteras, asi que
+# lo util aqui son las exclusiones: un patron de inclusion no las recorta.
+files:
+  - electron/**/*
+  - src/**/*
+  - package.json
+  # Los .map solo sirven para depurar y pesan mas que el propio codigo.
+  - '!**/*.map'
+  # Canvas nativo de Skia: entra como dependencia de pdf.js para usarlo desde
+  # Node. Aqui pdf.js corre en el navegador y no se toca. Son 20MB de nada.
+  - '!node_modules/@napi-rs/**'
+  # De pdf.js solo hacen falta el motor, el worker y los recursos de texto.
+  - '!node_modules/pdfjs-dist/{legacy,web,types,image_decoders,iccs}/**'
+  - '!node_modules/pdfjs-dist/build/*.min.mjs'
+  - '!node_modules/pdfjs-dist/build/pdf.sandbox.mjs'
+  - '!node_modules/pdfjs-dist/*.md'
+
+win:
+  target: portable
+  artifactName: Lector.exe
+
+portable:
+  # Un unico ejecutable, sin instalacion ni accesos directos.
+  artifactName: Lector.exe
+  requestExecutionLevel: user
