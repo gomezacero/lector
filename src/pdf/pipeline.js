@@ -7,7 +7,10 @@ import { toBlocks } from './blocks.js'
 import { buildChapters } from './chapters.js'
 
 // Sube este numero al cambiar el pipeline: invalida los libros ya cacheados.
-export const CACHE_VERSION = 2
+// v3: corredores de columna medidos en cuerpos de letra, sangria con techo y
+// por escalon, y palabras partidas que ya no cortan el parrafo. Sin subirlo,
+// los libros abiertos antes seguirian ensenando el texto de la version vieja.
+export const CACHE_VERSION = 3
 
 /**
  * @param {Uint8Array} bytes
