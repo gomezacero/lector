@@ -247,10 +247,18 @@ function composeLine (group, pageIndex) {
   for (const item of parts) {
     if (prev) {
       const gap = item.x - (prev.x + prev.w)
-      // Un espacio ronda 0.25em, asi que por encima de 0.28em casi seguro lo es.
-      // Por debajo es kerning o el ajuste de un renglon justificado, y meter un
-      // espacio ahi parte palabras: mas vale quedarse corto.
-      const needsSpace = gap > Math.max(prev.h, item.h) * 0.28
+      const em = Math.max(prev.h, item.h)
+
+      // Un espacio ronda 0.25em, asi que por encima de 0.28em casi seguro lo
+      // es. Por debajo es kerning o el ajuste de un renglon justificado, y
+      // meter un espacio ahi parte palabras: mas vale quedarse corto.
+      //
+      // Salvo que cambie la fuente. Un simbolo matematico en cursiva se pega a
+      // la palabra anterior mucho mas que un espacio normal, y un cambio de
+      // fuente ya es de por si una frontera de palabra: sin esto, un libro de
+      // fisica se lee "el pesowdel anuncio" o "un anguloucon la horizontal".
+      const sameFont = prev.font === item.font
+      const needsSpace = gap > em * (sameFont ? 0.28 : 0.1)
       if (needsSpace && !/\s$/.test(text) && !/^\s/.test(item.text)) text += ' '
     }
     text += item.text

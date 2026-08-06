@@ -489,6 +489,13 @@ async function diagnoseTask (win, outRoot) {
       for (const l of r.lines) {
         console.log(`  x${String(l.x).padStart(4)}-${String(l.xEnd).padEnd(4)} y${String(l.y).padStart(4)} ${String(l.size).padStart(5)}pt col${String(l.col).padStart(4)}  ${l.text}`)
       }
+      if (r.gaps?.length) {
+        console.log(`\n  HUECOS CON CAMBIO DE FUENTE (${r.gaps.length})`)
+        for (const g of r.gaps) {
+          console.log(`    hueco ${String(g.gap).padStart(5)}  em ${String(g.em).padStart(4)}  ` +
+                      `ratio ${(g.gap / g.em).toFixed(3)}   "${g.a}" | "${g.b}"`)
+        }
+      }
       if (r.drawings?.length) {
         console.log(`\n  DIBUJO DETECTADO (${r.drawings.length} zonas, mayores primero)`)
         for (const d of r.drawings) {

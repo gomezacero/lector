@@ -1,7 +1,78 @@
 [
   {
+    "file": "cien años de soledad.pdf",
+    "ms": 1032.4000000003725,
+    "title": "García Márquez - Cien años de soledad",
+    "author": "Patricio",
+    "pageCount": 173,
+    "blocks": 865,
+    "headings": 22,
+    "figures": 0,
+    "chapters": 22,
+    "chapterTitles": [
+      "Gabriel García Márquez",
+      "Cien años de soledad",
+      "I",
+      "II",
+      "III",
+      "IV",
+      "V",
+      "VI"
+    ],
+    "words": 137846,
+    "style": "indent",
+    "bodySize": 10,
+    "stats": {
+      "paragraphStyle": "indent",
+      "figures": 0,
+      "columnPages": 0,
+      "bodySize": 10,
+      "bodyLeft": 50,
+      "bodyRight": 546,
+      "leading": 12.1,
+      "words": 137846
+    },
+    "detected": {
+      "mode": "flow",
+      "figures": 0,
+      "columns": 0,
+      "why": "es texto corrido"
+    },
+    "signals": {
+      "lowerStart": 3,
+      "lowerStartPct": 0.3558718861209964,
+      "veryLong": 97,
+      "veryShort": 33,
+      "dangling": 0,
+      "corrupt": 0,
+      "medianLength": 422,
+      "repeated": [],
+      "repeatedTotal": 0
+    },
+    "samples": {
+      "inicio": [
+        "p.1    [T] Gabriel García Márquez",
+        "p.1    [T] Cien años de soledad",
+        "p.2    [p] Para Jomi García Ascot",
+        "p.2    [p] y María Luisa Elio"
+      ],
+      "medio": [
+        "p.73   [p] En los días siguientes se ocupó de destruir todo rastro de su paso por el mundo. Simplificó el taller de platería hasta sólo dejar los objetos impersonales, regaló sus ropas a los ordenanzas…",
+        "p.73   [p] -Préndalo con esto -le dijo él, entregándole el primer rollo de papeles amarillento-. Arde mejor, porque son cosas muy viejas.",
+        "p.73   [p] Santa Sofía de la Piedad, la silenciosa, la condescendiente, la que nunca contrarió ni a sus propios hijos, tuvo la impresión de que aquel era un acto prohibido.",
+        "p.73   [p] -Son papeles importantes -dijo."
+      ],
+      "final": [
+        "p.171  [p] Nigromanta lo rescató de un charco de vómito y de lágrimas. Lo llevó a su cuarto, lo limpió, le hizo tomar una taza de caldo. Creyendo que eso lo consolaba, tachó con una raya de carbón los …",
+        "p.171  [p] No lo encontró en la canastilla. Al primer impacto experimentó una deflagración de alegría, creyendo que Amaranta Úrsula había despertado de la muerte para ocuparse del niño. Pero el cadáver…",
+        "p.171  [p] Aureliano no había sido más lúcido en ningún acto de su vida que cuando olvidó sus muertos y el dolor de sus muertos, y volvió a clavar las puertas y las ventanas con las crucetas de Fernand…",
+        "p.173  [p] I .......................................................................................................................................3 II ................................................…"
+      ]
+    }
+  },
+  {
     "file": "Libro_El_Tunel.pdf",
-    "ms": 760,
+    "ms": 393,
     "title": "EL TÚNEL",
     "author": "Gerson O. Su.rez",
     "pageCount": 95,
@@ -19,7 +90,7 @@
       "IV",
       "V"
     ],
-    "words": 31778,
+    "words": 31794,
     "style": "indent",
     "bodySize": 11.5,
     "stats": {
@@ -30,7 +101,7 @@
       "bodyLeft": 92,
       "bodyRight": 519,
       "leading": 19.5,
-      "words": 31778
+      "words": 31794
     },
     "detected": {
       "mode": "flow",
@@ -72,7 +143,7 @@
   },
   {
     "file": "paper-resnet.pdf",
-    "ms": 418.29999999981374,
+    "ms": 216.29999999981374,
     "title": "Deep Residual Learning for Image Recognition",
     "author": "",
     "pageCount": 12,
@@ -90,7 +161,7 @@
       "3. Deep Residual Learning",
       "4. Experiments"
     ],
-    "words": 9393,
+    "words": 9500,
     "style": "indent",
     "bodySize": 10,
     "stats": {
@@ -101,7 +172,7 @@
       "bodyLeft": 50,
       "bodyRight": 545,
       "leading": 12,
-      "words": 9393
+      "words": 9500
     },
     "detected": {
       "mode": "page",
@@ -113,7 +184,7 @@
       "lowerStart": 115,
       "lowerStartPct": 29.11392405063291,
       "veryLong": 0,
-      "veryShort": 141,
+      "veryShort": 140,
       "dangling": 19,
       "corrupt": 1,
       "medianLength": 44,
@@ -160,7 +231,7 @@
       ],
       "final": [
         "p.12   [p] ports a center-crop error of 33.1% (Table 13) using ground truth classes. Under the same setting, our RPN method using ResNet-101 net significantly reduces the center-crop error to 13.3%. Th…",
-        "p.12   [p] The above results are only based on theproposal network (RPN) in Faster R-CNN [32]. One may use the detection network(Fast R-CNN [7]) in Faster R-CNN to improve the results. But we notice th…",
+        "p.12   [p] The above results are only based on the proposal network (RPN) in Faster R-CNN [32]. One may use the detection network (Fast R-CNN [7]) in Faster R-CNN to improve the results. But we notice …",
         "p.12   [p] Our R-CNN implementation is as follows. We apply the per-class RPN trained as above on the training images to predict bounding boxes for the ground truth class. These predicted boxes play a …",
         "p.12   [p] This method reduces the top-5 localization error to 10.6% (Table 13). This is our single-model result on the validation set. Using an ensemble of networks for both classification and localiz…"
       ]
@@ -168,7 +239,7 @@
   },
   {
     "file": "Fisica_biologica.pdf",
-    "ms": 572.6000000005588,
+    "ms": 381.69999999925494,
     "title": "Física biológica",
     "author": "",
     "pageCount": 58,
@@ -186,7 +257,7 @@
       "con la colaboración de Marko Radosavljevic y S…",
       "EDITORIAL REVERTÉ, S. A."
     ],
-    "words": 18707,
+    "words": 18979,
     "style": "indent",
     "bodySize": 10.5,
     "stats": {
@@ -197,7 +268,7 @@
       "bodyLeft": 52,
       "bodyRight": 541,
       "leading": 12.9,
-      "words": 18707
+      "words": 18979
     },
     "detected": {
       "mode": "page",

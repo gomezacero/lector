@@ -129,3 +129,48 @@ describe('buildLines', () => {
     expect(lines[0].width).toBe(60)
   })
 })
+
+describe('espacios entre fuentes distintas', () => {
+  const page = items => ({ width: 595, height: 842, items })
+
+  it('separa un simbolo en cursiva de la palabra anterior', () => {
+    // Medido en "Fisica Universitaria": entre el texto y el simbolo hay 0.25em,
+    // por debajo de un espacio normal pero muy por encima de cero.
+    const lines = buildLines(page([
+      item('el peso', 78, 100, 34, { font: 'g_d0_f1' }),
+      item('w', 115, 100, 6, { font: 'g_d0_f2' }),
+      item('del anuncio', 124, 100, 52, { font: 'g_d0_f1' })
+    ]))
+
+    expect(lines[0].text).toBe('el peso w del anuncio')
+  })
+
+  it('no separa un subindice, que va pegado de verdad', () => {
+    // En el mismo libro, "v" e "i" de un subindice van a hueco cero.
+    const lines = buildLines(page([
+      item('v', 78, 100, 5, { font: 'g_d0_f2' }),
+      item('i', 83, 100, 3, { font: 'g_d0_f3' })
+    ]))
+
+    expect(lines[0].text).toBe('vi')
+  })
+
+  it('sigue sin partir palabras dentro de la misma fuente', () => {
+    const lines = buildLines(page([
+      item('cami', 78, 100, 30, { font: 'g_d0_f1' }),
+      item('no', 109.5, 100, 14, { font: 'g_d0_f1' })
+    ]))
+
+    expect(lines[0].text).toBe('camino')
+  })
+
+  it('no separa cuando los fragmentos se tocan de verdad', () => {
+    // Cambio de fuente pero sin hueco: es la misma palabra en versalitas.
+    const lines = buildLines(page([
+      item('MIS', 78, 100, 20, { font: 'g_d0_f2' }),
+      item('terios', 98, 100, 30, { font: 'g_d0_f1' })
+    ]))
+
+    expect(lines[0].text).toBe('MISterios')
+  })
+})
