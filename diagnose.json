@@ -1,7 +1,7 @@
 [
   {
     "file": "cien años de soledad.pdf",
-    "ms": 1033.3999999985099,
+    "ms": 1043,
     "title": "García Márquez - Cien años de soledad",
     "author": "Patricio",
     "pageCount": 173,
@@ -52,7 +52,19 @@
       "corrupt": 0,
       "medianLength": 434,
       "repeated": [],
-      "repeatedTotal": 0
+      "repeatedTotal": 0,
+      "stops": {
+        "total": 700,
+        "perPage": 4.093567251461988,
+        "offPage": 0,
+        "offPagePct": 0,
+        "wide": 684,
+        "widePct": 97.71428571428571,
+        "tiny": 20,
+        "tinyPct": 2.857142857142857,
+        "formula": 0,
+        "formulaPct": 0
+      }
     },
     "samples": {
       "inicio": [
@@ -77,7 +89,7 @@
   },
   {
     "file": "Libro_El_Tunel.pdf",
-    "ms": 396.6000000014901,
+    "ms": 404.1000000014901,
     "title": "EL TÚNEL",
     "author": "Gerson O. Su.rez",
     "pageCount": 95,
@@ -128,7 +140,19 @@
       "corrupt": 0,
       "medianLength": 116,
       "repeated": [],
-      "repeatedTotal": 0
+      "repeatedTotal": 0,
+      "stops": {
+        "total": 494,
+        "perPage": 5.369565217391305,
+        "offPage": 0,
+        "offPagePct": 0,
+        "wide": 0,
+        "widePct": 0,
+        "tiny": 35,
+        "tinyPct": 7.08502024291498,
+        "formula": 0,
+        "formulaPct": 0
+      }
     },
     "samples": {
       "inicio": [
@@ -153,7 +177,7 @@
   },
   {
     "file": "_OceanofPDF.com_La_tregua_-_Mario_Benedetti.pdf",
-    "ms": 579.7999999970198,
+    "ms": 609.3999999985099,
     "title": "La tregua",
     "author": "Mario Benedetti",
     "pageCount": 182,
@@ -224,7 +248,19 @@
           "n": 4
         }
       ],
-      "repeatedTotal": 13
+      "repeatedTotal": 13,
+      "stops": {
+        "total": 353,
+        "perPage": 1.9502762430939227,
+        "offPage": 0,
+        "offPagePct": 0,
+        "wide": 284,
+        "widePct": 80.45325779036827,
+        "tiny": 0,
+        "tinyPct": 0,
+        "formula": 0,
+        "formulaPct": 0
+      }
     },
     "samples": {
       "inicio": [
@@ -249,7 +285,7 @@
   },
   {
     "file": "Fisica_biologica.pdf",
-    "ms": 357.1000000014901,
+    "ms": 379,
     "title": "Física biológica",
     "author": "",
     "pageCount": 58,
@@ -313,7 +349,19 @@
           "n": 4
         }
       ],
-      "repeatedTotal": 3
+      "repeatedTotal": 3,
+      "stops": {
+        "total": 287,
+        "perPage": 6.1063829787234045,
+        "offPage": 0,
+        "offPagePct": 0,
+        "wide": 11,
+        "widePct": 3.8327526132404177,
+        "tiny": 9,
+        "tinyPct": 3.1358885017421603,
+        "formula": 0,
+        "formulaPct": 0
+      }
     },
     "samples": {
       "inicio": [
@@ -338,7 +386,7 @@
   },
   {
     "file": "1998-Greene-48leyes_poder.pdf",
-    "ms": 3482.89999999851,
+    "ms": 3555.7999999970198,
     "title": "Las 48 leyes del poder",
     "author": "Robert Greene",
     "pageCount": 835,
@@ -414,7 +462,19 @@
           "n": 34
         }
       ],
-      "repeatedTotal": 18
+      "repeatedTotal": 18,
+      "stops": {
+        "total": 3488,
+        "perPage": 4.182254196642686,
+        "offPage": 0,
+        "offPagePct": 0,
+        "wide": 2117,
+        "widePct": 60.69380733944955,
+        "tiny": 1,
+        "tinyPct": 0.028669724770642203,
+        "formula": 0,
+        "formulaPct": 0
+      }
     },
     "samples": {
       "inicio": [
@@ -439,7 +499,7 @@
   },
   {
     "file": "Fisica-Universitaria-Sears-Zemansky-12ava-Edicion-Vol1.pdf",
-    "ms": 12157,
+    "ms": 12259,
     "title": "Fisica Universitaria Vol.1",
     "author": "Sears",
     "pageCount": 763,
@@ -515,7 +575,19 @@
           "n": 39
         }
       ],
-      "repeatedTotal": 117
+      "repeatedTotal": 117,
+      "stops": {
+        "total": 8567,
+        "perPage": 11.392287234042554,
+        "offPage": 0,
+        "offPagePct": 0,
+        "wide": 1185,
+        "widePct": 13.832146609081358,
+        "tiny": 460,
+        "tinyPct": 5.3694408777868565,
+        "formula": 385,
+        "formulaPct": 4.4939885607563905
+      }
     },
     "samples": {
       "inicio": [

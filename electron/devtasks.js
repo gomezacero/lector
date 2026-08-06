@@ -795,6 +795,16 @@ async function diagnoseTask (win, outRoot) {
 
     const s = r.signals
     console.log(`\n  SENALES`)
+    if (s.stops) {
+      const t = s.stops
+      console.log(`\n  PARADAS DE LA VISTA DE PAGINA (${t.total}, ${t.perPage.toFixed(1)} por pagina)`)
+      console.log(`    fuera de la pagina                 : ${t.offPage} (${t.offPagePct.toFixed(1)}%)`)
+      console.log(`    cruzan el corredor entre columnas  : ${t.wide} (${t.widePct.toFixed(1)}%)`)
+      console.log(`    de 5 caracteres o menos            : ${t.tiny} (${t.tinyPct.toFixed(1)}%)`)
+      console.log(`    trozos de ecuacion                 : ${t.formula} (${t.formulaPct.toFixed(1)}%)`)
+    }
+
+    console.log(`\n  SENALES DEL TEXTO`)
     console.log(`    parrafos que empiezan en minuscula : ${s.lowerStart} (${s.lowerStartPct.toFixed(1)}%)`)
     console.log(`    parrafos de mas de 2500 caracteres : ${s.veryLong}`)
     console.log(`    parrafos de menos de 25 caracteres : ${s.veryShort}`)

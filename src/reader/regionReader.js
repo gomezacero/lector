@@ -10,6 +10,7 @@
 
 import { createPageRenderer } from '../pdf/pageRender.js'
 import { chapterAtOffset, percentAt, makeProgress, blockAtOffset, startOffset } from './progress.js'
+import { buildRegions } from './regions.js'
 
 const SAVE_DELAY = 900
 
@@ -26,40 +27,6 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
   let saveTimer = null
   let zoom = 1
 
-  /**
-   * Cada region es un bloque en una pagina. Un parrafo que continua en la
-   * pagina siguiente da dos regiones: al leerlo hay que pasar de una a otra.
-   *
-   * Salvo la cubierta y los indices, que dan UNA region por pagina entera. Una
-   * cubierta esta hecha para mirarla de una vez, y un indice para buscar en el,
-   * no para recorrerlo entrada por entrada: sin esto, el indice de "Fisica
-   * Universitaria" son 547 paradas de cuatro caracteres de media.
-   */
-  function buildRegions () {
-    const list = []
-    const whole = new Set()
-
-    book.blocks.forEach((block, blockIndex) => {
-      for (const rect of block.rects ?? []) {
-        const role = book.pageRoles?.[rect.page] ?? block.role
-        if (role) {
-          if (whole.has(rect.page)) continue
-          whole.add(rect.page)
-          list.push({ block: blockIndex, type: role, role, rect: fullPage(rect.page), start: block.start })
-          continue
-        }
-        list.push({ block: blockIndex, type: block.type, rect, start: block.start })
-      }
-    })
-
-    return list.sort((a, b) => a.block - b.block || a.rect.page - b.rect.page)
-  }
-
-  /** El rectangulo de la pagina entera, para lo que se ensena de una pieza. */
-  function fullPage (page) {
-    const size = book.pageSizes?.[page] ?? { w: 612, h: 792 }
-    return { page, x: 0, y: 0, w: size.w, h: size.h }
-  }
 
   function prepareLayers () {
     images.sharp = document.createElement('img')
@@ -195,7 +162,7 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
       shownPage = -1
 
       await renderer.open(bytes)
-      regions = buildRegions()
+      regions = buildRegions(book)
       prepareLayers()
       await goTo(regionOfOffset(anchor), { animate: false })
     },
