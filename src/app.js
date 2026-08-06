@@ -12,6 +12,7 @@ import { createNotesStore } from '/src/notes/notesStore.js'
 import { createNotesView } from '/src/notes/notesView.js'
 import { percent } from '/src/ui/dom.js'
 import { resolveMode, MODES } from '/src/reader/mode.js'
+import { createBookSheet } from '/src/library/bookSheet.js'
 
 const $ = id => document.getElementById(id)
 const HUD_IDLE_MS = 2200
@@ -42,6 +43,8 @@ let entries = []
 let current = null // entrada de biblioteca del libro abierto
 let openedBook = null // { book, path } del libro en pantalla
 let lastOffset = 0 // ultimo punto de lectura, para conservarlo al cambiar de vista
+let bookSheet = null
+let pendingSave = null // ultima escritura en la biblioteca, para no leerla antes de tiempo
 let hudTimer = null
 
 // --- Avisos y carga --------------------------------------------------------
@@ -68,6 +71,7 @@ const library = createLibraryView({
   grid: $('library-grid'),
   empty: $('library-empty'),
   onOpen: entry => openBook(entry.path, entry),
+  onSheet: entry => openBook(entry.path, entry, { sheet: true }),
   onRemove: async entry => {
     entries = await window.lector.library.remove(entry.id)
     library.render(entries)
@@ -82,7 +86,7 @@ async function pickAndOpen () {
   if (picked) await openLoaded(picked)
 }
 
-async function openBook (filePath, entry) {
+async function openBook (filePath, entry, options) {
   showLoading('Abriendo el libro…')
   const loaded = await window.lector.pdf.load(filePath)
 
@@ -97,11 +101,15 @@ async function openBook (filePath, entry) {
     }
     return
   }
-  await openLoaded(loaded, entry)
+  await openLoaded(loaded, entry, options)
 }
 
-/** Del PDF ya leido en memoria al lector, pasando por la cache si la hay. */
-async function openLoaded (loaded, entry) {
+/**
+ * Del PDF ya leido en memoria al lector, pasando por la cache si la hay.
+ * @param {Object} [options]
+ * @param {boolean} [options.sheet] forzar la ficha aunque el libro ya se conozca
+ */
+async function openLoaded (loaded, entry, { sheet = false } = {}) {
   try {
     showLoading('Abriendo el libro…')
     const book = await loadOrBuild(loaded)
@@ -123,20 +131,26 @@ async function openLoaded (loaded, entry) {
       addedAt: entry?.addedAt ?? Date.now(),
       lastOpenedAt: Date.now(),
       progress: entry?.progress ?? null,
+      readingMode: entry?.readingMode ?? null,
+      reading: entry?.reading ?? {},
       missing: false
     }
     entries = await window.lector.library.upsert(current)
 
     notes = createNotesStore(loaded.id)
     await notes.load()
-    openedBook = { book, path: loaded.path }
+    openedBook = { book, path: loaded.path, bytes: loaded.bytes }
 
-    el.body.dataset.view = 'reader'
-    // El maquetado necesita que la vista ya este visible para medir bien.
-    await nextFrame()
-    await applyMode(chooseMode(book), book, current.progress, loaded.bytes)
-    notesView.render(notes.all, book)
-    wakeHud()
+    // La ficha solo aparece la primera vez: reabrir un libro conocido lleva
+    // directo al punto de lectura, que es lo que se quiere casi siempre.
+    if (sheet || !current.readingMode) {
+      hideLoading()
+      el.body.dataset.view = 'sheet'
+      bookSheet.render(book, { entry: current, title: current.progress ? 'Seguir leyendo' : 'Empezar a leer' })
+      return
+    }
+
+    await enterReader()
   } catch (err) {
     console.error(err)
     toast(`No se pudo procesar el PDF: ${err.message}`, 6000)
@@ -160,7 +174,12 @@ async function loadOrBuild (loaded) {
 
 async function backToLibrary () {
   if (reader?.isOpen) reader.close()
+  // El cierre guarda el punto de lectura; sin esperarlo, la estanteria se
+  // repinta con los datos de antes y el progreso parece no haberse movido.
+  await pendingSave
   openedBook = null
+  // Fuera de un libro mandan los ajustes globales otra vez.
+  settings.useBook({})
   showPanel(null)
   // Un aviso de la lectura no tiene sentido ya en la estanteria.
   el.toast.hidden = true
@@ -171,9 +190,20 @@ async function backToLibrary () {
   await refreshLibrary()
 }
 
-// --- Modos de lectura ------------------------------------------------------
+/** De la ficha al lector, con los ajustes que ese libro tenga guardados. */
+async function enterReader () {
+  const { book, bytes } = openedBook
+  settings.useBook(current.reading)
 
-const chooseMode = book => resolveMode(book, settings.get('readingMode'))
+  el.body.dataset.view = 'reader'
+  // El maquetado necesita que la vista ya este visible para medir bien.
+  await nextFrame()
+  await applyMode(resolveMode(book, current.readingMode), book, current.progress, bytes)
+  notesView.render(notes.all, book)
+  wakeHud()
+}
+
+// --- Modos de lectura ------------------------------------------------------
 
 async function applyMode (mode, book, progress, bytes) {
   if (reader?.isOpen) reader.close()
@@ -205,9 +235,20 @@ async function switchMode (next) {
 
 async function toggleMode () {
   const next = el.body.dataset.mode === 'page' ? 'flow' : 'page'
-  // La eleccion manual manda a partir de ahora, tambien en los proximos libros.
+  // El modo es del libro, no de la aplicacion: cambiarlo aqui no toca los demas.
   settings.update({ readingMode: next })
   await switchMode(next)
+}
+
+/** Guarda en la biblioteca los ajustes de lectura del libro abierto. */
+function saveBookSettings (reading) {
+  if (!current) return
+  current = { ...current, reading, readingMode: reading.readingMode ?? current.readingMode }
+  window.lector.library.upsert({
+    id: current.id,
+    reading: current.reading,
+    readingMode: current.readingMode
+  })
 }
 
 // --- HUD -------------------------------------------------------------------
@@ -272,8 +313,20 @@ const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => resol
 async function start () {
   settings = createSettings(await window.lector.settings.read(), {
     onLayoutChange: () => reader?.relayout(),
-    onChange: next => reader?.setFocusShape(next)
+    onChange: next => reader?.setFocusShape(next),
+    onBookChange: saveBookSettings
   })
+
+  bookSheet = createBookSheet({
+    onStart: async mode => {
+      current = { ...current, readingMode: mode }
+      saveBookSettings({ ...current.reading, readingMode: mode })
+      entries = await window.lector.library.list()
+      await enterReader()
+    },
+    onCancel: backToLibrary
+  })
+  document.body.append(bookSheet.element)
 
   // Los dos lectores comparten interfaz; solo uno esta abierto a la vez.
   const wiring = {
@@ -285,7 +338,9 @@ async function start () {
     onSave: progress => {
       if (!current) return
       current = { ...current, progress }
-      window.lector.library.upsert({ id: current.id, progress, lastOpenedAt: current.lastOpenedAt })
+      pendingSave = window.lector.library.upsert({
+        id: current.id, progress, lastOpenedAt: current.lastOpenedAt
+      })
     }
   }
   readers = { flow: createReader(wiring), page: createRegionReader(wiring) }

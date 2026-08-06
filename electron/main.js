@@ -56,7 +56,9 @@ const devTaskArg = process.env.LECTOR_TASK_ARG ?? null
 // lectura.
 if (devTask) {
   const scratch = path.join(app.getPath('temp'), 'lector-devtask')
-  rmSync(scratch, { recursive: true, force: true })
+  // LECTOR_KEEP conserva los datos entre ejecuciones, para poder comprobar lo
+  // que la aplicacion recuerda de una sesion a la siguiente.
+  if (!process.env.LECTOR_KEEP) rmSync(scratch, { recursive: true, force: true })
   app.setPath('userData', scratch)
 }
 

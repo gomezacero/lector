@@ -2,7 +2,9 @@
 
 import { h, percent } from '../ui/dom.js'
 
-export function createLibraryView ({ grid, empty, onOpen, onRemove }) {
+import { MODES } from '../reader/mode.js'
+
+export function createLibraryView ({ grid, empty, onOpen, onRemove, onSheet }) {
   function card (entry) {
     const progress = entry.progress?.percent ?? 0
 
@@ -28,6 +30,15 @@ export function createLibraryView ({ grid, empty, onOpen, onRemove }) {
       }),
       h('span', { text: `${entry.pageCount} pág.` })
     ),
+    // Como se lee este libro: se ve de un vistazo y se puede cambiar sin abrirlo.
+    entry.readingMode
+      ? h('button', {
+          class: 'book-card-mode',
+          title: 'Cambiar cómo se lee este libro',
+          text: MODES[entry.readingMode]?.label ?? '',
+          onclick: event => { event.stopPropagation(); onSheet(entry) }
+        })
+      : null,
     h('div', { class: 'book-card-bar' }, h('i', { style: { '--p': String(progress) } })),
     h('button', {
       class: 'book-card-remove',

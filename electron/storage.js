@@ -11,15 +11,27 @@ import path from 'node:path'
 const userData = () => app.getPath('userData')
 const booksDir = () => path.join(userData(), 'books')
 
+// Los ajustes viven en dos ambitos.
+//
+// Los de lectura dependen de como este compuesto el documento: una novela pide
+// letra grande y un articulo pide ampliacion, asi que se guardan con cada libro.
+// Los demas son gusto del lector y no cambian de un libro a otro.
+//
+// Regla unica: los ajustes efectivos son los globales con encima los del libro.
+// Los globales hacen ademas de punto de partida para cualquier libro nuevo.
+
+export const READING_KEYS = ['readingMode', 'fontSize', 'lineHeight', 'columnWidth', 'pageZoom']
+
 export const DEFAULT_SETTINGS = {
   // auto | flow (re-maquetado, linea a linea) | page (pagina original, region a region)
   readingMode: 'auto',
   pageZoom: 1,
-  theme: 'dark',
-  fontFamily: 'Sitka Text',
   fontSize: 20,
   lineHeight: 1.75,
   columnWidth: 640,
+
+  theme: 'dark',
+  fontFamily: 'Sitka Text',
   blurAmount: 2.4,
   dimOpacity: 0.34,
   focusLines: 1,

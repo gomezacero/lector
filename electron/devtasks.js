@@ -151,10 +151,35 @@ async function readTask (win, projectRoot) {
   }
 
   // --- Abrir ---------------------------------------------------------------
-  if (!await poll(win, 'document.body.dataset.view === "reader" || null', 40_000)) {
-    console.error('READ: el lector no llego a abrirse')
+  // Un libro que se abre por primera vez ensena su ficha antes de leerse.
+  const view = await poll(win, '["sheet", "reader"].includes(document.body.dataset.view) ? document.body.dataset.view : null', 60_000)
+  if (!view) {
+    console.error('READ: no se llego ni a la ficha ni al lector')
     return 1
   }
+
+  if (view === 'sheet') {
+    // El aviso de carga tapa la ficha hasta que el libro acaba de procesarse.
+    await poll(win, 'document.getElementById("loading").hidden || null', 60_000)
+    await wait(500)
+    await shoot('00-ficha')
+    const sheet = await js(`
+      (() => ({
+        title: document.querySelector('.sheet-title')?.textContent ?? '',
+        chosen: document.querySelector('.mode-card.is-on .mode-card-name')?.textContent ?? '',
+        why: document.querySelector('.sheet-why')?.textContent ?? ''
+      }))()
+    `)
+    console.log(`\nFICHA DEL LIBRO\n  ${sheet.title}\n  elegido: ${sheet.chosen}\n  ${sheet.why.slice(0, 110)}`)
+    check(Boolean(sheet.chosen), 'la ficha no trae ningun modo preseleccionado')
+
+    await js(`document.querySelector('.sheet-start').click()`)
+    if (!await poll(win, 'document.body.dataset.view === "reader" || null', 40_000)) {
+      console.error('READ: el lector no llego a abrirse desde la ficha')
+      return 1
+    }
+  }
+
   await wait(700)
   await shoot('01-inicio')
 
