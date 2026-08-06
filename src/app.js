@@ -3,6 +3,7 @@
 
 import { buildBook, CACHE_VERSION } from '/src/pdf/pipeline.js'
 import { createReader } from '/src/reader/reader.js'
+import { createRegionReader } from '/src/reader/regionReader.js'
 import { attachNavigation } from '/src/reader/navigation.js'
 import { createSettings } from '/src/settings/settings.js'
 import { createSettingsPanel } from '/src/settings/settingsPanel.js'
@@ -23,6 +24,7 @@ const el = {
   hud: $('hud'),
   hudChapter: $('hud-chapter'),
   hudProgress: $('hud-progress'),
+  hudMode: $('hud-mode'),
   hudBookmark: $('hud-bookmark'),
   loading: $('loading'),
   loadingText: $('loading-text'),
@@ -30,12 +32,15 @@ const el = {
 }
 
 let settings = null
-let reader = null
+let readers = null // { flow, page }
+let reader = null // el que esta en uso
 let settingsPanel = null
 let notesView = null
 let notes = null
 let entries = []
 let current = null // entrada de biblioteca del libro abierto
+let openedBook = null // { book, path } del libro en pantalla
+let lastOffset = 0 // ultimo punto de lectura, para conservarlo al cambiar de vista
 let hudTimer = null
 
 // --- Avisos y carga --------------------------------------------------------
@@ -123,11 +128,12 @@ async function openLoaded (loaded, entry) {
 
     notes = createNotesStore(loaded.id)
     await notes.load()
+    openedBook = { book, path: loaded.path }
 
     el.body.dataset.view = 'reader'
     // El maquetado necesita que la vista ya este visible para medir bien.
     await nextFrame()
-    await reader.open(book, current.progress, notes)
+    await applyMode(chooseMode(book), book, current.progress, loaded.bytes)
     notesView.render(notes.all, book)
     wakeHud()
   } catch (err) {
@@ -152,7 +158,8 @@ async function loadOrBuild (loaded) {
 }
 
 async function backToLibrary () {
-  if (reader.isOpen) reader.close()
+  if (reader?.isOpen) reader.close()
+  openedBook = null
   showPanel(null)
   // Un aviso de la lectura no tiene sentido ya en la estanteria.
   el.toast.hidden = true
@@ -161,6 +168,57 @@ async function backToLibrary () {
   notes = null
   el.body.dataset.view = 'library'
   await refreshLibrary()
+}
+
+// --- Modos de lectura ------------------------------------------------------
+
+/**
+ * Con que vista se lee este libro.
+ *
+ * La prosa gana mucho re-maquetada: el texto se adapta a la pantalla y se lee
+ * linea a linea. Un documento tecnico pierde con eso —las formulas, las tablas
+ * y las graficas se desmontan—, asi que se muestra tal y como esta compuesto y
+ * lo que se resalta es la region entera.
+ */
+function chooseMode (book) {
+  const preference = settings.get('readingMode')
+  if (preference !== 'auto') return preference
+
+  const pages = Math.max(1, book.pageCount)
+  const hasFigures = (book.stats.figures ?? 0) / pages > 0.15
+  const hasColumns = (book.stats.columnPages ?? 0) / pages > 0.3
+  return hasFigures || hasColumns ? 'page' : 'flow'
+}
+
+async function applyMode (mode, book, progress, bytes) {
+  if (reader?.isOpen) reader.close()
+
+  reader = readers[mode]
+  el.body.dataset.mode = mode
+  el.hudMode.textContent = mode === 'page' ? 'Página' : 'Flujo'
+  el.hudMode.title = mode === 'page'
+    ? 'Leyendo sobre la página original, región a región. Pulsa para re-maquetar el texto.'
+    : 'Leyendo el texto re-maquetado, línea a línea. Pulsa para ver la página original.'
+
+  reader.setFocusShape(settings.all)
+  await reader.open(book, progress, notes, bytes)
+}
+
+async function toggleMode () {
+  if (!reader?.isOpen || !openedBook) return
+  const next = el.body.dataset.mode === 'page' ? 'flow' : 'page'
+
+  // La eleccion manual manda a partir de ahora, tambien en los proximos libros.
+  settings.update({ readingMode: next })
+  showLoading('Cambiando de vista…')
+  try {
+    // La vista de pagina necesita el PDF para dibujarlo, no solo su texto.
+    const loaded = await window.lector.pdf.load(openedBook.path)
+    if (loaded?.error) return void toast('No se pudo releer el archivo')
+    await applyMode(next, openedBook.book, { offset: lastOffset }, loaded.bytes)
+  } finally {
+    hideLoading()
+  }
 }
 
 // --- HUD -------------------------------------------------------------------
@@ -193,6 +251,7 @@ function onStatus (status) {
   el.hudChapter.textContent = status.chapter
   el.hudProgress.textContent = percent(status.percent)
   el.hudBookmark.classList.toggle('is-on', status.marked)
+  lastOffset = status.offset
   // El punto de lectura exacto, para poder comprobarlo desde fuera.
   el.body.dataset.offset = String(status.offset)
 }
@@ -223,11 +282,12 @@ const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => resol
 
 async function start () {
   settings = createSettings(await window.lector.settings.read(), {
-    onLayoutChange: () => reader.relayout(),
-    onChange: next => reader.setFocusShape(next)
+    onLayoutChange: () => reader?.relayout(),
+    onChange: next => reader?.setFocusShape(next)
   })
 
-  reader = createReader({
+  // Los dos lectores comparten interfaz; solo uno esta abierto a la vez.
+  const wiring = {
     stage: el.stage,
     sharpLayer: el.sharpLayer,
     contentSharp: el.contentSharp,
@@ -238,8 +298,9 @@ async function start () {
       current = { ...current, progress }
       window.lector.library.upsert({ id: current.id, progress, lastOpenedAt: current.lastOpenedAt })
     }
-  })
-  reader.setFocusShape(settings.all)
+  }
+  readers = { flow: createReader(wiring), page: createRegionReader(wiring) }
+  reader = readers.flow
 
   settingsPanel = createSettingsPanel({ settings, onClose: () => showPanel(null) })
   notesView = createNotesView({
@@ -262,6 +323,7 @@ async function start () {
     jump: where => { reader.jump(where); wakeHud() },
     chapter: direction => { reader.chapter(direction); wakeHud() },
     bookmark: toggleBookmark,
+    mode: toggleMode,
     escape: () => {
       if (settingsPanel.isOpen || notesView.isOpen) showPanel(null)
       else if (reader.isOpen) backToLibrary()
@@ -282,6 +344,7 @@ async function start () {
   $('hud-library').addEventListener('click', backToLibrary)
   $('hud-settings').addEventListener('click', () => showPanel('settings'))
   $('hud-notes').addEventListener('click', () => showPanel('notes'))
+  el.hudMode.addEventListener('click', toggleMode)
   el.hudBookmark.addEventListener('click', toggleBookmark)
 
   window.lector.onMenu({

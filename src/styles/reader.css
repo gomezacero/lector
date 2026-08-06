@@ -8,6 +8,12 @@
 @property --mask-b { syntax: '<length>'; inherits: true; initial-value: 0px; }
 @property --mask-c { syntax: '<length>'; inherits: true; initial-value: 0px; }
 @property --mask-d { syntax: '<length>'; inherits: true; initial-value: 0px; }
+/* Los cuatro de la izquierda recortan a lo alto; estos, a lo ancho. Solo los
+   usa la vista de pagina, donde el foco es un rectangulo y no una banda. */
+@property --mask-e { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --mask-f { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --mask-g { syntax: '<length>'; inherits: true; initial-value: 100%; }
+@property --mask-h { syntax: '<length>'; inherits: true; initial-value: 100%; }
 
 .view-reader { position: relative; height: 100%; }
 
@@ -53,6 +59,47 @@
 /* Al recolocar tras un cambio de ajustes no debe animarse nada. */
 .stage.is-instant .page-layer-sharp,
 .stage.is-instant .page-content { transition: none; }
+
+/* --- Vista de pagina: el foco es un rectangulo, no una banda -------------- */
+
+body[data-mode='page'] .page-layer-sharp {
+  /* Dos degradados cruzados dan un rectangulo de bordes suaves. Con un recorte
+     duro la region resaltada pareceria un recorte pegado sobre la pagina. */
+  mask-image:
+    linear-gradient(to bottom, transparent var(--mask-a), #000 var(--mask-b),
+                    #000 var(--mask-c), transparent var(--mask-d)),
+    linear-gradient(to right, transparent var(--mask-e), #000 var(--mask-f),
+                    #000 var(--mask-g), transparent var(--mask-h));
+  mask-composite: intersect;
+  transition:
+    --mask-a var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-b var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-c var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-d var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-e var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-f var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-g var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-h var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+/* La pagina se centra y ocupa el alto disponible; el ancho manda si la pagina
+   es apaisada. */
+body[data-mode='page'] .page-content {
+  width: auto;
+  padding: 0;
+  top: 50%;
+  transform: translate(-50%, -50%) translateY(var(--content-y, 0px));
+}
+
+body[data-mode='page'] .page-image {
+  display: block;
+  max-width: 100%;
+  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* El papel del PDF es blanco; en tema oscuro deslumbra. */
+body[data-mode='page'][data-theme='dark'] .page-image { filter: invert(1) hue-rotate(180deg); }
+body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) brightness(0.97); }
 
 .page-content {
   position: absolute;

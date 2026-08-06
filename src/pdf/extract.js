@@ -20,9 +20,9 @@ export function openDocument (bytes) {
     // quien nos paso los bytes se queda sin ellos y un segundo uso revienta.
     data: new Uint8Array(bytes),
     ...RESOURCES,
-    // Solo se extrae texto: nada de esto hace falta y ahorra trabajo.
-    isEvalSupported: false,
-    disableFontFace: true
+    // La politica de seguridad de la ventana no permite eval; pdf.js lo detecta
+    // y usa el camino alternativo para construir las fuentes.
+    isEvalSupported: false
   }).promise
 }
 

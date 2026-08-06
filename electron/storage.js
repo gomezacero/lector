@@ -12,6 +12,9 @@ const userData = () => app.getPath('userData')
 const booksDir = () => path.join(userData(), 'books')
 
 export const DEFAULT_SETTINGS = {
+  // auto | flow (re-maquetado, linea a linea) | page (pagina original, region a region)
+  readingMode: 'auto',
+  pageZoom: 1,
   theme: 'dark',
   fontFamily: 'Sitka Text',
   fontSize: 20,

@@ -173,13 +173,24 @@ async function readTask (win, projectRoot) {
   await shoot('02-leyendo')
 
   const afterWheel = await readState(js)
-  check(afterWheel.contentY < 0, 'el texto no se desplazo al bajar el foco')
-  check(afterWheel.sameText, 'las dos capas no tienen el mismo texto')
-  check(afterWheel.blocksSharp === afterWheel.blocksDim, 'las capas tienen distinto numero de bloques')
+  const isPageMode = afterWheel.mode === 'page'
+
   const { a, b, c, d } = afterWheel.mask
   check(a < b && b <= c && c < d, `mascara desordenada: ${a}, ${b}, ${c}, ${d}`)
   check(b >= 0 && c <= afterWheel.stageHeight, 'la banda de foco cae fuera de la pantalla')
   check(afterWheel.offset > 0, 'el punto de lectura no avanzo')
+
+  if (isPageMode) {
+    // La pagina se ensena dibujada: lo que hay que comprobar es que llego.
+    check(afterWheel.image?.complete && !afterWheel.image.natural.startsWith('0x'),
+      `la pagina no se dibujo: ${JSON.stringify(afterWheel.image)}`)
+    const { e, f, g, h } = afterWheel.mask
+    check(e < f && f <= g && g < h, `el recorte horizontal esta desordenado: ${e}, ${f}, ${g}, ${h}`)
+  } else {
+    check(afterWheel.contentY < 0, 'el texto no se desplazo al bajar el foco')
+    check(afterWheel.sameText, 'las dos capas no tienen el mismo texto')
+    check(afterWheel.blocksSharp === afterWheel.blocksDim, 'las capas tienen distinto numero de bloques')
+  }
 
   // --- Cambiar el cuerpo de letra sin perder el sitio ----------------------
   const before = afterWheel.offset
@@ -244,7 +255,7 @@ async function readTask (win, projectRoot) {
   `)
   check(notes.count === 1, `deberia haber una nota, hay ${notes.count}`)
   check(notes.marked, 'el boton de marcar no quedo activo')
-  check(notes.bar === 1, 'el parrafo marcado no se senala al margen')
+  check(isPageMode || notes.bar === 1, 'el parrafo marcado no se senala al margen')
 
   // --- Volver a la biblioteca y reabrir -----------------------------------
   await js(`document.getElementById('hud-library').click()`)
@@ -283,6 +294,10 @@ async function readTask (win, projectRoot) {
     `no se retomo la lectura donde estaba: ${before} -> ${reopened.offset}`)
 
   // --- Informe -------------------------------------------------------------
+  if (afterWheel.mode === 'page') {
+    console.log(`\nVISTA DE PAGINA\n  imagen: ${JSON.stringify(afterWheel.image)}`)
+  }
+
   console.log('\nRECORRIDO COMPLETO')
   console.log(`  tras 14 lineas   : offset ${before}, desplazamiento ${afterWheel.contentY}px`)
   console.log(`  mascara          : a=${a} b=${b} c=${c} d=${d} (pantalla ${afterWheel.stageHeight}px)`)
@@ -316,11 +331,22 @@ function readState (js) {
         blocksDim: dim.children.length,
         sameText: content.textContent === dim.textContent,
         fontSize: parseFloat(getComputedStyle(content).fontSize),
-        mask: { a: read('--mask-a'), b: read('--mask-b'), c: read('--mask-c'), d: read('--mask-d') },
+        mask: { a: read('--mask-a'), b: read('--mask-b'), c: read('--mask-c'), d: read('--mask-d'), e: read('--mask-e'), f: read('--mask-f'), g: read('--mask-g'), h: read('--mask-h') },
         contentY: parseFloat(getComputedStyle(stage).getPropertyValue('--content-y')),
         stageHeight: stage.clientHeight,
         chapter: document.getElementById('hud-chapter').textContent,
-        progress: document.getElementById('hud-progress').textContent
+        progress: document.getElementById('hud-progress').textContent,
+        mode: document.body.dataset.mode,
+        image: (() => {
+          const img = content.querySelector('img')
+          if (!img) return null
+          return {
+            complete: img.complete,
+            natural: img.naturalWidth + 'x' + img.naturalHeight,
+            shown: img.width + 'x' + img.height,
+            src: img.src.slice(0, 28)
+          }
+        })()
       }
     })()
   `)

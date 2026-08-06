@@ -75,5 +75,7 @@ const KEYS = {
   ArrowLeft: h => h.chapter(-1),
   m: h => h.bookmark?.(),
   M: h => h.bookmark?.(),
+  v: h => h.mode?.(),
+  V: h => h.mode?.(),
   Escape: h => h.escape?.()
 }
