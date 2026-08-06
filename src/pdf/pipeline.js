@@ -5,12 +5,16 @@ import { openDocument, closeDocument, extractPage, extractOutline, extractMetada
 import { buildLines } from './lines.js'
 import { toBlocks } from './blocks.js'
 import { buildChapters } from './chapters.js'
+import { detectSections, findBodyStart } from './sections.js'
 
 // Sube este numero al cambiar el pipeline: invalida los libros ya cacheados.
 // v3: corredores de columna medidos en cuerpos de letra, sangria con techo y
 // por escalon, y palabras partidas que ya no cortan el parrafo. Sin subirlo,
 // los libros abiertos antes seguirian ensenando el texto de la version vieja.
-export const CACHE_VERSION = 3
+// v4: cubierta e indices marcados. Los bloques y los offsets salen identicos
+// —comprobado sobre los seis libros de prueba, bloque a bloque y caracter a
+// caracter—, pero el cache viejo no trae ni los roles ni bodyStart.
+export const CACHE_VERSION = 4
 
 /**
  * @param {Uint8Array} bytes
@@ -35,6 +39,17 @@ export async function buildBook (bytes, { fileName = '', onProgress } = {}) {
     const { blocks, metrics, style } = toBlocks(pages)
     const chapters = buildChapters(blocks, outline)
 
+    // Cubierta e indices. Solo se marcan: quitarlos de la lista moveria los
+    // offsets de abajo, que son el ancla del progreso y de las notas ya
+    // guardadas. Que hacer con ellos lo decide el lector.
+    const roles = detectSections(pages, metrics.bodySize)
+    if (roles.size) {
+      for (const block of blocks) {
+        const role = roles.get(block.page)
+        if (role) block.role = role
+      }
+    }
+
     // Offset de caracter acumulado: es el ancla estable del progreso y de las
     // notas, la unica que sobrevive a un cambio de tipografia.
     let chars = 0
@@ -54,7 +69,19 @@ export async function buildBook (bytes, { fileName = '', onProgress } = {}) {
       chars,
       blocks,
       chapters,
+      // El rol tambien por pagina, y no solo en los bloques: una pagina de
+      // indice cuyo texto no llega a extraerse —pasa en "El Tunel"— no produce
+      // ningun bloque, y la vista de pagina necesita saber igualmente que no
+      // es para leerla.
+      pageRoles: pages.map((_, i) => roles.get(i) ?? null),
+      // Donde empieza el libro de verdad. El lector se posa aqui la primera
+      // vez, en vez de en la cubierta.
+      bodyStart: findBodyStart(blocks, chars),
       stats: {
+        // Cuantas paginas se han apartado de la lectura, por si un libro sale
+        // con el principio saltado sin motivo.
+        coverPages: countPages(roles, 'cover'),
+        tocPages: countPages(roles, 'toc'),
         paragraphStyle: style,
         // Con que se decide si el libro se lee re-maquetado o sobre la pagina
         // original: la prosa corriente no trae ni figuras ni columnas.
@@ -76,6 +103,9 @@ export async function buildBook (bytes, { fileName = '', onProgress } = {}) {
 }
 
 const firstHeading = blocks => blocks.find(b => b.type === 'heading')?.text ?? ''
+
+const countPages = (roles, role) =>
+  [...roles.values()].filter(r => r === role).length
 
 const countWords = blocks =>
   blocks.reduce((total, b) => total + (b.text.match(/\S+/g)?.length ?? 0), 0)

@@ -140,6 +140,28 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
   box-shadow: -14px 0 0 -11px var(--accent);
 }
 
+/* --- Lo que no es para leer seguido -------------------------------------- */
+
+/* La cubierta: centrada, con aire y en cuerpo mayor. No es un parrafo suelto
+   perdido arriba del todo, que es como se veia. */
+.page-content [data-role='cover'] {
+  text-align: center;
+  font-size: 1.5em;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.6em;
+  text-wrap: balance;
+}
+.page-content [data-role='cover']:first-child { margin-top: 1.5em; }
+
+/* El indice se lee igual, pero se distingue del cuerpo: renglones apretados y
+   algo mas tenue, para que quede claro que es una lista y no el libro. */
+.page-content [data-role='toc'] {
+  margin: 0 0 0.15em;
+  font-size: 0.94em;
+  color: var(--fg-muted);
+}
+
 /* --- HUD ----------------------------------------------------------------- */
 
 .hud {

@@ -27,9 +27,28 @@ export function chapterAtOffset (book, offset) {
   return index === -1 ? 0 : index
 }
 
+/**
+ * Donde se posa la lectura la primera vez: el principio del libro de verdad, no
+ * la cubierta. Lo anterior sigue estando, a un gesto y en el indice de capitulos.
+ */
+export function startOffset (book) {
+  return book.blocks?.[book.bodyStart ?? 0]?.start ?? 0
+}
+
+/**
+ * El porcentaje mide el libro, no el fichero.
+ *
+ * Se descuentan los preliminares —cubierta, creditos, indice— porque contarlos
+ * hace que el capitulo primero empiece marcando un 36 %, como pasa en "Fisica
+ * biologica". El material del final si cuenta: descontarlo tambien dejaria el
+ * indice alfabetico de un manual marcando 100 % durante sus ultimas treinta
+ * paginas, que miente mas de lo que arregla.
+ */
 export function percentAt (book, offset) {
-  if (!book.chars) return 0
-  return Math.max(0, Math.min(1, offset / book.chars))
+  const from = startOffset(book)
+  const total = book.chars - from
+  if (total <= 0) return 0
+  return Math.max(0, Math.min(1, (offset - from) / total))
 }
 
 /** Estado a persistir para el libro abierto. */

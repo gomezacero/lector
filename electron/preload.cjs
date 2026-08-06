@@ -15,7 +15,8 @@ contextBridge.exposeInMainWorld('lector', {
   library: {
     list: () => ipcRenderer.invoke('library:list'),
     upsert: entry => ipcRenderer.invoke('library:upsert', entry),
-    remove: id => ipcRenderer.invoke('library:remove', id)
+    remove: id => ipcRenderer.invoke('library:remove', id),
+    usage: id => ipcRenderer.invoke('library:usage', id)
   },
   book: {
     readCache: id => ipcRenderer.invoke('book:readCache', id),

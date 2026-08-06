@@ -177,6 +177,7 @@ function registerIpc () {
   ipcMain.handle('library:list', () => store.readLibrary())
   ipcMain.handle('library:upsert', (_e, entry) => store.upsertLibraryEntry(entry))
   ipcMain.handle('library:remove', (_e, id) => store.removeLibraryEntry(id))
+  ipcMain.handle('library:usage', (_e, id) => store.bookUsage(id))
 
   ipcMain.handle('book:readCache', (_e, id) => store.readBookCache(id))
   ipcMain.handle('book:writeCache', (_e, id, book) => store.writeBookCache(id, book))
@@ -195,6 +196,16 @@ app.whenReady().then(() => {
   registerIpc()
   buildMenu()
   createWindow()
+
+  // Cache y portadas que ya no pertenecen a ningun libro. Nadie mas recorre
+  // esos directorios, asi que sin esto lo que se caiga de library.json queda
+  // ocupando disco para siempre. No se espera: la ventana ya esta en marcha.
+  //
+  // Las tareas de desarrollo se lo saltan: varias trabajan sobre un userData
+  // propio y no tienen por que tocar la biblioteca de quien las ejecuta.
+  if (!process.env.LECTOR_TASK) {
+    store.sweepOrphans().catch(err => console.error('barrido:', err.message))
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

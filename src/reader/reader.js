@@ -7,7 +7,7 @@
 import { renderChapter, setBlockMarked } from './layout.js'
 import { buildLineIndex, offsetOfLine } from './lineIndex.js'
 import { createFocusController } from './focus.js'
-import { makeProgress, chapterAtOffset, lineForOffset, percentAt } from './progress.js'
+import { makeProgress, chapterAtOffset, lineForOffset, percentAt, startOffset } from './progress.js'
 import { toSentenceUnits } from './sentences.js'
 
 const SAVE_DELAY = 900
@@ -134,7 +134,7 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
       book = nextBook
       notes = notesStore
       unit = readingUnit
-      anchor = progress?.offset ?? 0
+      anchor = progress?.offset ?? startOffset(nextBook)
       chapterIndex = chapterAtOffset(book, anchor)
       renderCurrentChapter()
       focus.moveTo(lineForOffset(book, focus.lines, anchor), { animate: false })

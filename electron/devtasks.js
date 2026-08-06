@@ -32,6 +32,9 @@ export function startUrlFor (task, arg) {
     return `app://lector/src/dev/ingest.html?pdf=${encodeURIComponent(arg ?? '')}`
   }
   if (task === 'icon') return 'app://lector/src/dev/icon.html'
+  // Trabaja contra el almacen, no contra la interfaz: arrancar la aplicacion
+  // solo la pondria a escribir en el userData que la prueba esta midiendo.
+  if (task === 'wipe') return 'about:blank'
   if (task === 'home') return 'app://lector/src/index.html'
   if (task === 'diagnose') {
     // "archivo.pdf#12" vuelca las lineas de la pagina 12 en vez del informe.
@@ -48,7 +51,138 @@ const TASKS = {
   read: readTask,
   home: homeTask,
   icon: iconTask,
-  smoke: smokeTask
+  smoke: smokeTask,
+  wipe: wipeTask
+}
+
+/**
+ * Comprueba que borrar un libro lo borra entero y que el barrido de huerfanos
+ * no se lleva por delante lo que no debe.
+ *
+ * Como toda tarea de desarrollo, trabaja sobre el userData de usar y tirar que
+ * main.js prepara y vacia en cada arranque. Es la unica forma honesta de probar
+ * esto: contra la biblioteca real, la prueba seria el desastre que evita.
+ */
+async function wipeTask () {
+  const { app } = await import('electron')
+  const store = await import('./storage.js')
+  const root = app.getPath('userData')
+
+  const checks = []
+  const check = (label, ok, detail = '') => {
+    checks.push({ label, ok, detail })
+    console.log(`  ${ok ? 'ok  ' : 'FALLO'} ${label}${detail ? ` — ${detail}` : ''}`)
+  }
+  // Solo lo que escribe la aplicacion: el userData comparte sitio con las
+  // cachees de Chromium, que no son asunto de esta prueba.
+  const tree = async () => {
+    const found = []
+    for (const dir of ['books', 'covers']) {
+      for (const name of await fs.readdir(path.join(root, dir)).catch(() => [])) {
+        found.push(`${dir}/${name}`)
+      }
+    }
+    for (const name of await fs.readdir(root).catch(() => [])) {
+      if (name === 'library.json' || name === 'settings.json' || name.endsWith('.tmp')) {
+        found.push(name)
+      }
+    }
+    return found.sort()
+  }
+
+  const id = 'a'.repeat(32)
+  const otro = 'b'.repeat(32)
+
+  console.log('\nBORRADO DE UN LIBRO')
+  await store.upsertLibraryEntry({ id, title: 'Libro de prueba', progress: { percent: 0.31 } })
+  await store.writeBookCache(id, { version: 3, blocks: new Array(500).fill({ text: 'x'.repeat(80) }) })
+  await store.writeNotes(id, [{ offset: 10, quote: 'una nota' }])
+  await store.writeCover(id, Buffer.from('imagen falsa de portada'))
+
+  const antes = await tree()
+  const suyos = [`books/${id}.json`, `books/${id}.notes.json`, `covers/${id}.jpg`]
+  check('el libro deja sus tres ficheros mas la entrada',
+    suyos.every(f => antes.includes(f)) && antes.includes('library.json'),
+    antes.join(', '))
+
+  const usage = await store.bookUsage(id)
+  check('bookUsage cuenta las notas y los bytes', usage.notes === 1 && usage.bytes > 0,
+    `${usage.notes} nota(s), ${usage.bytes} bytes`)
+
+  const result = await store.removeLibraryEntry(id)
+  const despues = await tree()
+  check('el borrado dice que fue bien', result.ok === true)
+  check('el borrado informa de lo liberado', result.bytes > 0, `${result.bytes} bytes`)
+  check('no queda nada del libro', despues.length === 1 && despues[0] === 'library.json',
+    despues.length ? despues.join(', ') : '(vacio)')
+
+  console.log('\nTEMPORALES DE UNA ESCRITURA A MEDIAS')
+  await store.upsertLibraryEntry({ id, title: 'Otra vez' })
+  await store.writeBookCache(id, { version: 3, blocks: [] })
+  // Los del esquema viejo, de nombre fijo, y los de ahora, con nombre propio.
+  await fs.writeFile(path.join(root, 'books', `${id}.json.tmp`), 'a medias')
+  await fs.writeFile(path.join(root, 'books', `${id}.notes.json.9999-1.tmp`), 'a medias')
+  await store.removeLibraryEntry(id)
+  const trasTmp = await tree()
+  check('el borrado se lleva tambien los temporales',
+    trasTmp.every(f => !f.includes('.tmp')), trasTmp.join(', ') || '(vacio)')
+
+  console.log('\nBARRIDO DE HUERFANOS')
+  const viejo = Date.now() - 48 * 60 * 60 * 1000
+  await store.upsertLibraryEntry({ id, title: 'El que se queda' })
+  await store.writeBookCache(id, { version: 3, blocks: [] })
+  await store.writeBookCache(otro, { version: 3, blocks: [] })
+  const huerfano = path.join(root, 'books', `${otro}.json`)
+  await fs.utimes(huerfano, viejo / 1000, viejo / 1000)
+
+  const barrido = await store.sweepOrphans()
+  const trasBarrido = await tree()
+  check('barre el cache sin dueno', barrido.swept === 1, `${barrido.swept} fichero(s)`)
+  check('respeta el libro que si tiene entrada',
+    trasBarrido.includes(`books/${id}.json`))
+
+  // Un cache recien escrito puede no tener aun su entrada en la biblioteca.
+  await store.writeBookCache(otro, { version: 3, blocks: [] })
+  const barrido2 = await store.sweepOrphans()
+  check('no toca un huerfano recien escrito', barrido2.swept === 0)
+
+  console.log('\nGUARDAS DEL BARRIDO')
+  await fs.writeFile(path.join(root, 'library.json'), '{ esto no es json')
+  const corrupto = await store.sweepOrphans()
+  check('con la biblioteca ilegible no barre nada',
+    corrupto.swept === 0 && corrupto.skipped === 'biblioteca ilegible', corrupto.skipped ?? '')
+
+  await fs.writeFile(path.join(root, 'library.json'), '[]')
+  const vacia = await store.sweepOrphans()
+  check('con la biblioteca vacia no barre nada',
+    vacia.swept === 0 && vacia.skipped === 'biblioteca vacia', vacia.skipped ?? '')
+
+  const sobrevive = await tree()
+  check('los dos cache siguen ahi tras las dos guardas',
+    sobrevive.filter(f => f.startsWith('books/')).length === 2,
+    sobrevive.filter(f => f.startsWith('books/')).join(', '))
+
+  console.log('\nTEMPORAL SUELTO EN LA RAIZ')
+  // El que dejo el esquema viejo de nombre fijo: nadie lo nombra ni lo mira.
+  await store.upsertLibraryEntry({ id, title: 'El que se queda' })
+  const suelto = path.join(root, 'library.json.tmp')
+  await fs.writeFile(suelto, '{"a medio escribir": true}')
+  await fs.utimes(suelto, viejo / 1000, viejo / 1000)
+  await store.sweepOrphans()
+  check('barre el temporal suelto de la raiz',
+    !(await tree()).includes('library.json.tmp'))
+
+  await fs.rm(path.join(root, 'books'), { recursive: true, force: true })
+  await fs.rm(path.join(root, 'covers'), { recursive: true, force: true })
+  await fs.rm(path.join(root, 'library.json'), { force: true })
+
+
+
+  const fallos = checks.filter(c => !c.ok)
+  console.log(fallos.length
+    ? `\nWIPE FALLO: ${fallos.length} de ${checks.length} comprobaciones`
+    : `\nWIPE OK: ${checks.length} comprobaciones`)
+  return fallos.length ? 1 : 0
 }
 
 /** Captura la estanteria tal y como queda con los libros ya en la biblioteca. */
@@ -71,6 +205,8 @@ async function homeTask (win, projectRoot) {
       view: document.body.dataset.view,
       resume: document.querySelector('.resume-title')?.textContent ?? null,
       books: document.querySelectorAll('.book').length,
+      // Uno por libro, franja incluida: el ultimo abierto se quedaba sin el.
+      removeButtons: document.querySelectorAll('.book-remove').length,
       covers: [...document.querySelectorAll('.cover-image')]
         .filter(img => img.complete && img.naturalWidth > 0).length,
       orders: [...document.querySelectorAll('.shelf-order button')].map(b => b.textContent)
@@ -85,7 +221,94 @@ async function homeTask (win, projectRoot) {
   console.log(`  ordenaciones    : ${state.orders.join(', ')}`)
   console.log('  captura en test/screenshots/home.png')
 
-  return state.view === 'library' ? 0 : 1
+  // Todo libro visible tiene que poder borrarse. El de la franja se quedaba
+  // fuera, y es justo el que mas apetece quitar: el ultimo que se abrio.
+  const visibles = state.books + (state.resume ? 1 : 0)
+  const borrables = state.removeButtons === visibles
+  console.log(`  se pueden borrar: ${state.removeButtons} de ${visibles}${borrables ? '' : '  <-- FALLO'}`)
+
+  const dialogo = state.removeButtons ? await confirmDialogCheck(win, shotDir) : null
+  return state.view === 'library' && borrables && dialogo !== false ? 0 : 1
+}
+
+/**
+ * Cuantas paradas hay entre el principio del documento y el primer texto que se
+ * lee. Es lo que el lector se ahorra al abrir, y lo que le costaria recorrer la
+ * cubierta y el indice si fuera a buscarlos con Inicio.
+ */
+async function countPreliminaries (js) {
+  const target = await js('Number(document.body.dataset.offset)')
+  if (!target) return null
+
+  // Inicio lleva al principio de verdad del documento, cubierta incluida.
+  await js(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }))`)
+  await wait(600)
+  const from = await js('Number(document.body.dataset.offset)')
+  if (from >= target) return null
+
+  let stops = 0
+  let last = from
+  // Tope generoso: sin plegar, el indice de un manual pasa de las quinientas.
+  while (stops < 1500) {
+    await js(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))`)
+    stops++
+    const offset = await js('Number(document.body.dataset.offset)')
+    // Si deja de avanzar es que llego al final de lo que hay antes del cuerpo.
+    if (offset >= target || offset === last) break
+    last = offset
+  }
+  return { stops, bodyStart: target }
+}
+
+/**
+ * Abre la confirmacion de borrado, la retrata y cancela.
+ *
+ * Lo que de verdad se comprueba es lo ultimo: que cancelar no borre. Un
+ * dialogo que se salta al pulsar Cancelar es peor que no tenerlo, porque
+ * promete una salida que no existe.
+ */
+async function confirmDialogCheck (win, shotDir) {
+  const js = expression => win.webContents.executeJavaScript(expression)
+
+  const antes = await js('document.querySelectorAll(".book-remove").length')
+  await js('document.querySelector(".book-remove").click()')
+  await wait(700)
+
+  const dialog = await js(`
+    (() => {
+      const d = document.querySelector('dialog.confirm')
+      if (!d) return null
+      return {
+        abierto: d.open,
+        titulo: d.querySelector('.confirm-title')?.textContent ?? '',
+        lineas: [...d.querySelectorAll('.confirm-list li')].map(li => li.textContent),
+        // El foco tiene que estar en Cancelar: un Enter de mas no puede borrar.
+        foco: document.activeElement?.textContent ?? ''
+      }
+    })()
+  `)
+
+  if (!dialog?.abierto) {
+    console.log('  confirmacion   : NO APARECE  <-- FALLO')
+    return false
+  }
+
+  await fs.writeFile(path.join(shotDir, 'confirmar-borrado.png'),
+    (await win.webContents.capturePage()).toPNG())
+
+  await js('document.querySelector("dialog.confirm .btn:not(.btn-danger)").click()')
+  await wait(500)
+  const despues = await js('document.querySelectorAll(".book-remove").length')
+  const cancelaBien = despues === antes && !(await js('Boolean(document.querySelector("dialog.confirm"))'))
+
+  console.log(`\nCONFIRMACION DE BORRADO`)
+  console.log(`  titulo          : ${dialog.titulo}`)
+  for (const linea of dialog.lineas) console.log(`  · ${linea}`)
+  console.log(`  foco inicial    : ${dialog.foco}${dialog.foco === 'Cancelar' ? '' : '  <-- FALLO'}`)
+  console.log(`  cancelar respeta: ${despues} de ${antes} libros${cancelaBien ? '' : '  <-- FALLO'}`)
+  console.log('  captura en test/screenshots/confirmar-borrado.png')
+
+  return cancelaBien && dialog.foco === 'Cancelar'
 }
 
 export function runDevTask (app, win, projectRoot, task, arg) {
@@ -449,7 +672,13 @@ async function readTask (win, projectRoot) {
     console.log(`\nVISTA DE PAGINA\n  imagen: ${JSON.stringify(afterWheel.image)}`)
   }
 
+  const prelim = await countPreliminaries(js)
+
   console.log('\nRECORRIDO COMPLETO')
+  if (prelim) {
+    console.log(`  antes del cuerpo : ${prelim.stops} paradas desde el principio del documento` +
+                ` (arranque automatico en el bloque ${prelim.bodyStart})`)
+  }
   console.log(`  tras 14 lineas   : offset ${before}, desplazamiento ${afterWheel.contentY}px`)
   console.log(`  mascara          : a=${a} b=${b} c=${c} d=${d} (pantalla ${afterWheel.stageHeight}px)`)
   console.log(`  cambio de cuerpo : ${afterResize.fontSize}px, offset ${afterResize.offset}`)
@@ -551,6 +780,11 @@ async function diagnoseTask (win, outRoot) {
     console.log(`  autor     : ${r.author || '(sin autor)'}`)
     console.log(`  paginas   : ${r.pageCount}   palabras: ${r.words}   ingesta: ${(r.ms / 1000).toFixed(1)}s`)
     console.log(`  bloques   : ${r.blocks} (${r.headings} titulos, ${r.figures} figuras)   parrafo mediano: ${r.signals.medianLength} car.`)
+    console.log(`  caracteres: ${r.chars}   <- si esto se mueve, se mueve el progreso guardado`)
+    const st = r.stats
+    const marcadas = (st.coverPages ?? 0) + (st.tocPages ?? 0)
+    console.log(`  apartadas : ${marcadas} paginas (${st.coverPages ?? 0} cubierta, ${st.tocPages ?? 0} indice)` +
+                `   arranque en el bloque ${r.bodyStart} (se saltan ${r.skipped} car.)`)
     console.log(`  estilo    : ${r.style}, cuerpo ${r.bodySize}pt, margenes ${r.stats.bodyLeft}-${r.stats.bodyRight}, interlineado ${r.stats.leading}`)
     console.log(`  capitulos : ${r.chapters} -> ${r.chapterTitles.join(' | ')}`)
     if (r.detected) {

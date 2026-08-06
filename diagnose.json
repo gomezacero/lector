@@ -1,11 +1,14 @@
 [
   {
     "file": "cien años de soledad.pdf",
-    "ms": 981.8000000007451,
+    "ms": 1033.3999999985099,
     "title": "García Márquez - Cien años de soledad",
     "author": "Patricio",
     "pageCount": 173,
     "blocks": 855,
+    "chars": 809176,
+    "bodyStart": 2,
+    "skipped": 44,
     "headings": 22,
     "figures": 0,
     "chapters": 22,
@@ -23,6 +26,8 @@
     "style": "indent",
     "bodySize": 10,
     "stats": {
+      "coverPages": 1,
+      "tocPages": 1,
       "paragraphStyle": "indent",
       "figures": 0,
       "columnPages": 0,
@@ -72,11 +77,14 @@
   },
   {
     "file": "Libro_El_Tunel.pdf",
-    "ms": 378.59999999962747,
+    "ms": 396.6000000014901,
     "title": "EL TÚNEL",
     "author": "Gerson O. Su.rez",
     "pageCount": 95,
     "blocks": 824,
+    "chars": 189922,
+    "bodyStart": 4,
+    "skipped": 5164,
     "headings": 41,
     "figures": 4,
     "chapters": 42,
@@ -94,6 +102,8 @@
     "style": "indent",
     "bodySize": 11.5,
     "stats": {
+      "coverPages": 1,
+      "tocPages": 2,
       "paragraphStyle": "indent",
       "figures": 4,
       "columnPages": 0,
@@ -142,83 +152,111 @@
     }
   },
   {
-    "file": "paper-resnet.pdf",
-    "ms": 210.80000000074506,
-    "title": "Deep Residual Learning for Image Recognition",
-    "author": "",
-    "pageCount": 12,
-    "blocks": 261,
-    "headings": 12,
-    "figures": 7,
-    "chapters": 12,
+    "file": "_OceanofPDF.com_La_tregua_-_Mario_Benedetti.pdf",
+    "ms": 579.7999999970198,
+    "title": "La tregua",
+    "author": "Mario Benedetti",
+    "pageCount": 182,
+    "blocks": 367,
+    "chars": 293059,
+    "bodyStart": 0,
+    "skipped": 0,
+    "headings": 2,
+    "figures": 0,
+    "chapters": 3,
     "chapterTitles": [
-      "Deep Residual Learning for Image Recognition",
-      "Kaiming He Xiangyu Zhang Shaoqing Ren Jian Sun",
-      "Microsoft Research",
-      "Abstract",
-      "1. Introduction",
-      "2. Related Work",
-      "3. Deep Residual Learning",
-      "4. Experiments"
+      "Comienzo",
+      "Mario Benedetti",
+      "La tregua"
     ],
-    "words": 9479,
-    "style": "indent",
-    "bodySize": 10,
+    "words": 51488,
+    "style": "spacing",
+    "bodySize": 15,
     "stats": {
-      "paragraphStyle": "indent",
-      "figures": 7,
-      "columnPages": 11,
-      "bodySize": 10,
-      "bodyLeft": 50,
-      "bodyRight": 545,
-      "leading": 12,
-      "words": 9479
+      "coverPages": 0,
+      "tocPages": 0,
+      "paragraphStyle": "spacing",
+      "figures": 0,
+      "columnPages": 0,
+      "bodySize": 15,
+      "bodyLeft": 76,
+      "bodyRight": 535,
+      "leading": 19.5,
+      "words": 51488
     },
     "detected": {
-      "mode": "page",
-      "figures": 0.5833333333333334,
-      "columns": 0.9166666666666666,
-      "why": "el texto va en columnas"
+      "mode": "flow",
+      "figures": 0,
+      "columns": 0,
+      "why": "es texto corrido"
     },
     "signals": {
-      "lowerStart": 63,
-      "lowerStartPct": 26.033057851239672,
-      "veryLong": 1,
-      "veryShort": 40,
-      "dangling": 2,
-      "corrupt": 1,
-      "medianLength": 142,
-      "repeated": [],
-      "repeatedTotal": 0
+      "lowerStart": 1,
+      "lowerStartPct": 0.273972602739726,
+      "veryLong": 46,
+      "veryShort": 176,
+      "dangling": 0,
+      "corrupt": 0,
+      "medianLength": 48,
+      "repeated": [
+        {
+          "text": "jueves # de febrero",
+          "n": 6
+        },
+        {
+          "text": "lunes # de febrero",
+          "n": 5
+        },
+        {
+          "text": "domingo # de junio",
+          "n": 5
+        },
+        {
+          "text": "viernes # de febrero",
+          "n": 4
+        },
+        {
+          "text": "viernes # de marzo",
+          "n": 4
+        },
+        {
+          "text": "martes # de abril",
+          "n": 4
+        }
+      ],
+      "repeatedTotal": 13
     },
     "samples": {
       "inicio": [
-        "p.1    [T] Deep Residual Learning for Image Recognition",
-        "p.1    [T] Kaiming He Xiangyu Zhang Shaoqing Ren Jian Sun",
-        "p.1    [T] Microsoft Research",
-        "p.1    [p] {kahe, v-xiangz, v-shren, jiansun}@microsoft.com"
+        "p.2    [p] Publicada en 1960, La tregua es la obra de Mario Benedetti que ha alcanzado mayor éxito de público. La cotidianidad gris y rutinaria, marcada por la frustración y la ausencia de perspectivas…",
+        "p.3    [T] Mario Benedetti",
+        "p.3    [T] La tregua",
+        "p.3    [p] ePUB v1.1 Narukei 20.06.12"
       ],
       "medio": [
-        "p.8    [p] 56-layer",
-        "p.8    [p] 10 10 20-layer 5 plain-20 5 plain-32 plain-44 plain-56 0 0 0 1 2 3 4 5 6 0 1 iter. (1e4)",
-        "p.8    [p] of plain-110 is higher than 60% and not displayed. Middle: ResNets.",
-        "p.8    [p] plain-20"
+        "p.96   [p] Esteban está enfermo. Dice el médico que puede ser algo serio. Esperemos que no. Pleuritis o algo pulmonar. No sabe. ¿Cuándo sabrán los médicos? Después de almorzar, entré a su cuarto a ver …",
+        "p.98   [p] Martes 25 de junio",
+        "p.98   [p] Un trabajo bárbaro. Será para mañana.",
+        "p.98   [p] Miércoles 26 de junio"
       ],
       "final": [
-        "p.12   [p] ports a center-crop error of 33.1% (Table 13) using ground truth classes. Under the same setting, our RPN method using ResNet-101 net significantly reduces the center-crop error to 13.3%. Th…",
-        "p.12   [p] The above results are only based on the proposal network (RPN) in Faster R-CNN [32]. One may use the detection network (Fast R-CNN [7]) in Faster R-CNN to improve the results. But we notice …",
-        "p.12   [p] Our R-CNN implementation is as follows. We apply the per-class RPN trained as above on the training images to predict bounding boxes for the ground truth class. These predicted boxes play a …",
-        "p.12   [p] This method reduces the top-5 localization error to 10.6% (Table 13). This is our single-model result on the validation set. Using an ensemble of networks for both classification and localiz…"
+        "p.181  [p] En la oficina me quisieron dar una despedida y no acepté. Para no incurrir en grosería, armé una excusa muy verosímil, a base de problemas familiares. La verdad es que no puedo imaginarme co…",
+        "p.181  [p] Viernes 28 de febrero",
+        "p.181  [p] Ultimo día de trabajo. Nada de trabajo, claro. Me lo pasé dando apretones de manos, recibiendo abrazos. Creo que el gerente desbordaba de satisfacción y que Muñoz estaba realmente conmovido.…",
+        "p.182  [p] Montevideo, enero a mayo de 1959. OceanofPDF.com"
       ]
     }
   },
   {
     "file": "Fisica_biologica.pdf",
-    "ms": 349,
+    "ms": 357.1000000014901,
     "title": "Física biológica",
     "author": "",
     "pageCount": 58,
     "blocks": 469,
+    "chars": 120367,
+    "bodyStart": 97,
+    "skipped": 17425,
     "headings": 91,
     "figures": 29,
     "chapters": 91,
@@ -236,6 +274,8 @@
     "style": "indent",
     "bodySize": 10.5,
     "stats": {
+      "coverPages": 1,
+      "tocPages": 9,
       "paragraphStyle": "indent",
       "figures": 29,
       "columnPages": 2,
@@ -298,11 +338,14 @@
   },
   {
     "file": "1998-Greene-48leyes_poder.pdf",
-    "ms": 3368.5999999996275,
+    "ms": 3482.89999999851,
     "title": "Las 48 leyes del poder",
     "author": "Robert Greene",
     "pageCount": 835,
     "blocks": 5457,
+    "chars": 1414456,
+    "bodyStart": 0,
+    "skipped": 0,
     "headings": 1353,
     "figures": 0,
     "chapters": 54,
@@ -320,6 +363,8 @@
     "style": "indent",
     "bodySize": 15,
     "stats": {
+      "coverPages": 0,
+      "tocPages": 0,
       "paragraphStyle": "indent",
       "figures": 0,
       "columnPages": 205,
@@ -394,11 +439,14 @@
   },
   {
     "file": "Fisica-Universitaria-Sears-Zemansky-12ava-Edicion-Vol1.pdf",
-    "ms": 11722.099999999627,
+    "ms": 12157,
     "title": "Fisica Universitaria Vol.1",
     "author": "Sears",
     "pageCount": 763,
     "blocks": 16233,
+    "chars": 3264745,
+    "bodyStart": 1187,
+    "skipped": 64629,
     "headings": 2918,
     "figures": 812,
     "chapters": 32,
@@ -416,6 +464,8 @@
     "style": "indent",
     "bodySize": 7.5,
     "stats": {
+      "coverPages": 1,
+      "tocPages": 9,
       "paragraphStyle": "indent",
       "figures": 812,
       "columnPages": 417,

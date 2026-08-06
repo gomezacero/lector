@@ -11,6 +11,7 @@ import { createLibraryView } from '/src/library/libraryView.js'
 import { createNotesStore } from '/src/notes/notesStore.js'
 import { createNotesView } from '/src/notes/notesView.js'
 import { percent } from '/src/ui/dom.js'
+import { confirmAction, readableSize } from '/src/ui/confirm.js'
 import { resolveMode, MODES, isFlowMode } from '/src/reader/mode.js'
 import { createBookSheet } from '/src/library/bookSheet.js'
 import { makeCover } from '/src/pdf/pageRender.js'
@@ -73,12 +74,38 @@ const library = createLibraryView({
   empty: $('library-empty'),
   onOpen: entry => openBook(entry.path, entry),
   onSheet: entry => openBook(entry.path, entry, { sheet: true }),
-  onRemove: async entry => {
-    entries = await window.lector.library.remove(entry.id)
-    library.render(entries)
-    toast(`«${entry.title}» quitado de la biblioteca`)
-  }
+  onRemove: entry => removeBook(entry)
 })
+
+/**
+ * Borrar destruye el texto ya procesado, las notas y el punto de lectura, y
+ * solo el PDF se salva. Antes se hacia de un clic con un boton que decia
+ * "quitar de la biblioteca", que suena a sacar de una lista.
+ */
+async function removeBook (entry) {
+  const { bytes, notes: noteCount } = await window.lector.library.usage(entry.id)
+  const read = entry.progress?.percent ?? 0
+
+  const confirmed = await confirmAction({
+    title: `¿Borrar «${entry.title}»?`,
+    lines: [
+      `Se borra el texto ya preparado (${readableSize(bytes)}); al volver a abrirlo hay que prepararlo otra vez.`,
+      noteCount === 1 ? 'Se borra tu nota.' : noteCount ? `Se borran tus ${noteCount} notas.` : null,
+      // Recien empezado el porcentaje redondea a cero, y "(0%)" no dice nada.
+      read > 0 ? `Se pierde por dónde ibas${read >= 0.005 ? ` (${percent(read)})` : ''}.` : null,
+      'El PDF no se toca: sigue donde está.'
+    ].filter(Boolean),
+    confirmLabel: 'Borrar el libro'
+  })
+  if (!confirmed) return
+
+  const result = await window.lector.library.remove(entry.id)
+  entries = result.entries
+  library.render(entries)
+
+  if (result.ok) toast(`Borrado «${entry.title}»: ${readableSize(result.bytes)} liberados`)
+  else toast(`No se pudo borrar «${entry.title}»: ${result.error}`, 6000)
+}
 
 // --- Apertura de libros ----------------------------------------------------
 
@@ -194,7 +221,10 @@ async function loadOrBuild (loaded) {
     fileName: loaded.fileName,
     onProgress: (done, total) => showLoading(`Preparando el libro… página ${done} de ${total}`)
   })
-  await window.lector.book.writeCache(loaded.id, book)
+  // Un PDF sin texto no llega a entrar en la biblioteca, asi que guardar su
+  // cache dejaria un fichero que ninguna entrada nombra y que el borrado nunca
+  // podria alcanzar. Tampoco ahorra nada: no hay nada que releer.
+  if (book.blocks.length) await window.lector.book.writeCache(loaded.id, book)
   return book
 }
 

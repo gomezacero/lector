@@ -21,6 +21,15 @@ export function renderChapter (book, chapter, { sharp, dim }, markedBlocks = new
     el.dataset.block = String(i)
     // textContent y nunca innerHTML: el texto viene de un archivo ajeno.
     el.textContent = block.text
+    // La cubierta y el indice se presentan distinto, pero siguen siendo el
+    // mismo texto y las mismas lineas: aqui no se pliega nada.
+    //
+    // Plegarlos como en la vista de pagina obligaria a pintar un texto que no
+    // es el del bloque, y el indice de lineas hace corresponder cada renglon
+    // con su tramo de caracteres: dejarian de casar, y con ellos el progreso y
+    // las notas. Tampoco hace falta: la lectura ya no arranca aqui, asi que
+    // estos renglones solo se ven yendo a buscarlos.
+    if (block.role) el.dataset.role = block.role
     if (markedBlocks.has(i)) el.dataset.marked = ''
     fragment.appendChild(el)
   }

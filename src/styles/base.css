@@ -195,6 +195,7 @@ body[data-view='sheet']   .view-sheet   { display: block; overflow-y: auto; }
 /* --- Seguir leyendo ------------------------------------------------------ */
 
 .resume {
+  position: relative;
   display: flex;
   gap: 28px;
   align-items: center;
@@ -204,6 +205,7 @@ body[data-view='sheet']   .view-sheet   { display: block; overflow-y: auto; }
   border-radius: 16px;
   background: var(--surface);
 }
+.resume:hover .book-remove { opacity: 1; }
 
 .resume-cover {
   border: none;
@@ -330,6 +332,8 @@ body[data-view='sheet']   .view-sheet   { display: block; overflow-y: auto; }
 }
 .book:hover .book-remove { opacity: 1; }
 .book-remove:hover { background: var(--danger); color: #fff; }
+/* Oculto al raton pero no al teclado: si no, se navega hasta un boton invisible. */
+.book-remove:focus-visible { opacity: 1; }
 
 .book-mode {
   margin-top: 7px;
@@ -395,6 +399,43 @@ body[data-view='sheet']   .view-sheet   { display: block; overflow-y: auto; }
 @keyframes toast-in {
   from { opacity: 0; transform: translate(-50%, 8px); }
   to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* --- Confirmar lo que no tiene vuelta atras ------------------------------- */
+
+.confirm {
+  margin: auto;
+  max-width: 420px;
+  padding: 26px 28px 22px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface-raised);
+  color: var(--fg);
+  box-shadow: var(--shadow);
+}
+.confirm::backdrop { background: rgb(0 0 0 / 0.5); backdrop-filter: blur(2px); }
+
+.confirm-title { margin: 0; font-size: 17px; font-weight: 600; }
+
+.confirm-list {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--fg-muted);
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.btn-danger { background: var(--danger); border-color: transparent; color: #fff; }
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--danger) 86%, #000);
+  border-color: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {

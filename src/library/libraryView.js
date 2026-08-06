@@ -52,11 +52,23 @@ export function createLibraryView ({ grid, empty, onOpen, onRemove, onSheet }) {
   const bar = value => h('div', { class: 'progress-bar' },
     h('i', { style: { '--p': String(value) } }))
 
+  /** El boton de borrar, igual en la franja y en las tarjetas. */
+  const removeButton = entry => h('button', {
+    class: 'book-remove',
+    title: `Borrar «${entry.title}»`,
+    onclick: event => { event.stopPropagation(); onRemove(entry) }
+  }, crossIcon())
+
   /** Franja de arriba: el libro que se estaba leyendo. */
   function resumeCard (entry) {
     const read = progressOf(entry)
 
     return h('section', { class: 'resume' },
+      // La franja se queda siempre con el ultimo libro abierto, y sin este
+      // boton ese libro —justo el que mas apetece quitar— era el unico de la
+      // biblioteca que no se podia borrar.
+      removeButton(entry),
+
       h('button', {
         class: 'resume-cover',
         title: `Seguir leyendo «${entry.title}»`,
@@ -105,11 +117,7 @@ export function createLibraryView ({ grid, empty, onOpen, onRemove, onSheet }) {
     h('div', { class: 'book-cover' },
       cover(entry, 'cover'),
       bar(read),
-      h('button', {
-        class: 'book-remove',
-        title: 'Quitar de la biblioteca',
-        onclick: event => { event.stopPropagation(); onRemove(entry) }
-      }, crossIcon())
+      removeButton(entry)
     ),
 
     h('p', { class: 'book-title', text: entry.title }),
