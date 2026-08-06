@@ -348,6 +348,12 @@ async function diagnoseTask (win, outRoot) {
       for (const l of r.lines) {
         console.log(`  x${String(l.x).padStart(4)}-${String(l.xEnd).padEnd(4)} y${String(l.y).padStart(4)} ${String(l.size).padStart(5)}pt col${String(l.col).padStart(4)}  ${l.text}`)
       }
+      if (r.drawings?.length) {
+        console.log(`\n  DIBUJO DETECTADO (${r.drawings.length} zonas, mayores primero)`)
+        for (const d of r.drawings) {
+          console.log(`    x${String(d.x).padStart(4)} y${String(d.y).padStart(4)}  ${d.w}x${d.h}`)
+        }
+      }
       if (r.blocks) {
         console.log(`\n  BLOQUES RESULTANTES (${r.blocks.length})`)
         for (const b of r.blocks) console.log(`    ${b}`)
@@ -360,7 +366,7 @@ async function diagnoseTask (win, outRoot) {
     console.log(`  titulo    : ${r.title}`)
     console.log(`  autor     : ${r.author || '(sin autor)'}`)
     console.log(`  paginas   : ${r.pageCount}   palabras: ${r.words}   ingesta: ${(r.ms / 1000).toFixed(1)}s`)
-    console.log(`  bloques   : ${r.blocks} (${r.headings} titulos)   parrafo mediano: ${r.signals.medianLength} car.`)
+    console.log(`  bloques   : ${r.blocks} (${r.headings} titulos, ${r.figures} figuras)   parrafo mediano: ${r.signals.medianLength} car.`)
     console.log(`  estilo    : ${r.style}, cuerpo ${r.bodySize}pt, margenes ${r.stats.bodyLeft}-${r.stats.bodyRight}, interlineado ${r.stats.leading}`)
     console.log(`  capitulos : ${r.chapters} -> ${r.chapterTitles.join(' | ')}`)
 

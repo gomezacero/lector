@@ -1,24 +1,25 @@
 [
   {
     "file": "Libro_El_Tunel.pdf",
-    "ms": 516.8999999985099,
-    "title": "EL TÚNEL",
+    "ms": 460.3000000002794,
+    "title": "ÍNDICE",
     "author": "Gerson O. Su.rez",
     "pageCount": 95,
-    "blocks": 840,
-    "headings": 42,
-    "chapters": 42,
+    "blocks": 838,
+    "headings": 40,
+    "figures": 3,
+    "chapters": 40,
     "chapterTitles": [
-      "EL TÚNEL",
-      "ERNESTO SÁBATO",
       "ÍNDICE",
       "I",
       "II",
       "III",
       "IV",
-      "V"
+      "V",
+      "VI",
+      "VII"
     ],
-    "words": 31826,
+    "words": 31776,
     "style": "indent",
     "bodySize": 11.5,
     "stats": {
@@ -27,13 +28,13 @@
       "bodyLeft": 92,
       "bodyRight": 519,
       "leading": 19.5,
-      "words": 31826
+      "words": 31776
     },
     "signals": {
       "lowerStart": 25,
-      "lowerStartPct": 3.132832080200501,
+      "lowerStartPct": 3.1446540880503147,
       "veryLong": 2,
-      "veryShort": 80,
+      "veryShort": 79,
       "dangling": 0,
       "corrupt": 0,
       "medianLength": 95,
@@ -42,16 +43,16 @@
     },
     "samples": {
       "inicio": [
-        "p.1    [T] EL TÚNEL",
-        "p.1    [T] ERNESTO SÁBATO",
         "p.2    [T] ÍNDICE",
-        "p.2    [p] I ..................................................................................................................................... 5 II .................................................…"
+        "p.2    [p] I ..................................................................................................................................... 5 II .................................................…",
+        "p.4    [p] \"...en todo caso, había un solo túnel, oscuro y solitario: el mío\".",
+        "p.4    [p] A la amistad de Rogelio Frigerio que ha resistido todas las asperezas y vicisitudes de"
       ],
       "medio": [
-        "p.46   [p] Un día la discusión fue más violenta que de costumbre y llegué a gritarle puta. María quedó muda y paralizada. Luego, lentamente, en silencio, fue a vestirse detrás del biombo de las modelos…",
-        "p.47   [p] Escenas semejantes se repetían casi todos los días. A veces terminaban en una calma relativa y salíamos a caminar por la Plaza Francia como dos adolescentes enamorados. Pero esos momentos de…",
         "p.47   [T] XVIII",
-        "p.47   [p] MIS INTERROGATORIOS, cada día más frecuentes y retorcidos, eran a propósito de sus silencios, sus miradas, sus palabras perdidas, algún viaje a la estancia, sus amores. Una vez le pregunté p…"
+        "p.47   [p] MIS INTERROGATORIOS, cada día más frecuentes y retorcidos, eran a propósito de sus silencios, sus miradas, sus palabras perdidas, algún viaje a la estancia, sus amores. Una vez le pregunté p…",
+        "p.47   [p] —¡Qué niño sos! ¿Qué importancia puede tener eso?",
+        "p.47   [p] —Para mí tiene mucha importancia —respondí examinando sus ojos."
       ],
       "final": [
         "p.95   [p] EN ESTOS MESES de encierro he intentado muchas veces razonar la última palabra del ciego, la palabra insensato. Un cansancio muy grande, o quizá oscuro instinto, me lo impide reiteradamente.…",
@@ -63,12 +64,13 @@
   },
   {
     "file": "cien años de soledad.pdf",
-    "ms": 964.7999999970198,
+    "ms": 1264.6000000000931,
     "title": "García Márquez - Cien años de soledad",
     "author": "Patricio",
     "pageCount": 173,
     "blocks": 884,
     "headings": 22,
+    "figures": 0,
     "chapters": 22,
     "chapterTitles": [
       "Gabriel García Márquez",
@@ -125,12 +127,13 @@
   },
   {
     "file": "_OceanofPDF.com_La_tregua_-_Mario_Benedetti.pdf",
-    "ms": 554.0999999940395,
+    "ms": 783.3999999999069,
     "title": "La tregua",
     "author": "Mario Benedetti",
     "pageCount": 182,
     "blocks": 367,
     "headings": 2,
+    "figures": 0,
     "chapters": 3,
     "chapterTitles": [
       "Comienzo",
@@ -206,89 +209,178 @@
     }
   },
   {
-    "file": "1998-Greene-48leyes_poder.pdf",
-    "ms": 2939.1999999955297,
-    "title": "Las 48 leyes del poder",
-    "author": "Robert Greene",
-    "pageCount": 835,
-    "blocks": 9112,
-    "headings": 1353,
-    "chapters": 54,
+    "file": "paper-resnet.pdf",
+    "ms": 344.5,
+    "title": "Deep Residual Learning for Image Recognition",
+    "author": "",
+    "pageCount": 12,
+    "blocks": 409,
+    "headings": 12,
+    "figures": 7,
+    "chapters": 12,
     "chapterTitles": [
-      "Comienzo",
-      "Las 48 leyes del poder",
-      "Reconocimientos",
-      "Prefacio",
-      "Ley n.º 1. Nunca le haga sombra a su amo",
-      "Ley n.º 2. Nunca confíe demasiado en sus amigo…",
-      "Ley n.º 3. Disimule sus intenciones",
-      "Ley n.º 4. Diga siempre menos de lo necesario"
+      "Deep Residual Learning for Image Recognition",
+      "Kaiming He Xiangyu Zhang Shaoqing Ren Jian Sun",
+      "Microsoft Research",
+      "Abstract",
+      "1. Introduction",
+      "2. Related Work",
+      "3. Deep Residual Learning",
+      "4. Experiments"
     ],
-    "words": 238533,
+    "words": 9385,
     "style": "indent",
-    "bodySize": 15,
+    "bodySize": 10,
     "stats": {
       "paragraphStyle": "indent",
-      "bodySize": 15,
-      "bodyLeft": 76,
-      "bodyRight": 535,
-      "leading": 18.7,
-      "words": 238533
+      "bodySize": 10,
+      "bodyLeft": 50,
+      "bodyRight": 545,
+      "leading": 12,
+      "words": 9385
     },
     "signals": {
-      "lowerStart": 4301,
-      "lowerStartPct": 55.43240108261374,
+      "lowerStart": 113,
+      "lowerStartPct": 28.974358974358978,
       "veryLong": 0,
-      "veryShort": 1254,
-      "dangling": 0,
-      "corrupt": 0,
-      "medianLength": 59,
+      "veryShort": 137,
+      "dangling": 19,
+      "corrupt": 1,
+      "medianLength": 47,
       "repeated": [
         {
-          "text": "interpretación",
-          "n": 120
+          "text": "#x# conv, #",
+          "n": 27
         },
         {
-          "text": "ley n.º#",
-          "n": 48
+          "text": "plain-#",
+          "n": 7
         },
         {
-          "text": "criterio",
-          "n": 48
+          "text": "resnet-#",
+          "n": 7
         },
         {
-          "text": "claves para alcanzar el poder",
-          "n": 46
+          "text": "resnet # #.#m #.#",
+          "n": 5
         },
         {
-          "text": "invalidación",
-          "n": 46
+          "text": "     ",
+          "n": 4
         },
         {
-          "text": "observancia de la ley",
-          "n": 34
+          "text": "[ ] [ ] #×#, # #×#, # #×#, #",
+          "n": 4
         }
       ],
-      "repeatedTotal": 21
+      "repeatedTotal": 10
     },
     "samples": {
       "inicio": [
-        "p.2    [p] Una guía diseñada para mostrarle al lector cuáles son las cualidades personales que se deben de tener para alcanzar el poder en términos sociológicos, un método práctico para todo aquel que …",
-        "p.2    [p] Para explicar sus leyes y cómo estas se deben de ejecutar, el autor utiliza como ejemplo las estrategias, los aciertos y desaciertos de personajes históricos famosos como Julio César, Haile …",
-        "p.3    [T] Robert Greene",
-        "p.3    [T] Las 48 leyes del poder"
+        "p.1    [T] Deep Residual Learning for Image Recognition",
+        "p.1    [T] Kaiming He Xiangyu Zhang Shaoqing Ren Jian Sun",
+        "p.1    [T] Microsoft Research",
+        "p.1    [p] {kahe, v-xiangz, v-shren, jiansun}@microsoft.com"
       ],
       "medio": [
-        "p.428  [p] y matraces que contenían «soluciones etéreas y otras",
-        "p.428  [p] esencias». Según J. Ennemoser, que en 1844 publicó una historia de la magia en Leipzig, la «casa de Graham… unía lo útil con",
-        "p.428  [p] lo placentero. En todas partes se exhibían objetos y",
-        "p.428  [p] elementos de gran magnificencia. Incluso en el"
+        "p.7    [p] # layers 1+2n 2n 2n",
+        "p.7    [p] # filters 16 32 64",
+        "p.7    [p] When shortcut connections are used, they are connected to the pairs of 3×3 layers (totally 3n shortcuts). On this dataset we use identity shortcuts in all cases (i.e., option A),",
+        "p.7    [p] method error (%)"
       ],
       "final": [
-        "p.834  [p] Cambridge, 1990. Robert Greene (Los Ángeles, EE. UU., 14-5-1959) es un escritor y psicólogo de origen judío, conocido por sus libros en materia de estrategia, poder y seducción. Greene ha es…",
-        "p.835  [p] Estudió en las universidades de California, Berkeley y Wisconsis-Madison, donde se graduó en estudios clásicos. Ha trabajado como editor y escritor de varias revistas en la Ciudad de Nueva Y…",
-        "p.835  [p] Nicolás Maquiavelo en su obra llamada que el primero se dirige a las masas y no a la nobleza. En",
-        "p.835  [p] Byron y analiza los métodos de seducción."
+        "p.12   [p] ports a center-crop error of 33.1% (Table 13) using ground truth classes. Under the same setting, our RPN method using ResNet-101 net significantly reduces the center-crop error to 13.3%. Th…",
+        "p.12   [p] The above results are only based on theproposal network (RPN) in Faster R-CNN [32]. One may use the detection network(Fast R-CNN [7]) in Faster R-CNN to improve the results. But we notice th…",
+        "p.12   [p] Our R-CNN implementation is as follows. We apply the per-class RPN trained as above on the training images to predict bounding boxes for the ground truth class. These predicted boxes play a …",
+        "p.12   [p] This method reduces the top-5 localization error to 10.6% (Table 13). This is our single-model result on the validation set. Using an ensemble of networks for both classification and localiz…"
+      ]
+    }
+  },
+  {
+    "file": "Fisica_biologica.pdf",
+    "ms": 660.4000000003725,
+    "title": "Física biológica",
+    "author": "",
+    "pageCount": 58,
+    "blocks": 1389,
+    "headings": 91,
+    "figures": 0,
+    "chapters": 91,
+    "chapterTitles": [
+      "Física biológica",
+      "Energía, información, vida",
+      "Física biológica",
+      "Energía, información, vida",
+      "Philip Nelson",
+      "University of Pennsylvania",
+      "con la colaboración de Marko Radosavljevic y S…",
+      "EDITORIAL REVERTÉ, S. A."
+    ],
+    "words": 19178,
+    "style": "indent",
+    "bodySize": 10.5,
+    "stats": {
+      "paragraphStyle": "indent",
+      "bodySize": 10.5,
+      "bodyLeft": 52,
+      "bodyRight": 541,
+      "leading": 12.9,
+      "words": 19178
+    },
+    "signals": {
+      "lowerStart": 748,
+      "lowerStartPct": 57.6271186440678,
+      "veryLong": 0,
+      "veryShort": 244,
+      "dangling": 202,
+      "corrupt": 0,
+      "medianLength": 84,
+      "repeated": [
+        {
+          "text": "problemas #",
+          "n": 6
+        },
+        {
+          "text": "visión de conjunto #",
+          "n": 5
+        },
+        {
+          "text": "vía # #",
+          "n": 5
+        },
+        {
+          "text": "# nm",
+          "n": 5
+        },
+        {
+          "text": "#.# lista de los constituyentes moleculares #",
+          "n": 5
+        },
+        {
+          "text": "#.# calor #",
+          "n": 4
+        }
+      ],
+      "repeatedTotal": 7
+    },
+    "samples": {
+      "inicio": [
+        "p.1    [T] Física biológica",
+        "p.1    [T] Energía, información, vida",
+        "p.2    [T] Física biológica",
+        "p.2    [T] Energía, información, vida"
+      ],
+      "medio": [
+        "p.30   [p] Figura 1.3: (Esquema) Máquina que transduce energía libre. Un cilindro lleno de agua está dividido en dos cámaras mediante una membrana semipermeable. La membrana está fijada en el cilindro.…",
+        "p.30   [p] mucha energía térmica en el mundo exterior. El flujo osmótico sacrifica orden molecular para organizar movimiento térmico aleatorio en movimiento mecánico a gran escala contra un peso.",
+        "p.30   [p] Podemos expresar el argumento anterior aplicando el lenguaje introducido en la sección 1.1.3. En la idea 1.5 introdujimos la idea de que la máquina osmótica se desplazará espontáneamente en …",
+        "p.30   [p] Supongamos ahora que tiramos fuertemente del émbolo izquierdo, como en la figura 1.3b. Esta vez, un desplazamiento del émbolo hacia la derecha aumentaría tanto la"
+      ],
+      "final": [
+        "p.58   [p] nueva",
+        "p.58   [p] proteína",
+        "p.58   [p] mRNA",
+        "p.58   [p] Figura 2.24: (Dibujo, basado en datos estructurales) La información del RNA mensajero es traducida a una secuencia de aminoácidos que forman una nueva proteína por la acción combinada de una…"
       ]
     }
   }

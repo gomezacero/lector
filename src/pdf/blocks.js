@@ -102,6 +102,8 @@ export function stripFurniture (lines, pageHeight, pageCount, metrics = null) {
   const furniture = findFurniture(lines, pageHeight, pageCount, metrics)
 
   return lines.filter(line => {
+    // Una figura nunca es mobiliario, aunque caiga en el margen de la pagina.
+    if (line.figure) return true
     const zone = zoneOf(line, pageHeight)
     if (!zone) return true
     if (looksLikeTitle(line, metrics)) return true
@@ -200,12 +202,30 @@ export function buildBlocks (lines, metrics, style) {
   const flush = () => {
     if (!current) return
     const text = joinLines(current.lines)
-    if (text) blocks.push({ type: current.type, text, page: current.lines[0].page })
+    if (text) {
+      blocks.push({
+        type: current.type,
+        text,
+        page: current.lines[0].page,
+        // Donde cae el bloque en la pagina. Lo necesita la vista que resalta
+        // regiones sobre el documento original en vez de re-maquetarlo.
+        rects: rectsOf(current.lines)
+      })
+    }
     current = null
   }
 
   let prev = null
   for (const line of lines) {
+    // Una figura es una region de lectura por si misma: ni se une al parrafo
+    // anterior ni se mide como texto.
+    if (line.figure) {
+      flush()
+      blocks.push({ type: 'figure', text: '', page: line.page, rects: [line.rect] })
+      prev = null
+      continue
+    }
+
     if (isHeading(line, metrics)) {
       flush()
       current = { type: 'heading', lines: [line] }
@@ -230,20 +250,53 @@ export function buildBlocks (lines, metrics, style) {
 }
 
 /**
+ * Rectangulo que ocupa el bloque en cada pagina que toca. Son varios porque un
+ * parrafo puede seguir en la pagina siguiente, o pasar de una columna a otra.
+ *
+ * La `y` de una linea es su linea base, no su borde superior, asi que hay que
+ * subir un ascendente para arriba y bajar un descendente para abajo.
+ */
+function rectsOf (lines) {
+  const byPage = new Map()
+  for (const line of lines) {
+    if (!byPage.has(line.page)) byPage.set(line.page, [])
+    byPage.get(line.page).push(line)
+  }
+
+  return [...byPage].map(([page, group]) => {
+    const top = Math.min(...group.map(l => l.y - l.fontSize * 0.9))
+    const bottom = Math.max(...group.map(l => l.y + l.fontSize * 0.3))
+    const left = Math.min(...group.map(l => l.x))
+    const right = Math.max(...group.map(l => l.xEnd))
+    return {
+      page,
+      x: Math.round(left * 10) / 10,
+      y: Math.round(top * 10) / 10,
+      w: Math.round((right - left) * 10) / 10,
+      h: Math.round((bottom - top) * 10) / 10
+    }
+  })
+}
+
+/**
  * Punto de entrada del modulo: paginas con lineas -> bloques de lectura.
  * @param {Array<{width:number, height:number, lines:Array}>} pages
  */
 export function toBlocks (pages) {
   const pageHeight = median(pages.map(p => p.height)) || 842
   const all = pages.flatMap(p => p.lines)
+  // Las figuras viajan en el mismo flujo para conservar su sitio, pero no son
+  // texto y falsearian el cuerpo, los margenes y el interlineado.
+  const textLines = all.filter(line => !line.figure)
 
   // Se mide dos veces a proposito: la primera pasada solo sirve para saber que
   // cuerpo tiene el texto y poder distinguir un titulo de un titulillo. Como el
   // cuerpo se calcula ponderando por caracteres, el mobiliario no la desvia.
-  const rough = measureBody(all)
+  const rough = measureBody(textLines)
   const clean = stripFurniture(all, pageHeight, pages.length, rough)
-  const metrics = measureBody(clean)
-  const style = detectParagraphStyle(clean, metrics)
+  const cleanText = clean.filter(line => !line.figure)
+  const metrics = measureBody(cleanText)
+  const style = detectParagraphStyle(cleanText, metrics)
 
   return { blocks: buildBlocks(clean, metrics, style), metrics, style }
 }

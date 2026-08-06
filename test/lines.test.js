@@ -68,6 +68,58 @@ describe('buildLines', () => {
     expect(lines[0].fontSize).toBe(11.5)
   })
 
+  describe('figuras', () => {
+    // Un dibujo con varios trazos y solo rotulos dentro: eso es una figura.
+    const artwork = (x, y, w, h) => ({ x, y, w, h, parts: 12, image: false })
+
+    const withDrawings = (items, drawings) => ({ width: 595, height: 842, items, drawings })
+
+    it('saca del texto los rotulos de dentro de una figura', () => {
+      const lines = buildLines(withDrawings([
+        item('Antes de la figura', 78, 100, 200),
+        item('0', 120, 300, 6),
+        item('50', 240, 300, 12),
+        item('error (%)', 120, 200, 40),
+        item('Despues de la figura', 78, 420, 200)
+      ], [artwork(100, 150, 300, 200)]))
+
+      const texts = lines.filter(l => !l.figure).map(l => l.text)
+      expect(texts).toEqual(['Antes de la figura', 'Despues de la figura'])
+    })
+
+    it('deja la figura en el recorrido, en su sitio', () => {
+      const lines = buildLines(withDrawings([
+        item('Antes de la figura', 78, 100, 200),
+        item('Despues de la figura', 78, 420, 200)
+      ], [artwork(100, 150, 300, 200)]))
+
+      expect(lines.map(l => l.figure ? 'FIGURA' : l.text))
+        .toEqual(['Antes de la figura', 'FIGURA', 'Despues de la figura'])
+    })
+
+    it('no toma por figura un recuadro que enmarca parrafos', () => {
+      // Es la diferencia entre resaltar una grafica y borrar media pagina: si
+      // dentro hay prosa, el trazo es un marco y el texto tiene que leerse.
+      const items = Array.from({ length: 8 }, (_, i) =>
+        item(`linea ${i} de un parrafo enmarcado bastante largo`, 100, 160 + i * 16, 280))
+
+      const lines = buildLines(withDrawings(items, [artwork(90, 140, 320, 160)]))
+
+      expect(lines.filter(l => !l.figure)).toHaveLength(8)
+      expect(lines.some(l => l.figure)).toBe(false)
+    })
+
+    it('ignora un trazo suelto, como el filete de un encabezado', () => {
+      const lines = buildLines(withDrawings([
+        item('texto de la pagina', 78, 100, 200),
+        item('mas texto de la pagina', 78, 300, 200)
+      ], [{ x: 100, y: 150, w: 300, h: 200, parts: 1, image: false }]))
+
+      expect(lines.some(l => l.figure)).toBe(false)
+      expect(lines).toHaveLength(2)
+    })
+  })
+
   it('guarda el numero de pagina y los margenes de cada linea', () => {
     const lines = buildLines(page([item('texto', 78, 100, 60)]), 3)
 

@@ -201,6 +201,35 @@ describe('buildBlocks', () => {
   })
 })
 
+describe('rectangulos de los bloques', () => {
+  it('encierra todas las lineas del parrafo', () => {
+    const lines = [
+      line('primera linea del parrafo', { y: 120, x: 78, width: 430 }),
+      line('segunda, mas corta', { y: 136.4, x: 78, width: 300 })
+    ]
+    const [block] = buildBlocks(lines, measureBody(lines), 'indent')
+    const [rect] = block.rects
+
+    expect(rect.page).toBe(0)
+    expect(rect.x).toBe(78)
+    expect(rect.w).toBe(430)
+    // Sube un ascendente sobre la primera base y baja un descendente bajo la ultima.
+    expect(rect.y).toBeLessThan(120)
+    expect(rect.y + rect.h).toBeGreaterThan(136.4)
+  })
+
+  it('da un rectangulo por pagina cuando el parrafo continua en la siguiente', () => {
+    const lines = [
+      line('acaba la pagina', { y: 700, page: 0 }),
+      line('y sigue en la otra', { y: 100, page: 1 })
+    ]
+    const [block] = buildBlocks(lines, measureBody(lines), 'spacing')
+
+    expect(block.rects).toHaveLength(2)
+    expect(block.rects.map(r => r.page)).toEqual([0, 1])
+  })
+})
+
 describe('toBlocks', () => {
   it('encadena limpieza, medicion y agrupacion sobre paginas completas', () => {
     // Cada pagina: titulillo, dos parrafos de dos lineas marcados con sangria,

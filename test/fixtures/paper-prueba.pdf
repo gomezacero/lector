@@ -1,0 +1,221 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [7 0 R 9 0 R 11 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 7967 >>
+stream
+BT /F3 15 Tf 1 0 0 1 54.00 760.00 Tm (Sobre la lectura guiada de documentos tecnicos) Tj ET
+BT /F2 9 Tf 1 0 0 1 54.00 742.00 Tm (Fixture de prueba) Tj ET
+BT /F3 10.5 Tf 1 0 0 1 54.00 676.00 Tm (1. Introduccion) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 64.00 657.44 Tm (Leer un articulo tecnico en una pantalla) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 645.84 Tm (pequena obliga a un vaiven constante entre el) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 634.24 Tm (cuerpo del texto y las figuras que lo) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 622.64 Tm (acompanan. El lector pierde el hilo con) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 611.04 Tm (facilidad, sobre todo cuando la maquetacion) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 599.44 Tm (reparte el contenido en dos columnas y las) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 587.84 Tm (figuras se intercalan sin un orden evidente.) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 64.00 571.60 Tm (Este trabajo propone una guia de lectura que) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 560.00 Tm (resalta una region cada vez y atenua el resto) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 548.40 Tm (de la pagina. La region activa avanza) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 536.80 Tm (siguiendo el orden real de lectura: primero la) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 525.20 Tm (columna izquierda de arriba abajo y despues la) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 513.60 Tm (derecha, intercalando las figuras en el punto) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 502.00 Tm (en que aparecen.) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 64.00 485.76 Tm (La propuesta no reconstruye la pagina ni) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 474.16 Tm (altera su maquetacion. Conserva el documento) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 462.56 Tm (tal y como fue compuesto, de modo que las) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 450.96 Tm (formulas, las tablas y los graficos) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 439.36 Tm (vectoriales se ven exactamente igual que en el) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 427.76 Tm (original.) Tj ET
+0.6 w
+54 331.51999999999964 240 80 re S
+88.3 337.5 m 273.4 405.5 l S
+122.6 337.5 m 252.9 405.5 l S
+156.9 337.5 m 232.3 405.5 l S
+191.1 337.5 m 211.7 405.5 l S
+225.4 337.5 m 191.1 405.5 l S
+259.7 337.5 m 170.6 405.5 l S
+60.0 355.5 m 150.0 403.5 198.0 339.5 288.0 387.5 c S
+BT /F2 6 Tf 1 0 0 1 57.00 335.52 Tm (0) Tj ET
+BT /F2 6 Tf 1 0 0 1 162.00 335.52 Tm (50) Tj ET
+BT /F2 6 Tf 1 0 0 1 278.00 335.52 Tm (100) Tj ET
+BT /F2 6 Tf 1 0 0 1 57.00 403.52 Tm (error \(%\)) Tj ET
+BT /F2 7 Tf 1 0 0 1 54.00 321.52 Tm (Figura 1. Error de lectura frente al numero de) Tj ET
+BT /F2 7 Tf 1 0 0 1 54.00 313.52 Tm (regiones resaltadas.) Tj ET
+BT /F3 10.5 Tf 1 0 0 1 54.00 295.52 Tm (2. Metodo) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 64.00 276.96 Tm (El procedimiento consta de tres fases. En la) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 265.36 Tm (primera se extraen los fragmentos de texto con) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 253.76 Tm (sus coordenadas y se reunen en renglones. En) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 242.16 Tm (la segunda se detectan los corredores) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 230.56 Tm (verticales que separan las columnas. En la) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 218.96 Tm (tercera se agrupan los renglones en regiones) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 207.36 Tm (de lectura.) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 64.00 191.12 Tm (Las zonas de la pagina que no contienen texto) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 179.52 Tm (de cuerpo pero si dibujo se tratan como) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 167.92 Tm (regiones graficas. Su texto interior, que) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 156.32 Tm (suele corresponder a los rotulos de los ejes,) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 144.72 Tm (se excluye del flujo de lectura para que no) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 133.12 Tm (interrumpa la prosa.) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 64.00 116.88 Tm (El orden de las regiones se establece por) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 105.28 Tm (columnas: se recorren de arriba abajo dentro) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 93.68 Tm (de cada columna y despues se pasa a la) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 82.08 Tm (siguiente. Las regiones que ocupan todo el) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 736.00 Tm (ancho de la pagina se insertan segun su) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 724.40 Tm (posicion vertical.) Tj ET
+0.6 w
+318 628.16 240 80 re S
+352.3 634.2 m 537.4 702.2 l S
+386.6 634.2 m 516.9 702.2 l S
+420.9 634.2 m 496.3 702.2 l S
+455.1 634.2 m 475.7 702.2 l S
+489.4 634.2 m 455.1 702.2 l S
+523.7 634.2 m 434.6 702.2 l S
+324.0 652.2 m 414.0 700.2 462.0 636.2 552.0 684.2 c S
+BT /F2 6 Tf 1 0 0 1 321.00 632.16 Tm (0) Tj ET
+BT /F2 6 Tf 1 0 0 1 426.00 632.16 Tm (50) Tj ET
+BT /F2 6 Tf 1 0 0 1 542.00 632.16 Tm (100) Tj ET
+BT /F2 6 Tf 1 0 0 1 321.00 700.16 Tm (error \(%\)) Tj ET
+BT /F2 7 Tf 1 0 0 1 318.00 618.16 Tm (Figura 2. Error de lectura frente al numero de) Tj ET
+BT /F2 7 Tf 1 0 0 1 318.00 610.16 Tm (regiones resaltadas.) Tj ET
+BT /F3 10.5 Tf 1 0 0 1 318.00 592.16 Tm (3. Resultados) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 328.00 573.60 Tm (Se evaluaron cuatro documentos de prueba con) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 562.00 Tm (maquetaciones distintas. En todos ellos el) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 550.40 Tm (orden de lectura reconstruido coincidio con el) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 538.80 Tm (orden previsto por el maquetador, incluidas) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 527.20 Tm (las paginas mixtas en las que el texto pasa de) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 515.60 Tm (dos columnas a una sola.) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 328.00 499.36 Tm (El coste de calculo resulta despreciable) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 487.76 Tm (frente al de dibujar la pagina. La deteccion) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 476.16 Tm (de regiones se resuelve en una sola pasada) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 464.56 Tm (sobre los renglones ya agrupados, sin) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 452.96 Tm (necesidad de analizar la imagen.) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 328.00 436.72 Tm (El caso mas dificil sigue siendo el material) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 425.12 Tm (marginal de anchura variable, que aparece en) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 413.52 Tm (algunos manuales y que puede confundirse con) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 401.92 Tm (una columna cuando ocupa muchos renglones) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 390.32 Tm (seguidos.) Tj ET
+0.6 w
+318 294.0799999999997 240 80 re S
+352.3 300.1 m 537.4 368.1 l S
+386.6 300.1 m 516.9 368.1 l S
+420.9 300.1 m 496.3 368.1 l S
+455.1 300.1 m 475.7 368.1 l S
+489.4 300.1 m 455.1 368.1 l S
+523.7 300.1 m 434.6 368.1 l S
+324.0 318.1 m 414.0 366.1 462.0 302.1 552.0 350.1 c S
+BT /F2 6 Tf 1 0 0 1 321.00 298.08 Tm (0) Tj ET
+BT /F2 6 Tf 1 0 0 1 426.00 298.08 Tm (50) Tj ET
+BT /F2 6 Tf 1 0 0 1 542.00 298.08 Tm (100) Tj ET
+BT /F2 6 Tf 1 0 0 1 321.00 366.08 Tm (error \(%\)) Tj ET
+BT /F2 7 Tf 1 0 0 1 318.00 284.08 Tm (Figura 3. Error de lectura frente al numero de) Tj ET
+BT /F2 7 Tf 1 0 0 1 318.00 276.08 Tm (regiones resaltadas.) Tj ET
+BT /F3 10.5 Tf 1 0 0 1 318.00 258.08 Tm (4. Conclusiones) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 328.00 239.52 Tm (Resaltar una region cada vez reduce el) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 227.92 Tm (esfuerzo de seguimiento sin modificar el) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 216.32 Tm (documento. El metodo es sencillo de) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 204.72 Tm (implementar y se apoya unicamente en las) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 193.12 Tm (coordenadas que ya proporciona el extractor de) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 181.52 Tm (texto.) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 328.00 165.28 Tm (Queda pendiente estudiar como se comporta la) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 153.68 Tm (guia en documentos con notas al margen) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 142.08 Tm (extensas y en tablas de gran tamano, donde la) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 130.48 Tm (nocion de region de lectura resulta menos) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 318.00 118.88 Tm (evidente.) Tj ET
+BT /F2 8 Tf 1 0 0 1 302.00 34.00 Tm (1) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 1003 >>
+stream
+BT /F2 7 Tf 1 0 0 1 54.00 750.00 Tm (Tabla 1. Resultados por documento.) Tj ET
+0.5 w
+54 746.0 m 294.0 746.0 l S
+54 733.0 m 294.0 733.0 l S
+BT /F3 7.5 Tf 1 0 0 1 58.00 736.00 Tm (Documento) Tj ET
+BT /F3 7.5 Tf 1 0 0 1 138.00 736.00 Tm (Regiones) Tj ET
+BT /F3 7.5 Tf 1 0 0 1 218.00 736.00 Tm (Aciertos) Tj ET
+54 720.0 m 294.0 720.0 l S
+BT /F2 7.5 Tf 1 0 0 1 58.00 723.00 Tm (Articulo A) Tj ET
+BT /F2 7.5 Tf 1 0 0 1 138.00 723.00 Tm (412) Tj ET
+BT /F2 7.5 Tf 1 0 0 1 218.00 723.00 Tm (98.1) Tj ET
+54 707.0 m 294.0 707.0 l S
+BT /F2 7.5 Tf 1 0 0 1 58.00 710.00 Tm (Articulo B) Tj ET
+BT /F2 7.5 Tf 1 0 0 1 138.00 710.00 Tm (387) Tj ET
+BT /F2 7.5 Tf 1 0 0 1 218.00 710.00 Tm (97.4) Tj ET
+54 694.0 m 294.0 694.0 l S
+BT /F2 7.5 Tf 1 0 0 1 58.00 697.00 Tm (Manual C) Tj ET
+BT /F2 7.5 Tf 1 0 0 1 138.00 697.00 Tm (1204) Tj ET
+BT /F2 7.5 Tf 1 0 0 1 218.00 697.00 Tm (91.2) Tj ET
+BT /F2 7 Tf 1 0 0 1 54.00 48.00 Tm (1 Los datos completos se publican por separado.) Tj ET
+BT /F2 8 Tf 1 0 0 1 302.00 34.00 Tm (2) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 1244 >>
+stream
+BT /F3 10.5 Tf 1 0 0 1 54.00 736.00 Tm (5. Apendice) Tj ET
+0.6 w
+54 502 504 194 re S
+126.0 508.0 m 514.8 690.0 l S
+198.0 508.0 m 471.6 690.0 l S
+270.0 508.0 m 428.4 690.0 l S
+342.0 508.0 m 385.2 690.0 l S
+414.0 508.0 m 342.0 690.0 l S
+486.0 508.0 m 298.8 690.0 l S
+60.0 560.2 m 255.6 676.6 356.4 521.4 552.0 637.8 c S
+BT /F2 6 Tf 1 0 0 1 57.00 506.00 Tm (0) Tj ET
+BT /F2 6 Tf 1 0 0 1 280.80 506.00 Tm (50) Tj ET
+BT /F2 6 Tf 1 0 0 1 542.00 506.00 Tm (100) Tj ET
+BT /F2 6 Tf 1 0 0 1 57.00 688.00 Tm (error \(%\)) Tj ET
+BT /F2 7 Tf 1 0 0 1 54.00 492.00 Tm (Figura 4. Comparacion de las tres estrategias sobre) Tj ET
+BT /F2 7 Tf 1 0 0 1 54.00 484.00 Tm (el conjunto completo.) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 456.00 Tm (El apendice recoge la comparacion completa de) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 444.40 Tm (las tres estrategias evaluadas. La figura) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 432.80 Tm (anterior ocupa el ancho de las dos columnas,) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 421.20 Tm (de modo que la region correspondiente abarca) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 409.60 Tm (la pagina entera y el recorrido debe tratarla) Tj ET
+BT /F1 9.5 Tf 1 0 0 1 54.00 398.00 Tm (como un unico paso.) Tj ET
+BT /F2 8 Tf 1 0 0 1 302.00 34.00 Tm (3) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 10 0 R >>
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000128 00000 n 
+0000000227 00000 n 
+0000000324 00000 n 
+0000000426 00000 n 
+0000008445 00000 n 
+0000008591 00000 n 
+0000009646 00000 n 
+0000009792 00000 n 
+0000011089 00000 n 
+trailer
+<< /Size 12 /Root 1 0 R /Info << /Title (Sobre la lectura guiada de documentos tecnicos) /Author (Fixture de prueba) >> >>
+startxref
+11237
+%%EOF

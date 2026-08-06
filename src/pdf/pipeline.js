@@ -7,7 +7,7 @@ import { toBlocks } from './blocks.js'
 import { buildChapters } from './chapters.js'
 
 // Sube este numero al cambiar el pipeline: invalida los libros ya cacheados.
-export const CACHE_VERSION = 1
+export const CACHE_VERSION = 2
 
 /**
  * @param {Uint8Array} bytes
@@ -20,7 +20,7 @@ export async function buildBook (bytes, { fileName = '', onProgress } = {}) {
   try {
     const pages = []
     for (let n = 1; n <= doc.numPages; n++) {
-      const page = await extractPage(doc, n)
+      const page = await extractPage(doc, n, { withDrawings: true })
       pages.push({ width: page.width, height: page.height, lines: buildLines(page, n - 1) })
       onProgress?.(n, doc.numPages)
       // Un libro de 400 paginas congelaria la ventana varios segundos: cada
@@ -45,6 +45,9 @@ export async function buildBook (bytes, { fileName = '', onProgress } = {}) {
       title: meta.title || firstHeading(blocks) || cleanFileName(fileName),
       author: meta.author,
       pageCount: doc.numPages,
+      // Tamano de cada pagina: sin el no se pueden llevar los rectangulos de
+      // los bloques a la pantalla. No todas las paginas miden igual.
+      pageSizes: pages.map(p => ({ w: Math.round(p.width), h: Math.round(p.height) })),
       chars,
       blocks,
       chapters,

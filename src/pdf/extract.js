@@ -4,6 +4,7 @@
 // y no sabe que existe pdf.js.
 
 import * as pdfjsLib from '/node_modules/pdfjs-dist/build/pdf.mjs'
+import { extractDrawings, mergeDrawings } from './graphics.js'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/node_modules/pdfjs-dist/build/pdf.worker.mjs'
 
@@ -34,10 +35,16 @@ export function closeDocument (doc) {
  * Items de una pagina, con el origen movido a la esquina superior izquierda.
  * @returns {{width:number, height:number, items:Array}}
  */
-export async function extractPage (doc, pageNumber) {
+export async function extractPage (doc, pageNumber, { withDrawings = false } = {}) {
   const page = await doc.getPage(pageNumber)
   const viewport = page.getViewport({ scale: 1 })
   const content = await page.getTextContent()
+
+  // Solo se piden los dibujos cuando hacen falta: la lista de operaciones es
+  // bastante mas cara de obtener que el texto.
+  const drawings = withDrawings
+    ? mergeDrawings(extractDrawings(await page.getOperatorList(), viewport.transform, pdfjsLib.OPS))
+    : []
 
   const items = []
   for (const item of content.items) {
@@ -65,7 +72,7 @@ export async function extractPage (doc, pageNumber) {
   }
 
   page.cleanup()
-  return { width: viewport.width, height: viewport.height, items }
+  return { width: viewport.width, height: viewport.height, items, drawings }
 }
 
 /** Indice del PDF, si el documento lo declara. */

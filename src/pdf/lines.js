@@ -21,16 +21,23 @@ function sameLine (a, b) {
  * @returns {Array} lineas en orden de lectura
  */
 export function buildLines (page, pageIndex = 0) {
+  const figures = significantFigures(page)
+
   const items = page.items
     .filter(it => !it.rotated && it.text.trim() !== '')
+    // Los rotulos de los ejes y las leyendas de dentro de una figura no son
+    // prosa: leerlos corta el texto con fragmentos sin sentido.
+    .filter(it => !insideAny(figures, it))
     .sort((a, b) => a.y - b.y || a.x - b.x)
 
   const rows = groupRows(items)
 
   // Agrupar solo por altura fusionaria la cita del margen con el cuerpo, asi
   // que antes se mira si la pagina lleva columnas.
-  const channels = findChannels(rows, page.width)
-  if (!channels.length) return compose(rows, pageIndex)
+  const channels = findChannels(rows, page.width, figures)
+  if (!channels.length) {
+    return placeFigures(compose(rows, pageIndex), figures, pageIndex, channels)
+  }
 
   // Cada columna se lee entera antes de pasar a la siguiente, y el texto que
   // corre a todo lo ancho forma un flujo aparte con su propio margen.
@@ -52,13 +59,112 @@ export function buildLines (page, pageIndex = 0) {
   const composed = groups.map(rowsOfGroup => compose(rowsOfGroup, pageIndex))
   reclaimWideLines(composed)
 
-  return composed
+  const columns = composed.slice(0, -1)
     .map(withColumnMargins)
+    .map(lines => placeFigures(lines, figures, pageIndex, channels))
     .filter(lines => lines.length)
-    // Los grupos se leen en el orden en que empiezan en la pagina: las columnas
-    // primero y despues el texto ancho que suele venir por debajo.
-    .sort((a, b) => a[0].y - b[0].y)
-    .flat()
+
+  const wide = placeFigures(
+    withColumnMargins(composed.at(-1)), figures, pageIndex, channels, true)
+
+  return orderGroups(columns, wide).flat()
+}
+
+/**
+ * Orden de lectura entre los grupos de una pagina.
+ *
+ * Las columnas van de izquierda a derecha, nunca por altura: las dos empiezan
+ * casi a la misma altura y cualquier diferencia de unos puntos —una figura que
+ * asoma antes, por ejemplo— invertiria el orden de lectura entero.
+ *
+ * El texto que corre a todo lo ancho es el unico que se coloca por altura: si
+ * empieza antes que las columnas es un titulo y va delante; si empieza despues
+ * es texto que continua por debajo y va detras.
+ */
+function orderGroups (columns, wide) {
+  if (!wide.length) return columns
+  if (!columns.length) return [wide]
+
+  const firstColumnY = Math.min(...columns.map(group => group[0].y))
+  return wide[0].y < firstColumnY ? [wide, ...columns] : [...columns, wide]
+}
+
+/**
+ * Figuras que merecen ser una region propia.
+ *
+ * Hay que hilar fino porque el texto que cae dentro de una figura se descarta:
+ * confundir con una figura el fondo de la pagina, un marco o el sombreado de un
+ * cuadro se lleva por delante capitulos enteros. La regla que lo separa es que
+ * una figura lleva rotulos sueltos, nunca parrafos: si dentro hay mucho texto,
+ * no es una figura por grande que sea el trazo.
+ */
+function significantFigures (page) {
+  const minArea = page.width * page.height * 0.006
+  const maxArea = page.width * page.height * 0.6
+  const texts = page.items.filter(it => !it.rotated && it.text.trim() !== '')
+
+  return (page.drawings ?? [])
+    .filter(d => d.w > 28 && d.h > 14 && d.w * d.h >= minArea && d.w * d.h <= maxArea)
+    // Una imagen ya es una figura; un dibujo tiene que traer varios trazos. Un
+    // recuadro suelto o el filete de un titulillo son un trazo y no pintan nada.
+    .filter(d => d.image || (d.parts ?? 1) >= 4)
+    .filter(d => {
+      // Los rotulos de unos ejes suman unos pocos caracteres. Si ahi dentro hay
+      // parrafos, lo que se ha encontrado no es una figura sino un recuadro que
+      // enmarca texto, y descartarlo se llevaria la pagina por delante.
+      const chars = texts
+        .filter(it => insideAny([d], it))
+        .reduce((total, it) => total + it.text.trim().length, 0)
+      return chars <= MAX_LABEL_CHARS
+    })
+}
+
+const MAX_LABEL_CHARS = 150
+
+const insideAny = (figures, item) => figures.some(f => {
+  const cx = item.x + item.w / 2
+  const cy = item.y - item.h * 0.3
+  return cx >= f.x && cx <= f.x + f.w && cy >= f.y && cy <= f.y + f.h
+})
+
+/**
+ * Mete cada figura en el sitio que le toca dentro del recorrido de lectura:
+ * en su columna y a su altura, para que el foco pase por ella al llegar.
+ */
+function placeFigures (lines, figures, pageIndex, channels, isWide = false) {
+  if (!figures.length || !lines.length) return lines
+
+  // Una figura que cruza un canal pertenece al flujo ancho, no a una columna.
+  const crossesChannel = f => channels.some(c => f.x < c && f.x + f.w > c)
+  const mine = figures.filter(f => isWide
+    ? crossesChannel(f)
+    : !crossesChannel(f) && columnIndexOf(f, channels) === columnIndexOf(lines[0], channels))
+  if (!mine.length) return lines
+
+  const asLines = mine.map(f => ({
+    figure: true,
+    text: '',
+    x: f.x,
+    xEnd: f.x + f.w,
+    width: f.w,
+    y: f.y,
+    fontSize: 0,
+    font: '',
+    page: pageIndex,
+    rect: { page: pageIndex, x: f.x, y: f.y, w: f.w, h: f.h },
+    columnLeft: lines[0].columnLeft,
+    columnRight: lines[0].columnRight
+  }))
+
+  return [...lines, ...asLines].sort((a, b) => a.y - b.y)
+}
+
+function columnIndexOf (box, channels) {
+  if (!box) return 0
+  const center = box.x + (box.width ?? box.w ?? 0) / 2
+  let index = 0
+  while (index < channels.length && center > channels[index]) index++
+  return index
 }
 
 /**

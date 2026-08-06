@@ -29,18 +29,28 @@ const BIN = 1 // en puntos; con menos resolucion se pierden corredores estrechos
 /**
  * @param {Array<Array>} rows fragmentos agrupados por renglon
  * @param {number} pageWidth
+ * @param {Array} drawings figuras de la pagina; el corredor entre columnas esta
+ *   libre de todo, no solo de texto, y una figura llena su columna hasta el
+ *   borde mientras que el texto casi nunca llega
  * @returns {number[]} posiciones horizontales de los canales, de izq. a der.
  */
-export function findChannels (rows, pageWidth) {
+export function findChannels (rows, pageWidth, drawings = []) {
   const items = rows.flat()
   if (items.length < 20) return []
 
   const bins = new Array(Math.ceil(pageWidth / BIN)).fill(0)
-  for (const item of items) {
-    const from = Math.max(0, Math.floor(item.x / BIN))
-    const to = Math.min(bins.length - 1, Math.floor((item.x + item.w) / BIN))
-    for (let i = from; i <= to; i++) bins[i]++
+  const cover = (from, to, weight) => {
+    const a = Math.max(0, Math.floor(from / BIN))
+    const b = Math.min(bins.length - 1, Math.floor(to / BIN))
+    for (let i = a; i <= b; i++) bins[i] += weight
   }
+
+  for (const item of items) cover(item.x, item.x + item.w, 1)
+
+  // Una figura pesa tantos renglones como ocupa de alto: si contara como uno
+  // solo, el sondeo la ignoraria frente a las decenas de lineas de texto.
+  const em = median(items.map(it => it.h)) || 12
+  for (const d of drawings) cover(d.x, d.x + d.w, Math.max(1, Math.round(d.h / (em * 1.2))))
 
   const covered = bins.filter(count => count > 0).sort((a, b) => a - b)
   if (!covered.length) return []
@@ -51,7 +61,6 @@ export function findChannels (rows, pageWidth) {
   const last = findLastIndex(bins, count => count > valleyMax)
   if (first === -1 || last <= first) return []
 
-  const em = median(items.map(it => it.h)) || 12
   const minGap = Math.max(pageWidth * MIN_GAP_RATIO, em * MIN_GAP_EMS)
 
   // Corredores dentro de la mancha de texto, nunca los margenes de la pagina.
@@ -61,12 +70,12 @@ export function findChannels (rows, pageWidth) {
     const low = bins[i] <= valleyMax
     if (low && runStart === -1) runStart = i
     if (!low && runStart !== -1) {
-      if ((i - runStart) * BIN >= minGap) channels.push(((runStart + i) / 2) * BIN)
+      if ((i - runStart) * BIN >= minGap) channels.push(centerOfRun(bins, runStart, i))
       runStart = -1
     }
   }
 
-  return channels.filter(x => isRealChannel(x, items, rows))
+  return channels.filter(x => isRealChannel(x, items, rows, drawings))
 }
 
 /**
@@ -74,11 +83,14 @@ export function findChannels (rows, pageWidth) {
  * dos lados y si la mayoria de los renglones lo respetan. Asi se descartan el
  * hueco que deja un folio suelto y la coincidencia casual de unos espacios.
  */
-function isRealChannel (x, items, rows) {
+function isRealChannel (x, items, rows, drawings = []) {
   const left = items.filter(it => it.x + it.w <= x).length
   const right = items.filter(it => it.x >= x).length
   const share = Math.min(left, right) / items.length
   if (share < MIN_SIDE_SHARE) return false
+
+  // Una figura tumbada sobre el corredor lo invalida igual que el texto.
+  if (drawings.some(d => d.x < x - 1 && d.x + d.w > x + 1)) return false
 
   const crossing = rows.filter(row => row.some(it => it.x < x && it.x + it.w > x)).length
   return crossing / rows.length <= MAX_CROSSING
@@ -143,6 +155,32 @@ export function splitRow (row, channels) {
   }
 
   return { columns, wide }
+}
+
+/**
+ * Centro del corredor de verdad dentro de una racha de poca cobertura.
+ *
+ * La racha suele ser mas ancha que el corredor: por la izquierda incluye la
+ * zona donde el texto ya no llega pero la figura si. Tomar el centro de toda la
+ * racha lo dejaria caer dentro de la figura, que entonces invalidaria el canal.
+ * El corredor es el tramo mas largo con la menor cobertura de la racha.
+ */
+function centerOfRun (bins, from, to) {
+  let lowest = Infinity
+  for (let i = from; i < to; i++) lowest = Math.min(lowest, bins[i])
+
+  let best = { start: from, length: 0 }
+  let start = -1
+  for (let i = from; i <= to; i++) {
+    const atFloor = i < to && bins[i] === lowest
+    if (atFloor && start === -1) start = i
+    if (!atFloor && start !== -1) {
+      if (i - start > best.length) best = { start, length: i - start }
+      start = -1
+    }
+  }
+
+  return ((best.start + best.start + best.length) / 2) * BIN
 }
 
 function median (values) {
