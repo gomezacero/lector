@@ -1,0 +1,295 @@
+[
+  {
+    "file": "Libro_El_Tunel.pdf",
+    "ms": 516.8999999985099,
+    "title": "EL TÚNEL",
+    "author": "Gerson O. Su.rez",
+    "pageCount": 95,
+    "blocks": 840,
+    "headings": 42,
+    "chapters": 42,
+    "chapterTitles": [
+      "EL TÚNEL",
+      "ERNESTO SÁBATO",
+      "ÍNDICE",
+      "I",
+      "II",
+      "III",
+      "IV",
+      "V"
+    ],
+    "words": 31826,
+    "style": "indent",
+    "bodySize": 11.5,
+    "stats": {
+      "paragraphStyle": "indent",
+      "bodySize": 11.5,
+      "bodyLeft": 92,
+      "bodyRight": 519,
+      "leading": 19.5,
+      "words": 31826
+    },
+    "signals": {
+      "lowerStart": 25,
+      "lowerStartPct": 3.132832080200501,
+      "veryLong": 2,
+      "veryShort": 80,
+      "dangling": 0,
+      "corrupt": 0,
+      "medianLength": 95,
+      "repeated": [],
+      "repeatedTotal": 0
+    },
+    "samples": {
+      "inicio": [
+        "p.1    [T] EL TÚNEL",
+        "p.1    [T] ERNESTO SÁBATO",
+        "p.2    [T] ÍNDICE",
+        "p.2    [p] I ..................................................................................................................................... 5 II .................................................…"
+      ],
+      "medio": [
+        "p.46   [p] Un día la discusión fue más violenta que de costumbre y llegué a gritarle puta. María quedó muda y paralizada. Luego, lentamente, en silencio, fue a vestirse detrás del biombo de las modelos…",
+        "p.47   [p] Escenas semejantes se repetían casi todos los días. A veces terminaban en una calma relativa y salíamos a caminar por la Plaza Francia como dos adolescentes enamorados. Pero esos momentos de…",
+        "p.47   [T] XVIII",
+        "p.47   [p] MIS INTERROGATORIOS, cada día más frecuentes y retorcidos, eran a propósito de sus silencios, sus miradas, sus palabras perdidas, algún viaje a la estancia, sus amores. Una vez le pregunté p…"
+      ],
+      "final": [
+        "p.95   [p] EN ESTOS MESES de encierro he intentado muchas veces razonar la última palabra del ciego, la palabra insensato. Un cansancio muy grande, o quizá oscuro instinto, me lo impide reiteradamente.…",
+        "p.95   [p] Al menos puedo pintar, aunque sospecho que los médicos se ríen a mis espaldas, como sospecho que se rieron durante el proceso cuando mencioné la escena de la ventana.",
+        "p.95   [p] Sólo existió un ser que entendía mi pintura. Mientras tanto, estos cuadros deben de confirmarlos cada vez más en su estúpido punto de vista. Y los muros de este infierno serán, así, cada día…",
+        "p.95   [p] FIN"
+      ]
+    }
+  },
+  {
+    "file": "cien años de soledad.pdf",
+    "ms": 964.7999999970198,
+    "title": "García Márquez - Cien años de soledad",
+    "author": "Patricio",
+    "pageCount": 173,
+    "blocks": 884,
+    "headings": 22,
+    "chapters": 22,
+    "chapterTitles": [
+      "Gabriel García Márquez",
+      "Cien años de soledad",
+      "I",
+      "II",
+      "III",
+      "IV",
+      "V",
+      "VI"
+    ],
+    "words": 137846,
+    "style": "indent",
+    "bodySize": 10,
+    "stats": {
+      "paragraphStyle": "indent",
+      "bodySize": 10,
+      "bodyLeft": 50,
+      "bodyRight": 546,
+      "leading": 12.1,
+      "words": 137846
+    },
+    "signals": {
+      "lowerStart": 3,
+      "lowerStartPct": 0.34802784222737815,
+      "veryLong": 96,
+      "veryShort": 33,
+      "dangling": 0,
+      "corrupt": 0,
+      "medianLength": 365,
+      "repeated": [],
+      "repeatedTotal": 0
+    },
+    "samples": {
+      "inicio": [
+        "p.1    [T] Gabriel García Márquez",
+        "p.1    [T] Cien años de soledad",
+        "p.2    [p] Para Jomi García Ascot",
+        "p.2    [p] y María Luisa Elio"
+      ],
+      "medio": [
+        "p.74   [p] El acto se celebró a veinte kilómetros de Macondo, a la sombra de una ceiba gigantesca en torno a la cual había de fundarse más tarde el pueblo de Neerlandia. Los delegados del gobierno y lo…",
+        "p.74   [p] El acto duró apenas el tiempo indispensable para que se estamparan las firmas. En torno de la rústica mesa colocada en el centro de una remendada carpa de circo, donde se sentaron los delega…",
+        "p.74   [p] -Coronel -dijo-, háganos el favor de no ser el primero en firmar.",
+        "p.74   [p] El coronel Aureliano Buendía accedió. Cuando el documento dio la vuelta completa a la mesa, en medio de un silencio tan nítido que habrían podido descifrarse las firmas por el garrapateo de …"
+      ],
+      "final": [
+        "p.173  [p] XVII .............................................................................................................................. 138",
+        "p.173  [p] XVIII............................................................................................................................. 147",
+        "p.173  [p] XIX............................................................................................................................... 156",
+        "p.173  [p] XX ................................................................................................................................ 165"
+      ]
+    }
+  },
+  {
+    "file": "_OceanofPDF.com_La_tregua_-_Mario_Benedetti.pdf",
+    "ms": 554.0999999940395,
+    "title": "La tregua",
+    "author": "Mario Benedetti",
+    "pageCount": 182,
+    "blocks": 367,
+    "headings": 2,
+    "chapters": 3,
+    "chapterTitles": [
+      "Comienzo",
+      "Mario Benedetti",
+      "La tregua"
+    ],
+    "words": 51487,
+    "style": "spacing",
+    "bodySize": 15,
+    "stats": {
+      "paragraphStyle": "spacing",
+      "bodySize": 15,
+      "bodyLeft": 76,
+      "bodyRight": 535,
+      "leading": 19.5,
+      "words": 51487
+    },
+    "signals": {
+      "lowerStart": 1,
+      "lowerStartPct": 0.273972602739726,
+      "veryLong": 46,
+      "veryShort": 176,
+      "dangling": 0,
+      "corrupt": 0,
+      "medianLength": 48,
+      "repeated": [
+        {
+          "text": "jueves # de febrero",
+          "n": 6
+        },
+        {
+          "text": "lunes # de febrero",
+          "n": 5
+        },
+        {
+          "text": "domingo # de junio",
+          "n": 5
+        },
+        {
+          "text": "viernes # de febrero",
+          "n": 4
+        },
+        {
+          "text": "viernes # de marzo",
+          "n": 4
+        },
+        {
+          "text": "martes # de abril",
+          "n": 4
+        }
+      ],
+      "repeatedTotal": 13
+    },
+    "samples": {
+      "inicio": [
+        "p.2    [p] Publicada en 1960, La tregua es la obra de Mario Benedetti que ha alcanzado mayor éxito de público. La cotidianidad gris y rutinaria, marcada por la frustración y la ausencia de perspectivas…",
+        "p.3    [T] Mario Benedetti",
+        "p.3    [T] La tregua",
+        "p.3    [p] ePUB v1.1 Narukei 20.06.12"
+      ],
+      "medio": [
+        "p.96   [p] Esteban está enfermo. Dice el médico que puede ser algo serio. Esperemos que no. Pleuritis o algo pulmonar. No sabe. ¿Cuándo sabrán los médicos? Después de almorzar, entré a su cuarto a ver …",
+        "p.98   [p] Martes 25 de junio",
+        "p.98   [p] Un trabajo bárbaro. Será para mañana.",
+        "p.98   [p] Miércoles 26 de junio"
+      ],
+      "final": [
+        "p.181  [p] En la oficina me quisieron dar una despedida y no acepté. Para no incurrir en grosería, armé una excusa muy verosímil, a base de problemas familiares. La verdad es que no puedo imaginarme co…",
+        "p.181  [p] Viernes 28 de febrero",
+        "p.181  [p] Ultimo día de trabajo. Nada de trabajo, claro. Me lo pasé dando apretones de manos, recibiendo abrazos. Creo que el gerente desbordaba de satisfacción y que Muñoz estaba realmente conmovido.…",
+        "p.182  [p] Montevideo, enero a mayo de 1959. OceanofPDF.com"
+      ]
+    }
+  },
+  {
+    "file": "1998-Greene-48leyes_poder.pdf",
+    "ms": 2939.1999999955297,
+    "title": "Las 48 leyes del poder",
+    "author": "Robert Greene",
+    "pageCount": 835,
+    "blocks": 9112,
+    "headings": 1353,
+    "chapters": 54,
+    "chapterTitles": [
+      "Comienzo",
+      "Las 48 leyes del poder",
+      "Reconocimientos",
+      "Prefacio",
+      "Ley n.º 1. Nunca le haga sombra a su amo",
+      "Ley n.º 2. Nunca confíe demasiado en sus amigo…",
+      "Ley n.º 3. Disimule sus intenciones",
+      "Ley n.º 4. Diga siempre menos de lo necesario"
+    ],
+    "words": 238533,
+    "style": "indent",
+    "bodySize": 15,
+    "stats": {
+      "paragraphStyle": "indent",
+      "bodySize": 15,
+      "bodyLeft": 76,
+      "bodyRight": 535,
+      "leading": 18.7,
+      "words": 238533
+    },
+    "signals": {
+      "lowerStart": 4301,
+      "lowerStartPct": 55.43240108261374,
+      "veryLong": 0,
+      "veryShort": 1254,
+      "dangling": 0,
+      "corrupt": 0,
+      "medianLength": 59,
+      "repeated": [
+        {
+          "text": "interpretación",
+          "n": 120
+        },
+        {
+          "text": "ley n.º#",
+          "n": 48
+        },
+        {
+          "text": "criterio",
+          "n": 48
+        },
+        {
+          "text": "claves para alcanzar el poder",
+          "n": 46
+        },
+        {
+          "text": "invalidación",
+          "n": 46
+        },
+        {
+          "text": "observancia de la ley",
+          "n": 34
+        }
+      ],
+      "repeatedTotal": 21
+    },
+    "samples": {
+      "inicio": [
+        "p.2    [p] Una guía diseñada para mostrarle al lector cuáles son las cualidades personales que se deben de tener para alcanzar el poder en términos sociológicos, un método práctico para todo aquel que …",
+        "p.2    [p] Para explicar sus leyes y cómo estas se deben de ejecutar, el autor utiliza como ejemplo las estrategias, los aciertos y desaciertos de personajes históricos famosos como Julio César, Haile …",
+        "p.3    [T] Robert Greene",
+        "p.3    [T] Las 48 leyes del poder"
+      ],
+      "medio": [
+        "p.428  [p] y matraces que contenían «soluciones etéreas y otras",
+        "p.428  [p] esencias». Según J. Ennemoser, que en 1844 publicó una historia de la magia en Leipzig, la «casa de Graham… unía lo útil con",
+        "p.428  [p] lo placentero. En todas partes se exhibían objetos y",
+        "p.428  [p] elementos de gran magnificencia. Incluso en el"
+      ],
+      "final": [
+        "p.834  [p] Cambridge, 1990. Robert Greene (Los Ángeles, EE. UU., 14-5-1959) es un escritor y psicólogo de origen judío, conocido por sus libros en materia de estrategia, poder y seducción. Greene ha es…",
+        "p.835  [p] Estudió en las universidades de California, Berkeley y Wisconsis-Madison, donde se graduó en estudios clásicos. Ha trabajado como editor y escritor de varias revistas en la Ciudad de Nueva Y…",
+        "p.835  [p] Nicolás Maquiavelo en su obra llamada que el primero se dirige a las masas y no a la nobleza. En",
+        "p.835  [p] Byron y analiza los métodos de seducción."
+      ]
+    }
+  }
+]

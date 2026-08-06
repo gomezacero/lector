@@ -7,54 +7,12 @@
 //
 // Modulo puro y sin DOM: se prueba con fixtures de lineas.
 
+import { median, percentile, mode, marginLeft } from './metrics.js'
+
 const HEAD_ZONE = 0.11 // fraccion superior de la pagina donde vive el titulillo
 const FOOT_ZONE = 0.89 // a partir de aqui, el pie
 
 // --- Metricas del documento ------------------------------------------------
-
-function median (values) {
-  if (!values.length) return 0
-  const sorted = [...values].sort((a, b) => a - b)
-  const mid = sorted.length >> 1
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
-}
-
-function percentile (values, p) {
-  if (!values.length) return 0
-  const sorted = [...values].sort((a, b) => a - b)
-  return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))]
-}
-
-/**
- * Margen izquierdo del cuerpo. No vale la moda: en un libro de parrafos cortos
- * hay tantas lineas sangradas como sin sangrar y el empate elige la sangria,
- * que es justo la senal que luego hay que detectar. El margen es el menor de
- * los valores con presencia real.
- */
-function marginLeft (values, bucket = 2, minShare = 0.12) {
-  const tally = new Map()
-  for (const value of values) {
-    const key = Math.round(value / bucket) * bucket
-    tally.set(key, (tally.get(key) ?? 0) + 1)
-  }
-
-  const floor = values.length * minShare
-  const frequent = [...tally].filter(([, count]) => count >= floor).map(([key]) => key)
-  return frequent.length ? Math.min(...frequent) : percentile(values, 0.1)
-}
-
-/** Valor mas frecuente, agrupando en cubos para tolerar el ruido decimal. */
-function mode (values, bucket = 1, weights = null) {
-  const tally = new Map()
-  values.forEach((value, i) => {
-    const key = Math.round(value / bucket) * bucket
-    tally.set(key, (tally.get(key) ?? 0) + (weights ? weights[i] : 1))
-  })
-  let best = 0
-  let max = -1
-  for (const [key, count] of tally) if (count > max) { max = count; best = key }
-  return best
-}
 
 /**
  * Lo que cuenta como "normal" en este documento: cuerpo de letra, margenes e
@@ -155,6 +113,11 @@ export function stripFurniture (lines, pageHeight, pageCount, metrics = null) {
 
 // --- Estilo de parrafo -----------------------------------------------------
 
+// En una pagina a varias columnas cada una trae sus propios margenes; solo si
+// no los hay se recurre a los del libro entero.
+const leftOf = (line, metrics) => line.columnLeft ?? metrics.bodyLeft
+const rightOf = (line, metrics) => line.columnRight ?? metrics.bodyRight
+
 /**
  * Como marca este libro el inicio de parrafo. Elegir mal la senal es la causa
  * numero uno de parrafos pegados o partidos, asi que se decide por documento.
@@ -164,7 +127,7 @@ export function detectParagraphStyle (lines, metrics) {
   if (lines.length < 6) return 'ragged'
 
   const indentThreshold = metrics.bodySize * 0.55
-  const indented = lines.filter(l => l.x - metrics.bodyLeft > indentThreshold).length
+  const indented = lines.filter(l => l.x - leftOf(l, metrics) > indentThreshold).length
   if (indented / lines.length >= 0.08) return 'indent'
 
   let spaced = 0
@@ -195,11 +158,14 @@ function startsParagraph (line, prev, metrics, style) {
   // Un hueco extra siempre separa, sea cual sea el estilo del libro.
   if (samePage && verticalGap > metrics.leading * 1.45) return true
 
-  const indented = line.x - metrics.bodyLeft > metrics.bodySize * 0.55
+  // Cambiar de columna siempre empieza algo nuevo.
+  if (line.columnLeft !== prev.columnLeft) return true
+
+  const indented = line.x - leftOf(line, metrics) > metrics.bodySize * 0.55
   if (style === 'indent') return indented
 
   // Sin sangrias, la senal es que la linea anterior no llego al margen.
-  const prevEndedShort = prev.xEnd < metrics.bodyRight - metrics.bodySize * 1.6
+  const prevEndedShort = prev.xEnd < rightOf(prev, metrics) - metrics.bodySize * 1.6
   if (style === 'spacing') return !samePage ? prevEndedShort : false
   return prevEndedShort
 }

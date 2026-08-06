@@ -32,10 +32,22 @@ export function startUrlFor (task, arg) {
     return `app://lector/src/dev/ingest.html?pdf=${encodeURIComponent(arg ?? '')}`
   }
   if (task === 'icon') return 'app://lector/src/dev/icon.html'
+  if (task === 'diagnose') {
+    // "archivo.pdf#12" vuelca las lineas de la pagina 12 en vez del informe.
+    const [pdfs, page] = (arg ?? '').split('#')
+    const query = `pdfs=${encodeURIComponent(pdfs)}${page ? `&page=${encodeURIComponent(page)}` : ''}`
+    return `app://lector/src/dev/diagnose.html?${query}`
+  }
   return 'app://lector/src/index.html'
 }
 
-const TASKS = { ingest: ingestTask, read: readTask, icon: iconTask, smoke: smokeTask }
+const TASKS = {
+  ingest: ingestTask,
+  diagnose: diagnoseTask,
+  read: readTask,
+  icon: iconTask,
+  smoke: smokeTask
+}
 
 export function runDevTask (app, win, projectRoot, task, arg) {
   // Empaquetada, la aplicacion es una GUI sin consola: lo que se escriba en
@@ -312,6 +324,65 @@ function readState (js) {
       }
     })()
   `)
+}
+
+/** Informe de calidad de la extraccion sobre varios PDF reales. */
+async function diagnoseTask (win, outRoot) {
+  const result = await poll(win, 'window.__diagnose', 300_000)
+  if (!result?.ok) {
+    console.log(`DIAGNOSE FALLO: ${result?.error ?? 'sin resultado'}`)
+    return 1
+  }
+
+  for (const r of result.results) {
+    console.log(`\n${'='.repeat(74)}`)
+    if (r.error) {
+      console.log(`${r.file}\n  ERROR: ${r.error}`)
+      continue
+    }
+
+    // Volcado de una pagina concreta: coordenadas de cada linea.
+    if (r.lines) {
+      console.log(`Pagina ${r.page} — ${Math.round(r.width)}x${Math.round(r.height)} — canales: ${r.channels?.length ? r.channels.map(Math.round).join(", ") : "ninguno"}`)
+      console.log(`${'-'.repeat(74)}`)
+      for (const l of r.lines) {
+        console.log(`  x${String(l.x).padStart(4)}-${String(l.xEnd).padEnd(4)} y${String(l.y).padStart(4)} ${String(l.size).padStart(5)}pt col${String(l.col).padStart(4)}  ${l.text}`)
+      }
+      if (r.blocks) {
+        console.log(`\n  BLOQUES RESULTANTES (${r.blocks.length})`)
+        for (const b of r.blocks) console.log(`    ${b}`)
+      }
+      continue
+    }
+
+    console.log(`${r.file}`)
+    console.log(`${'-'.repeat(74)}`)
+    console.log(`  titulo    : ${r.title}`)
+    console.log(`  autor     : ${r.author || '(sin autor)'}`)
+    console.log(`  paginas   : ${r.pageCount}   palabras: ${r.words}   ingesta: ${(r.ms / 1000).toFixed(1)}s`)
+    console.log(`  bloques   : ${r.blocks} (${r.headings} titulos)   parrafo mediano: ${r.signals.medianLength} car.`)
+    console.log(`  estilo    : ${r.style}, cuerpo ${r.bodySize}pt, margenes ${r.stats.bodyLeft}-${r.stats.bodyRight}, interlineado ${r.stats.leading}`)
+    console.log(`  capitulos : ${r.chapters} -> ${r.chapterTitles.join(' | ')}`)
+
+    const s = r.signals
+    console.log(`\n  SENALES`)
+    console.log(`    parrafos que empiezan en minuscula : ${s.lowerStart} (${s.lowerStartPct.toFixed(1)}%)`)
+    console.log(`    parrafos de mas de 2500 caracteres : ${s.veryLong}`)
+    console.log(`    parrafos de menos de 25 caracteres : ${s.veryShort}`)
+    console.log(`    guiones sin unir al final          : ${s.dangling}`)
+    console.log(`    caracteres corruptos               : ${s.corrupt}`)
+    console.log(`    textos repetidos 4+ veces          : ${s.repeatedTotal}`)
+    for (const rep of s.repeated) console.log(`        ${rep.n}x  "${rep.text}"`)
+
+    for (const [where, lines] of Object.entries(r.samples)) {
+      console.log(`\n  ${where.toUpperCase()}`)
+      for (const line of lines) console.log(`    ${line}`)
+    }
+  }
+
+  await fs.mkdir(outRoot, { recursive: true })
+  await fs.writeFile(path.join(outRoot, 'diagnose.json'), JSON.stringify(result.results, null, 2))
+  return 0
 }
 
 /** Dibuja el icono de la aplicacion y lo deja en build/icon.ico. */

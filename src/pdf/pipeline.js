@@ -51,6 +51,12 @@ export async function buildBook (bytes, { fileName = '', onProgress } = {}) {
       stats: {
         paragraphStyle: style,
         bodySize: Math.round(metrics.bodySize * 10) / 10,
+        // Las medidas con las que se decide donde empieza cada parrafo. Se
+        // guardan porque son lo primero que hay que mirar cuando un libro sale
+        // con los parrafos partidos o pegados.
+        bodyLeft: Math.round(metrics.bodyLeft),
+        bodyRight: Math.round(metrics.bodyRight),
+        leading: Math.round(metrics.leading * 10) / 10,
         words: countWords(blocks)
       }
     }
