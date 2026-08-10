@@ -2,6 +2,7 @@
 // biblioteca, el lector, los ajustes y las notas, y se decide que se ve.
 
 import { buildBook, CACHE_VERSION } from '/src/pdf/pipeline.js'
+import { buildBookInWorker } from '/src/pdf/ingestClient.js'
 import { migrateBook, validateBook, reanchor, textOf } from '/src/pdf/migrate.js'
 import { blockAtOffset, percentAt, chapterAtOffset } from '/src/reader/progress.js'
 import { createReader } from '/src/reader/reader.js'
@@ -133,16 +134,50 @@ async function openBook (filePath, entry, options) {
 
   if (loaded?.error) {
     hideLoading()
+    if (loaded.error === 'missing' && entry) {
+      entries = await window.lector.library.upsert({ ...entry, missing: true })
+      library.render(entries)
+      await offerRelink(entry, options)
+      return
+    }
     toast(loaded.error === 'missing'
       ? 'El archivo ya no está donde estaba. ¿Lo has movido?'
       : `No se pudo abrir: ${loaded.error}`, 5000)
-    if (entry) {
-      entries = await window.lector.library.upsert({ ...entry, missing: true })
-      library.render(entries)
-    }
     return
   }
   await openLoaded(loaded, entry, options)
+}
+
+/**
+ * Un libro cuyo archivo desaparecio no esta perdido: si el lector señala el
+ * PDF en su nueva ubicacion, la entrada se reengancha y el progreso y las
+ * notas siguen donde estaban. El id es el hash del contenido, asi que un PDF
+ * distinto no puede colarse en el sitio de otro.
+ */
+async function offerRelink (entry, options) {
+  const confirmed = await confirmAction({
+    title: 'El archivo ya no está donde estaba',
+    lines: [
+      '¿Lo has movido o renombrado? Puedes señalar su nueva ubicación.',
+      'El progreso, los marcadores y las notas se conservan.'
+    ],
+    confirmLabel: 'Localizar el archivo',
+    danger: false
+  })
+  if (!confirmed) return
+
+  const picked = await window.lector.pdf.pick()
+  if (!picked) return
+  if (picked.id !== entry.id) {
+    toast('Ese PDF no es el mismo libro: su contenido no coincide.', 6000)
+    return
+  }
+
+  const relinked = { ...entry, path: picked.path, missing: false }
+  entries = await window.lector.library.upsert(relinked)
+  library.render(entries)
+  toast('Archivo localizado: todo sigue donde estaba.', 4000)
+  await openLoaded(picked, relinked, options)
 }
 
 /**
@@ -279,7 +314,7 @@ async function loadOrBuild (loaded) {
     }
   }
 
-  const book = await buildBook(loaded.bytes, {
+  const book = await ingest(loaded.bytes, {
     fileName: loaded.fileName,
     ocrItemsByPage: ocr?.pages,
     onProgress: (done, total) => showLoading(`Preparando el libro… página ${done} de ${total}`)
@@ -289,6 +324,22 @@ async function loadOrBuild (loaded) {
   // podria alcanzar. Un escaneado sin texto si entra, y si se guarda.
   if (readable(book)) await window.lector.book.writeCache(loaded.id, book)
   return { book, previous: cached ?? null }
+}
+
+/**
+ * La ingesta corre en un worker y la ventana queda libre (se puede seguir en
+ * la biblioteca mientras). Si el worker no arranca, cae al hilo principal:
+ * mas lento de sentir, pero el libro se abre igual. Un fallo del pipeline
+ * (PDF corrupto) no se reintenta: seria el mismo error otra vez.
+ */
+async function ingest (bytes, options) {
+  try {
+    return await buildBookInWorker(bytes, options)
+  } catch (err) {
+    if (err?.name !== 'WorkerUnavailable') throw err
+    window.lector.log.error(`ingesta sin worker: ${err.message}`)
+    return buildBook(bytes, options)
+  }
 }
 
 // Se puede leer si trae texto o, al menos, paginas que ensenar tal cual.
@@ -407,7 +458,7 @@ async function finishOcr (id) {
   try {
     const previous = openedBook.book
     const ocr = await window.lector.ocr.read(id)
-    const book = await buildBook(openedBook.bytes, { ocrItemsByPage: ocr?.pages })
+    const book = await ingest(openedBook.bytes, { ocrItemsByPage: ocr?.pages })
     await window.lector.book.writeCache(id, book)
     // El progreso provisional (pagina a pagina) cae en el primer bloque de la
     // misma pagina del texto nuevo; las notas, por su cita o su pagina.

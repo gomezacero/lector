@@ -28,7 +28,9 @@ import { classifyPage } from './pageKind.js'
 // v9: los capitulos desmesurados se parten en tramos (MAX_CHAPTER_BLOCKS).
 // Solo cambia la lista de capitulos, que se deriva de si misma: migracion en
 // sitio, sin reproceso y sin mover un offset.
-export const CACHE_VERSION = 9
+// v10: las fechas de un diario ("Sábado 23 de febrero") cuentan como
+// capitulos cuando no hay estructura mejor. Migracion en sitio.
+export const CACHE_VERSION = 10
 
 /**
  * @param {Uint8Array} bytes

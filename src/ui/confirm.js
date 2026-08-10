@@ -12,9 +12,11 @@ import { h } from './dom.js'
  * @param {string} options.title
  * @param {Array<string>} options.lines lo que se va a perder, una cosa por linea
  * @param {string} options.confirmLabel
+ * @param {boolean} [options.danger] false para confirmaciones que no destruyen
+ *   nada (localizar un archivo): boton primario en vez de rojo
  * @returns {Promise<boolean>}
  */
-export function confirmAction ({ title, lines = [], confirmLabel = 'Continuar' }) {
+export function confirmAction ({ title, lines = [], confirmLabel = 'Continuar', danger = true }) {
   return new Promise(resolve => {
     let answer = false
 
@@ -37,7 +39,7 @@ export function confirmAction ({ title, lines = [], confirmLabel = 'Continuar' }
     h('div', { class: 'confirm-actions' },
       cancel,
       h('button', {
-        class: 'btn btn-danger',
+        class: danger ? 'btn btn-danger' : 'btn btn-primary',
         text: confirmLabel,
         onclick: () => { answer = true; dialog.close() }
       })

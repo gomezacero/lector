@@ -12,7 +12,7 @@
 // para poder probarlo en vitest con los fixtures reales. chapters.js tambien
 // es puro, asi que la migracion de la v9 puede apoyarse en el.
 
-import { splitLongChapters } from './chapters.js'
+import { splitLongChapters, rechapterFromDates } from './chapters.js'
 
 // Cuanto texto se guarda junto al offset para poder re-anclarlo. Corto no
 // distingue frases parecidas; largo se rompe con cualquier cambio menor de
@@ -40,7 +40,10 @@ const MIGRATIONS = {
   7: () => ({ rebuild: true }),
   // v9 parte los capitulos desmesurados en tramos. La lista nueva se deriva
   // de la vieja sin tocar bloques ni offsets: transformable en sitio.
-  8: book => ({ book: { ...book, version: 9, chapters: splitLongChapters(book.chapters ?? []) } })
+  8: book => ({ book: { ...book, version: 9, chapters: splitLongChapters(book.chapters ?? []) } }),
+  // v10 recapitula los diarios: si el cache no tiene estructura real y sus
+  // bloques traen fechas-entrada, esas pasan a ser los capitulos. En sitio.
+  9: book => ({ book: rechapterFromDates(book) })
 }
 
 /**

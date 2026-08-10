@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildChapters, splitLongChapters, MAX_CHAPTER_BLOCKS } from '../src/pdf/chapters.js'
+import { buildChapters, splitLongChapters, rechapterFromDates, MAX_CHAPTER_BLOCKS } from '../src/pdf/chapters.js'
 
 const block = (text, page, type = 'paragraph') => ({ type, text, page })
 
@@ -75,6 +75,95 @@ describe('buildChapters', () => {
 
   it('no devuelve nada si no hay bloques', () => {
     expect(buildChapters([], [])).toEqual([])
+  })
+})
+
+describe('fechas de diario como capítulos', () => {
+  // "La tregua": cada entrada abre con una fecha en cursiva pequeña que la
+  // detección de títulos no ve, y el libro entero caía en un solo capítulo.
+  const diary = [
+    block('La tregua', 0),
+    block('Sábado 23 de febrero', 1), block('Hoy almorcé solo, en el Centro.', 1),
+    block('Domingo 24 de febrero', 2), block('No hay caso.', 2),
+    block('Lunes 25 de febrero', 3), block('Otra entrada más del diario.', 3),
+    block('11 de marzo de 1957', 4), block('También sin día de la semana.', 4)
+  ]
+
+  it('las líneas-fecha repetidas hacen de capítulos', () => {
+    const chapters = buildChapters(diary, [])
+    expect(chapters.map(c => c.title)).toEqual([
+      'Comienzo', 'Sábado 23 de febrero', 'Domingo 24 de febrero',
+      'Lunes 25 de febrero', '11 de marzo de 1957'
+    ])
+  })
+
+  it('el índice que declara el PDF sigue mandando', () => {
+    const outline = [
+      { title: 'Primera parte', page: 1, depth: 0 },
+      { title: 'Segunda parte', page: 3, depth: 0 }
+    ]
+    expect(buildChapters(diary, outline).map(c => c.title))
+      .toEqual(['Comienzo', 'Primera parte', 'Segunda parte'])
+  })
+
+  it('unas pocas fechas no desplazan a los títulos detectados', () => {
+    const blocks = [
+      block('Uno', 0, 'heading'), block('texto', 0),
+      block('3 de enero', 1), block('texto', 1),
+      block('Dos', 2, 'heading'), block('4 de enero', 2), block('5 de enero', 2),
+      block('Tres', 3, 'heading'), block('Cuatro', 4, 'heading')
+    ]
+    // Cuatro títulos contra tres fechas: mandan los títulos.
+    expect(buildChapters(blocks, []).map(c => c.title))
+      .toEqual(['Uno', 'Dos', 'Tres', 'Cuatro'])
+  })
+
+  it('una fecha dentro de un párrafo largo no cuenta', () => {
+    const blocks = [
+      block('El lunes 3 de enero fuimos al puerto y pasó de todo aquello.', 0),
+      block('más prosa', 0), block('y más', 1)
+    ]
+    // Cae al troceado de reserva: la mención en prosa no crea capítulos.
+    expect(buildChapters(blocks, []).map(c => c.title)).toEqual(['Sección 1'])
+  })
+})
+
+describe('rechapterFromDates (migración v10)', () => {
+  const diaryBook = () => ({
+    version: 9,
+    blocks: [
+      { type: 'paragraph', text: 'La tregua', page: 0, start: 0 },
+      { type: 'paragraph', text: 'Sábado 23 de febrero', page: 1, start: 10 },
+      { type: 'paragraph', text: 'Hoy almorcé solo.', page: 1, start: 31 },
+      { type: 'paragraph', text: 'Domingo 24 de febrero', page: 2, start: 49 },
+      { type: 'paragraph', text: 'No hay caso.', page: 2, start: 71 },
+      { type: 'paragraph', text: 'Lunes 25 de febrero', page: 3, start: 84 },
+      { type: 'paragraph', text: 'Más texto del diario.', page: 3, start: 104 }
+    ]
+  })
+
+  it('recapitula un cache sin estructura real', () => {
+    const book = { ...diaryBook(), chapters: [
+      { title: 'La tregua (1/2)', start: 0, end: 4 },
+      { title: 'La tregua (2/2)', start: 4, end: 7 }
+    ] }
+    const out = rechapterFromDates(book)
+    expect(out.version).toBe(10)
+    expect(out.chapters.map(c => c.title)).toEqual(
+      ['Comienzo', 'Sábado 23 de febrero', 'Domingo 24 de febrero', 'Lunes 25 de febrero'])
+    // Ni los bloques ni los offsets se tocan.
+    expect(out.blocks).toBe(book.blocks)
+  })
+
+  it('respeta unos capítulos con estructura de verdad', () => {
+    const chapters = [
+      { title: 'Prólogo', start: 0, end: 2 },
+      { title: 'El encuentro', start: 2, end: 5 },
+      { title: 'La cena', start: 5, end: 7 }
+    ]
+    const out = rechapterFromDates({ ...diaryBook(), chapters })
+    expect(out.version).toBe(10)
+    expect(out.chapters).toEqual(chapters)
   })
 })
 
