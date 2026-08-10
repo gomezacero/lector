@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildChapters } from '../src/pdf/chapters.js'
+import { buildChapters, splitLongChapters, MAX_CHAPTER_BLOCKS } from '../src/pdf/chapters.js'
 
 const block = (text, page, type = 'paragraph') => ({ type, text, page })
 
@@ -75,5 +75,32 @@ describe('buildChapters', () => {
 
   it('no devuelve nada si no hay bloques', () => {
     expect(buildChapters([], [])).toEqual([])
+  })
+})
+
+describe('splitLongChapters', () => {
+  it('parte un capítulo desmesurado en tramos legibles y numerados', () => {
+    const chapters = [{ title: 'Mecánica', start: 0, end: MAX_CHAPTER_BLOCKS * 2 + 10 }]
+    const parts = splitLongChapters(chapters)
+
+    expect(parts.length).toBe(3)
+    expect(parts.map(p => p.title)).toEqual(['Mecánica (1/3)', 'Mecánica (2/3)', 'Mecánica (3/3)'])
+    // Sin huecos ni solapes, y el conjunto cubre lo mismo que el original.
+    expect(parts[0].start).toBe(0)
+    expect(parts.at(-1).end).toBe(MAX_CHAPTER_BLOCKS * 2 + 10)
+    for (let i = 1; i < parts.length; i++) {
+      expect(parts[i].start).toBe(parts[i - 1].end)
+    }
+    for (const part of parts) {
+      expect(part.end - part.start).toBeLessThanOrEqual(MAX_CHAPTER_BLOCKS)
+    }
+  })
+
+  it('deja intactos los capítulos de tamaño normal', () => {
+    const chapters = [
+      { title: 'Uno', start: 0, end: 84 },
+      { title: 'Dos', start: 84, end: 300 }
+    ]
+    expect(splitLongChapters(chapters)).toEqual(chapters)
   })
 })

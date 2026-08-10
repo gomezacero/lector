@@ -57,9 +57,18 @@ function registerAppProtocol () {
     if (!cover && !target.startsWith(projectRoot + path.sep)) {
       return new Response('Forbidden', { status: 403 })
     }
+    const type = MIME[path.extname(target).toLowerCase()] ?? 'application/octet-stream'
     try {
+      // Un HEAD pregunta si el recurso existe (asi comprueba el lector si el
+      // modelo de layout esta instalado): responder leyendo el fichero entero
+      // cargaba 61 MB de ONNX en cada apertura de libro.
+      if (request.method === 'HEAD') {
+        const { size } = await fs.stat(target)
+        return new Response(null, {
+          headers: { 'content-type': type, 'content-length': String(size) }
+        })
+      }
       const body = await fs.readFile(target)
-      const type = MIME[path.extname(target).toLowerCase()] ?? 'application/octet-stream'
       return new Response(body, { headers: { 'content-type': type } })
     } catch {
       return new Response('Not found', { status: 404 })

@@ -227,7 +227,18 @@ function withColumnMargins (lines, columned = false) {
 function groupRows (items) {
   const rows = []
   for (const item of items) {
-    const row = rows.find(r => sameLine(r[0], item))
+    // Los items llegan ordenados por y, asi que solo las ultimas filas pueden
+    // estar a su alcance: se retrocede hasta quedar claramente fuera y se
+    // corta. Con miles de fragmentos por pagina (una grafica densa), recorrer
+    // todas las filas por cada item multiplicaba el coste sin necesidad.
+    // De entre las que alcanzan se queda la de mas arriba, como hacia el
+    // recorrido hacia delante.
+    let row = null
+    for (let i = rows.length - 1; i >= 0; i--) {
+      const first = rows[i][0]
+      if (sameLine(first, item)) row = rows[i]
+      else if (item.y - first.y > 3 * Math.max(item.h, first.h)) break
+    }
     if (row) row.push(item)
     else rows.push([item])
   }

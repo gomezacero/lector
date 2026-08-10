@@ -2,7 +2,7 @@
 // biblioteca, el lector, los ajustes y las notas, y se decide que se ve.
 
 import { buildBook, CACHE_VERSION } from '/src/pdf/pipeline.js'
-import { migrateBook, validateBook, reanchor } from '/src/pdf/migrate.js'
+import { migrateBook, validateBook, reanchor, textOf } from '/src/pdf/migrate.js'
 import { blockAtOffset, percentAt, chapterAtOffset } from '/src/reader/progress.js'
 import { createReader } from '/src/reader/reader.js'
 import { createRegionReader } from '/src/reader/regionReader.js'
@@ -15,6 +15,7 @@ import { createNotesView } from '/src/notes/notesView.js'
 import { percent } from '/src/ui/dom.js'
 import { confirmAction, readableSize } from '/src/ui/confirm.js'
 import { resolveMode, MODES, isFlowMode } from '/src/reader/mode.js'
+import { hasUnappliedOcr, unattemptedPages } from '/src/ocr/pending.js'
 import { createBookSheet } from '/src/library/bookSheet.js'
 import { makeCover } from '/src/pdf/pageRender.js'
 import { createOcrRun } from '/src/ocr/ocrRun.js'
@@ -249,13 +250,14 @@ async function drawCoverOf (book) {
  */
 async function loadOrBuild (loaded) {
   const cached = await window.lector.book.readCache(loaded.id)
-  // El OCR guardado sobrevive a todo reproceso: si cubre las paginas
-  // escaneadas del cache, este se reconstruye para incorporarlo aunque la
-  // version este al dia (pasa al reabrir un libro cuyo OCR termino con la
-  // aplicacion cerrada o a punto de cerrarse).
+  // El OCR guardado sobrevive a todo reproceso: si trae texto que el cache
+  // aun no incorpora, este se reconstruye aunque la version este al dia (pasa
+  // al reabrir un libro cuyo OCR termino con la aplicacion cerrada o a punto
+  // de cerrarse). Solo el texto de verdad cuenta: las paginas intentadas que
+  // quedaron vacias siguen siendo 'scanned' siempre, y tratarlas como
+  // pendientes reprocesaria el libro entero en cada apertura.
   const ocr = await window.lector.ocr.read(loaded.id)
-  const ocrPending = cached?.stats?.scannedPages > 0 && ocr?.pages &&
-    Object.keys(ocr.pages).length >= cached.stats.scannedPages
+  const ocrPending = hasUnappliedOcr(cached?.pageKinds, ocr?.pages)
 
   // Un cache al dia pero roto —un fichero a medio escribir, una edicion a
   // mano— se reprocesa en vez de dejar el lector con datos sin sentido.
@@ -286,8 +288,10 @@ async function loadOrBuild (loaded) {
 }
 
 // Se puede leer si trae texto o, al menos, paginas que ensenar tal cual.
+// Las 'ocr' sin bloque tambien se ensenan: son la imagen escaneada de siempre,
+// solo que con un reconocimiento que no dio texto util.
 const readable = book => book.blocks.length > 0 ||
-  (book.pageKinds ?? []).some(k => k === 'scanned' || k === 'mixed')
+  (book.pageKinds ?? []).some(k => k === 'scanned' || k === 'mixed' || k === 'ocr')
 
 const isScanned = book =>
   (book.stats?.scannedPages ?? 0) / Math.max(1, book.pageCount) > 0.5
@@ -299,8 +303,12 @@ const isScanned = book =>
  * fecha no, porque re-anclar no es leer.
  */
 async function reanchorStored (id, oldBook, book, known) {
+  // El texto completo del libro nuevo, una sola vez: son varios MB en un
+  // libro grande y cada re-anclaje lo necesita.
+  const text = textOf(book)
+
   if (known?.progress) {
-    const offset = reanchor(oldBook, book, known.progress)
+    const offset = reanchor(oldBook, book, known.progress, text)
     known.progress = {
       ...known.progress,
       offset,
@@ -313,7 +321,7 @@ async function reanchorStored (id, oldBook, book, known) {
   if (stored.length) {
     for (const note of stored) {
       // La cita que la nota ya guardaba para su lista es tambien su ancla.
-      note.offset = reanchor(oldBook, book, { offset: note.offset, context: note.quote })
+      note.offset = reanchor(oldBook, book, { offset: note.offset, context: note.quote }, text)
       note.block = blockAtOffset(book, note.offset)
       note.char = Math.max(0, note.offset - (book.blocks[note.block]?.start ?? 0))
     }
@@ -342,6 +350,10 @@ async function maybeStartOcr () {
   if (ocrDeclined.has(current.id)) return
 
   const stored = await window.lector.ocr.read(current.id)
+  // Sin paginas por intentar no hay nada que reconocer: lo ya reconocido lo
+  // aplico loadOrBuild al abrir. Arrancar un run vacio acababa en un onDone
+  // inmediato que reconstruia el libro (con su aviso) en cada apertura.
+  if (!unattemptedPages(book.pageKinds, stored?.pages).length) return
   const resumed = Object.keys(stored?.pages ?? {}).length > 0
 
   if (!resumed) {
@@ -540,9 +552,10 @@ async function switchMode (next) {
   showLoading('Cambiando de vista…')
   try {
     // La vista de pagina necesita el PDF para dibujarlo, no solo su texto.
-    const loaded = await window.lector.pdf.load(openedBook.path)
-    if (loaded?.error) return void toast('No se pudo releer el archivo')
-    await applyMode(next, openedBook.book, { offset: lastOffset }, loaded.bytes)
+    // Los bytes siguen en memoria desde la apertura (openDocument trabaja
+    // sobre una copia): releer el archivo y recalcular su hash por cada
+    // pulsacion de V eran cientos de ms de disco para nada.
+    await applyMode(next, openedBook.book, { offset: lastOffset }, openedBook.bytes)
   } finally {
     hideLoading()
   }
@@ -561,15 +574,23 @@ async function toggleMode () {
   await switchMode(next)
 }
 
-/** Guarda en la biblioteca los ajustes de lectura del libro abierto. */
+/**
+ * Guarda en la biblioteca los ajustes de lectura del libro abierto.
+ *
+ * En memoria se actualiza al instante; al disco se baja una sola vez al soltar
+ * el deslizador (cada llamada es un leer-y-reescribir de library.json entero
+ * por IPC, y arrastrando llegan decenas por segundo). El plazo es el mismo que
+ * el de los ajustes globales en settings.js.
+ */
+let bookSaveTimer = null
 function saveBookSettings (reading) {
   if (!current) return
   current = { ...current, reading, readingMode: reading.readingMode ?? current.readingMode }
-  window.lector.library.upsert({
-    id: current.id,
-    reading: current.reading,
-    readingMode: current.readingMode
-  })
+  // Capturado ahora: si el libro se cierra antes de que venza el plazo, se
+  // guarda igualmente lo suyo y no lo del siguiente.
+  const payload = { id: current.id, reading: current.reading, readingMode: current.readingMode }
+  clearTimeout(bookSaveTimer)
+  bookSaveTimer = setTimeout(() => window.lector.library.upsert(payload), 400)
 }
 
 // --- HUD -------------------------------------------------------------------
@@ -632,8 +653,16 @@ function toggleBookmark () {
 const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => resolve()))
 
 async function start () {
+  // Arrastrar un deslizador de cuerpo o ancho dispara decenas de cambios por
+  // segundo. El CSS ya se aplico (settings.apply), asi que la pantalla responde
+  // al momento; lo que se agrupa es la re-medida de lineas, que es lo caro.
+  // Mismo plazo que el ResizeObserver de abajo.
+  let relayoutTimer = null
   settings = createSettings(await window.lector.settings.read(), {
-    onLayoutChange: () => reader?.relayout(),
+    onLayoutChange: () => {
+      clearTimeout(relayoutTimer)
+      relayoutTimer = setTimeout(() => reader?.relayout(), 120)
+    },
     onChange: next => reader?.setFocusShape(next),
     onBookChange: saveBookSettings
   })

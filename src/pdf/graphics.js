@@ -100,12 +100,20 @@ export function mergeDrawings (drawings, tolerance = 10, pageArea = Infinity) {
   // antes de fundir nada. Si se dejaran, tocarian todo lo demas y acabarian
   // absorbiendolo: una pagina con una fotografia y un marco daria una sola
   // caja del tamano de la pagina, y la fotografia se perderia dentro.
-  const boxes = drawings
+  let boxes = drawings
     .filter(d => d.w * d.h < pageArea * 0.85)
     .map(d => ({ ...d, parts: 1 }))
-  let merged = true
 
-  while (merged) {
+  // Una grafica vectorial densa o un mapa traen miles de trazos, y la fusion
+  // fina es cuadratica por pasada: sin tope, una sola pagina podia colgar la
+  // ingesta. Por encima del tope se reduce antes por rejilla —misma figura
+  // final, algo menos de precision en los bordes— y la fusion fina remata.
+  if (boxes.length > MAX_FINE_BOXES) boxes = coarsen(boxes, tolerance * 4)
+
+  let merged = true
+  let passes = 0
+  // El tope de pasadas es un cinturon de seguridad: lo normal son dos o tres.
+  while (merged && ++passes <= MAX_PASSES) {
     merged = false
     for (let i = 0; i < boxes.length; i++) {
       for (let j = i + 1; j < boxes.length; j++) {
@@ -118,6 +126,23 @@ export function mergeDrawings (drawings, tolerance = 10, pageArea = Infinity) {
     }
   }
   return boxes
+}
+
+const MAX_FINE_BOXES = 1500
+const MAX_PASSES = 12
+
+/**
+ * Reduccion gruesa: las cajas cuyo centro cae en la misma celda de la rejilla
+ * se funden en una. Lineal, y deja el resultado listo para la fusion fina.
+ */
+export function coarsen (boxes, cell) {
+  const buckets = new Map()
+  for (const box of boxes) {
+    const key = `${Math.floor((box.x + box.w / 2) / cell)}:${Math.floor((box.y + box.h / 2) / cell)}`
+    const seen = buckets.get(key)
+    buckets.set(key, seen ? union(seen, box) : box)
+  }
+  return [...buckets.values()]
 }
 
 function nearby (a, b, tolerance) {

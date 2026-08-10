@@ -9,7 +9,10 @@
 // por su texto en vez de perderse en silencio.
 //
 // Este modulo es puro a proposito: no importa ni pdf.js ni nada del lector,
-// para poder probarlo en vitest con los fixtures reales.
+// para poder probarlo en vitest con los fixtures reales. chapters.js tambien
+// es puro, asi que la migracion de la v9 puede apoyarse en el.
+
+import { splitLongChapters } from './chapters.js'
 
 // Cuanto texto se guarda junto al offset para poder re-anclarlo. Corto no
 // distingue frases parecidas; largo se rompe con cualquier cambio menor de
@@ -34,7 +37,10 @@ const MIGRATIONS = {
   // bloques de los preliminares cambian de texto y de offsets.
   6: () => ({ rebuild: true }),
   // v8 marca las portadillas, y reconocerlas exige las lineas de la pagina.
-  7: () => ({ rebuild: true })
+  7: () => ({ rebuild: true }),
+  // v9 parte los capitulos desmesurados en tramos. La lista nueva se deriva
+  // de la vieja sin tocar bloques ni offsets: transformable en sitio.
+  8: book => ({ book: { ...book, version: 9, chapters: splitLongChapters(book.chapters ?? []) } })
 }
 
 /**
@@ -160,10 +166,12 @@ export function contextAt (book, offset, span = CONTEXT_CHARS) {
  * @param {Object|null} oldBook cache anterior, si aun existe
  * @param {Object} newBook libro reprocesado
  * @param {{offset:number, context?:string, page?:number|null}} target
+ * @param {string} [text] textOf(newBook) ya calculado. Re-anclando muchas
+ *   notas seguidas, recomponer varios MB de texto por cada una pesaba mas que
+ *   la propia busqueda: el llamador lo calcula una vez y lo pasa.
  * @returns {number} offset en el libro nuevo
  */
-export function reanchor (oldBook, newBook, target) {
-  const text = textOf(newBook)
+export function reanchor (oldBook, newBook, target, text = textOf(newBook)) {
   const scale = oldBook?.chars > 0 ? newBook.chars / oldBook.chars : 1
   const expected = Math.round((target.offset ?? 0) * scale)
 

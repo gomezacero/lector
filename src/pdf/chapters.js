@@ -6,6 +6,12 @@
 
 const FALLBACK_CHUNK = 100 // bloques por seccion cuando no hay estructura
 
+// Tope de bloques que el lector pinta de golpe. El capitulo se dibuja entero
+// y en dos capas: uno de mil y pico bloques ("Fisica Universitaria" trae uno
+// de 1495) son miles de nodos y cientos de miles de caracteres en el DOM, y
+// cada re-maquetado los vuelve a medir todos.
+export const MAX_CHAPTER_BLOCKS = 300
+
 /** Primer bloque que cae en esa pagina, prefiriendo un titulo si lo hay. */
 function blockAtPage (blocks, page, fromIndex = 0) {
   let candidate = -1
@@ -76,4 +82,34 @@ export function buildChapters (blocks, outline = []) {
       end: i + 1 < marks.length ? marks[i + 1].start : blocks.length
     }))
     .filter(chapter => chapter.end > chapter.start)
+}
+
+/**
+ * Parte los capitulos que superan MAX_CHAPTER_BLOCKS en tramos parejos y
+ * numerados ("Mecánica (2/5)"). No toca ni bloques ni offsets: el progreso y
+ * las notas anclan por caracter y ni se enteran.
+ *
+ * Se aplica despues de detectar portadillas, no dentro de buildChapters: las
+ * paginas donde arranca cada tramo intermedio no son principios de capitulo
+ * de verdad y no deben entrar como candidatas a portadilla.
+ */
+export function splitLongChapters (chapters) {
+  const out = []
+  for (const chapter of chapters) {
+    const size = chapter.end - chapter.start
+    if (size <= MAX_CHAPTER_BLOCKS) {
+      out.push(chapter)
+      continue
+    }
+    const count = Math.ceil(size / MAX_CHAPTER_BLOCKS)
+    const per = Math.ceil(size / count)
+    for (let i = 0; i < count; i++) {
+      out.push({
+        title: `${chapter.title} (${i + 1}/${count})`,
+        start: chapter.start + i * per,
+        end: Math.min(chapter.end, chapter.start + (i + 1) * per)
+      })
+    }
+  }
+  return out
 }

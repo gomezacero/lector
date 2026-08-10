@@ -95,9 +95,8 @@ export function toSentenceUnits (lines, blocks) {
   // renglon comparte ese renglon con la anterior, asi que las unidades se
   // solapan; asignar cada renglon a una sola frase dejaria fuera justo el
   // renglon en el que la frase empieza.
-  for (const blockIndex of blocksIn(lines)) {
+  for (const [blockIndex, own] of linesByBlock(lines)) {
     const block = blocks[blockIndex]
-    const own = lines.filter(line => line.block === blockIndex)
     if (!block?.text) {
       units.push(...own)
       continue
@@ -120,13 +119,19 @@ export function toSentenceUnits (lines, blocks) {
   return units
 }
 
-/** Bloques presentes en las lineas, en el orden en que aparecen. */
-function blocksIn (lines) {
-  const seen = []
+/**
+ * Lineas de cada bloque, en el orden en que aparecen. Una sola pasada: filtrar
+ * todas las lineas una vez por bloque era cuadratico, y en un capitulo de mil
+ * y pico bloques se notaba en cada re-maquetado.
+ */
+function linesByBlock (lines) {
+  const byBlock = new Map()
   for (const line of lines) {
-    if (seen.at(-1) !== line.block) seen.push(line.block)
+    const own = byBlock.get(line.block)
+    if (own) own.push(line)
+    else byBlock.set(line.block, [line])
   }
-  return seen
+  return byBlock
 }
 
 // Las frases de un bloque no cambian: se calculan una vez por libro abierto.

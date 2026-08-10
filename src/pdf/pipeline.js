@@ -4,7 +4,7 @@
 import { openDocument, closeDocument, extractPage, extractOutline, extractMetadata } from './extract.js'
 import { buildLines } from './lines.js'
 import { toBlocks } from './blocks.js'
-import { buildChapters } from './chapters.js'
+import { buildChapters, splitLongChapters } from './chapters.js'
 import { detectSections, detectOpeners, findBodyStart } from './sections.js'
 import { classifyPage } from './pageKind.js'
 
@@ -25,7 +25,10 @@ import { classifyPage } from './pageKind.js'
 // progreso y las notas se re-anclan por su texto.
 // v8: portadillas de capitulo en pageRoles. Los offsets no se mueven, pero
 // detectarlas exige las lineas de la pagina: se reprocesa.
-export const CACHE_VERSION = 8
+// v9: los capitulos desmesurados se parten en tramos (MAX_CHAPTER_BLOCKS).
+// Solo cambia la lista de capitulos, que se deriva de si misma: migracion en
+// sitio, sin reproceso y sin mover un offset.
+export const CACHE_VERSION = 9
 
 /**
  * @param {Uint8Array} bytes
@@ -110,8 +113,13 @@ export async function buildBook (bytes, { fileName = '', onProgress, ocrItemsByP
     // progreso ni paradas. Ancla provisional: cada pagina vale un caracter,
     // offset = indice de pagina. El libro queda marcado como provisional; el
     // dia que un OCR le ponga texto, el progreso se re-ancla por la pagina.
+    //
+    // Las paginas 'ocr' tambien cuentan: un reconocimiento que solo saco
+    // mobiliario (los folios de un album de laminas) deja las paginas en
+    // 'ocr' y ningun bloque, y sin esta clausula el libro perderia la marca
+    // y quedaria ilegible del todo en vez de seguir hojeandose.
     const provisional = blocks.length === 0 &&
-      pages.some(p => p.kind === 'scanned' || p.kind === 'mixed')
+      pages.some(p => p.kind === 'scanned' || p.kind === 'mixed' || p.kind === 'ocr')
     if (provisional) chars = pages.length
 
     return {
@@ -124,7 +132,9 @@ export async function buildBook (bytes, { fileName = '', onProgress, ocrItemsByP
       pageSizes: pages.map(p => ({ w: Math.round(p.width), h: Math.round(p.height) })),
       chars,
       blocks,
-      chapters,
+      // Partidos aqui y no en buildChapters: detectOpeners (arriba) necesita
+      // los principios de capitulo de verdad, no los cortes por tamano.
+      chapters: splitLongChapters(chapters),
       // El rol tambien por pagina, y no solo en los bloques: una pagina de
       // indice cuyo texto no llega a extraerse —pasa en "El Tunel"— no produce
       // ningun bloque, y la vista de pagina necesita saber igualmente que no
