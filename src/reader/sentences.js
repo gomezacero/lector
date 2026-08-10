@@ -106,13 +106,19 @@ export function toSentenceUnits (lines, blocks) {
       const touched = own.filter(line => line.start < sentence.end && line.end > sentence.start)
       if (!touched.length) continue
 
-      units.push({
-        ...touched[0],
-        top: Math.min(...touched.map(l => l.top)),
-        bottom: Math.max(...touched.map(l => l.bottom)),
-        start: sentence.start,
-        end: sentence.end
-      })
+      const top = Math.min(...touched.map(l => l.top))
+      const bottom = Math.max(...touched.map(l => l.bottom))
+
+      // Dos frases cortas que caben en los mismos renglones se leen de un
+      // vistazo: pararse dos veces sobre la misma banda es un tartamudeo, no
+      // una guia. Se alarga la parada anterior en vez de abrir otra igual.
+      const prev = units.at(-1)
+      if (prev && prev.block === blockIndex && prev.top === top && prev.bottom === bottom) {
+        prev.end = sentence.end
+        continue
+      }
+
+      units.push({ ...touched[0], top, bottom, start: sentence.start, end: sentence.end })
     }
   }
 

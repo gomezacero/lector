@@ -94,6 +94,27 @@ describe('toSentenceUnits', () => {
     expect(toSentenceUnits(lines, blocks)).toHaveLength(2)
   })
 
+  it('dos frases cortas sobre los mismos renglones comparten parada', () => {
+    // «¿Mario Vignale? No me acuerdo.» cabe en un renglón: pararse dos veces
+    // sobre la misma banda es un tartamudeo, no una guía.
+    const short = '¿Mario Vignale? No me acuerdo. Pero no tuve valor para confesárselo aquella tarde.'
+    const shortBlocks = [{ text: short, start: 0 }]
+    const shortLines = [
+      { block: 0, start: 0, end: 44, top: 0, bottom: 30 },
+      { block: 0, start: 44, end: short.length, top: 30, bottom: 60 }
+    ]
+
+    const units = toSentenceUnits(shortLines, shortBlocks)
+    expect(units).toHaveLength(2)
+    // La primera parada reúne las dos frases del primer renglón…
+    expect(units[0].start).toBe(0)
+    expect(units[0].end).toBe(30)
+    expect(units[0].top).toBe(0)
+    expect(units[0].bottom).toBe(30)
+    // …y la segunda es la frase larga que sigue.
+    expect(units[1].end).toBe(short.length)
+  })
+
   it('la unidad abarca todos los renglones que toca la frase', () => {
     const [, segunda] = toSentenceUnits(lines, blocks)
 

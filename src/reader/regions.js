@@ -265,3 +265,68 @@ function fullPage (book, page) {
   const size = book.pageSizes?.[page] ?? { w: 612, h: 792 }
   return { page, x: 0, y: 0, w: size.w, h: size.h }
 }
+
+// Techo de una parada, en alto de pagina. Por encima la banda ya no guia: una
+// entrada de diario de "La tregua" es UN parrafo que ocupa la pagina entera y
+// el foco iluminaba toda la hoja.
+const MAX_STOP_SHARE = 0.42
+
+/**
+ * Parte en tramos las paradas de texto demasiado altas y, si se pide, todas:
+ * con linesPerStop la vista de pagina se recorre por grupos de renglones, que
+ * es la guia linea a linea sobre la hoja original.
+ *
+ * Los bloques no guardan el rectangulo de cada renglon, pero dentro de un
+ * parrafo los renglones van a interlineado constante: cortar en multiplos del
+ * interlineado deja cada banda sobre renglones completos.
+ *
+ * Cada tramo recibe una porcion proporcional de los caracteres del bloque:
+ * offsets crecientes dentro del parrafo, que anclan el progreso y las notas
+ * igual que siempre (la regla de no mover offsets no se toca: son offsets del
+ * propio bloque, repartidos).
+ *
+ * @param {Object} book
+ * @param {Array} regions salida de buildRegions
+ * @param {number|null} [linesPerStop] renglones por parada; con null solo se
+ *   parte lo desmesurado y el resto sigue siendo un parrafo por parada
+ */
+export function splitStops (book, regions, linesPerStop = null) {
+  const leading = book.stats?.leading || 14
+  const out = []
+
+  for (const region of regions) {
+    const size = book.pageSizes?.[region.rect.page] ?? { w: 612, h: 792 }
+    const cap = linesPerStop
+      ? Math.max(1, linesPerStop) * leading
+      : size.h * MAX_STOP_SHARE
+    // En modo por lineas se tolera pasarse un poco: partir en dos un parrafo
+    // de renglon y medio no ayuda a nadie.
+    const threshold = linesPerStop ? cap * 1.5 : cap
+    const splittable = !region.role && region.type !== 'figure' &&
+      region.type !== 'page' && (region.chars ?? 0) > 0
+
+    if (!splittable || region.rect.h <= threshold) {
+      out.push(region)
+      continue
+    }
+
+    const lines = Math.max(1, Math.round(region.rect.h / leading))
+    const perStop = linesPerStop ?? Math.ceil(lines / Math.ceil(region.rect.h / cap))
+    const bands = Math.ceil(lines / perStop)
+
+    for (let i = 0; i < bands; i++) {
+      const firstLine = i * perStop
+      const y = region.rect.y + firstLine * leading
+      const h = i === bands - 1
+        ? region.rect.y + region.rect.h - y
+        : Math.min(perStop, lines - firstLine) * leading
+      out.push({
+        ...region,
+        rect: { ...region.rect, y, h },
+        start: region.start + Math.floor((region.chars ?? 0) * (firstLine / lines)),
+        chars: Math.ceil((region.chars ?? 0) / bands)
+      })
+    }
+  }
+  return out
+}

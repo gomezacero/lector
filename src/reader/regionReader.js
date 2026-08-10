@@ -10,7 +10,7 @@
 
 import { createPageRenderer } from '../pdf/pageRender.js'
 import { chapterAtOffset, percentAt, makeProgress, startOffset } from './progress.js'
-import { buildRegions } from './regions.js'
+import { buildRegions, splitStops } from './regions.js'
 
 const SAVE_DELAY = 900
 
@@ -27,6 +27,11 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
   let saveTimer = null
   let zoom = 1
   let layouts = null // cajas del modelo de layout, si este libro las tiene
+  // Renglones por parada, o null para detenerse por parrafos (partiendo solo
+  // los desmesurados). Lo fija el ajuste "Parada" con "Lineas en foco".
+  let stopLines = null
+
+  const buildStops = () => splitStops(book, buildRegions(book, layouts), stopLines)
 
 
   function prepareLayers () {
@@ -175,7 +180,7 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
       shownPage = -1
 
       await renderer.open(bytes)
-      regions = buildRegions(book, layouts)
+      regions = buildStops()
       prepareLayers()
       await goTo(regionOfOffset(anchor), { animate: false })
     },
@@ -195,7 +200,23 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
     },
 
     move: delta => goTo(index + delta),
-    page: direction => goTo(index + direction * 5),
+
+    /** AvPag/RePag pasan la hoja: a la primera parada de la pagina vecina. */
+    page (direction) {
+      const current = regions[index]?.rect.page
+      if (current == null) return
+      if (direction > 0) {
+        const next = regions.findIndex(r => r.rect.page > current)
+        return goTo(next === -1 ? regions.length - 1 : next)
+      }
+      let previous = -1
+      for (const region of regions) {
+        if (region.rect.page < current) previous = Math.max(previous, region.rect.page)
+      }
+      if (previous === -1) return goTo(0)
+      return goTo(regions.findIndex(r => r.rect.page === previous))
+    },
+
     jump: where => goTo(where === 'start' ? 0 : regions.length - 1),
 
     /** En esta vista, avanzar de capitulo es saltar al primero de su bloque. */
@@ -212,12 +233,15 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
       const region = regions[index]
       if (!region) return null
       const block = book.blocks[region.block]
+      // En un tramo de parrafo partido, la cita empieza donde empieza el
+      // tramo, no siempre al principio del bloque.
+      const char = Math.max(0, region.start - (block?.start ?? 0))
       return {
         block: region.block,
-        char: 0,
+        char,
         offset: region.start,
         text: block?.text ?? '',
-        context: (block?.text ?? '').slice(0, 200) || (region.type === 'page'
+        context: (block?.text ?? '').slice(char, char + 200).trim() || (region.type === 'page'
           ? `Página ${region.rect.page + 1}`
           : `Figura en la página ${region.rect.page + 1}`)
       }
@@ -231,6 +255,19 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
     },
 
     setFocusShape (settings) {
+      // Parada por lineas: "Lineas en foco" dice cuantos renglones abarca
+      // cada tramo. Cambiarlo rehace las paradas sin perder el punto.
+      const nextStop = settings.pageStop === 'lines'
+        ? Math.max(1, settings.focusLines ?? 1)
+        : null
+      if (nextStop !== stopLines) {
+        stopLines = nextStop
+        if (book) {
+          regions = buildStops()
+          void goTo(regionOfOffset(anchor), { animate: false })
+        }
+      }
+
       const next = settings.pageZoom ?? 1
       if (next === zoom) return
       zoom = next

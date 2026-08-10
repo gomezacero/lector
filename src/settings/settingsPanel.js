@@ -30,7 +30,8 @@ const SLIDERS = {
     { key: 'focusLines', label: 'Líneas en foco', min: 1, max: 5, step: 1, unit: '' }
   ],
   page: [
-    { key: 'pageZoom', label: 'Ampliación', min: 1, max: 2.6, step: 0.1, unit: '×' }
+    { key: 'pageZoom', label: 'Ampliación', min: 1, max: 2.6, step: 0.1, unit: '×' },
+    { key: 'focusLines', label: 'Líneas en foco', min: 1, max: 8, step: 1, unit: '' }
   ],
   both: [
     { key: 'blurAmount', label: 'Desenfoque', min: 0, max: 8, step: 0.2, unit: 'px' },
@@ -118,6 +119,18 @@ export function createSettingsPanel ({ settings, currentMode, onReadingMode, onC
         id => { settings.update({ theme: id }); render() }, 'Tema')),
 
       // La tipografia y la alineacion no pintan nada sobre la pagina original.
+      // Como se recorre la pagina original: por parrafos, o por grupos de
+      // renglones (la guia linea a linea sobre la hoja tal cual).
+      !isFlowMode(mode)
+        ? field('Parada', segmented(
+            [{ id: 'block', label: 'Por párrafo' }, { id: 'lines', label: 'Por líneas' }],
+            settings.get('pageStop') ?? 'block',
+            id => { settings.update({ pageStop: id }); render() }, 'Parada'),
+          settings.get('pageStop') === 'lines'
+            ? 'El foco recorre la página por grupos de renglones; «Líneas en foco» dice cuántos.'
+            : 'Una parada por párrafo o figura; los muy largos se recorren por tramos.')
+        : null,
+
       isFlowMode(mode)
         ? field('Tipografía', h('select', {
             id: 'set-fontFamily',
@@ -137,8 +150,10 @@ export function createSettingsPanel ({ settings, currentMode, onReadingMode, onC
         : null,
 
       ...SLIDERS[isFlowMode(mode) ? 'flow' : 'page']
-        // Las lineas en foco no pintan nada con la guia apagada.
-        .filter(spec => guided || spec.key !== 'focusLines')
+        // Las lineas en foco no pintan nada con la guia apagada; y en la
+        // vista de pagina solo cuentan con la parada por lineas.
+        .filter(spec => spec.key !== 'focusLines' ||
+          (guided && (isFlowMode(mode) || settings.get('pageStop') === 'lines')))
         .map(slider),
       // Y estos tres son el efecto en si.
       ...(guided ? SLIDERS.both.map(slider) : []),

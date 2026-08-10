@@ -65,6 +65,9 @@ function warn (message) {
 export const DEFAULT_SETTINGS = {
   // auto | flow (re-maquetado, linea a linea) | page (pagina original, region a region)
   readingMode: 'auto',
+  // En la vista de pagina: block (una parada por parrafo o figura) | lines
+  // (por grupos de renglones, con focusLines diciendo cuantos).
+  pageStop: 'block',
   pageZoom: 1,
   fontSize: 20,
   lineHeight: 1.75,

@@ -30,7 +30,7 @@ export const THEMES = [
 
 /** Ajustes que se guardan con el libro y no con la aplicacion. */
 export const READING_KEYS = new Set(
-  ['readingMode', 'fontSize', 'lineHeight', 'columnWidth', 'pageZoom'])
+  ['readingMode', 'fontSize', 'lineHeight', 'columnWidth', 'pageZoom', 'pageStop'])
 
 // Tocar cualquiera de estos cambia donde caen los saltos de linea.
 const LAYOUT_KEYS = new Set(['fontFamily', 'fontSize', 'lineHeight', 'columnWidth', 'textAlign'])
