@@ -1,10 +1,13 @@
-// Que paginas de un libro no son para leerlas: la cubierta y los indices.
+// Que paginas de un libro no son para leerlas seguidas: la cubierta, los
+// indices y las paginas de referencia (tablas de conversion, constantes,
+// listas de actividades).
 //
 // No se borra nada. Se marca, y ya decide el lector que hacer con cada cosa:
-// una cubierta se ensena entera porque esta hecha para mirarse, y un indice se
-// pliega porque sirve para navegar, no para recorrerlo entrada por entrada.
-// Borrar bloques moveria los offsets de caracter, que son el ancla del progreso
-// y de las notas de los libros ya empezados.
+// una cubierta se ensena entera porque esta hecha para mirarse, un indice se
+// pliega porque sirve para navegar, y una tabla de referencia se consulta de
+// un vistazo, no renglon a renglon. Borrar bloques moveria los offsets de
+// caracter, que son el ancla del progreso y de las notas de los libros ya
+// empezados.
 //
 // Todas las reglas son de pagina entera, nunca de bloque suelto: un renglon
 // corto aparece en cualquier sitio, pero una pagina llena de renglones cortos
@@ -43,7 +46,7 @@ const MIN_PAGES_FOR_COVER = 10
 /**
  * @param {Array<{lines:Array}>} pages paginas con sus lineas ya construidas
  * @param {number} [bodySize] cuerpo de letra del libro, para juzgar los titulos
- * @returns {Map<number, 'cover'|'toc'>} rol por indice de pagina
+ * @returns {Map<number, 'cover'|'toc'|'reference'>} rol por indice de pagina
  */
 export function detectSections (pages, bodySize = 0) {
   const roles = new Map()
@@ -53,6 +56,7 @@ export function detectSections (pages, bodySize = 0) {
 
   markCover(pages, textOf, roles)
   markIndexes(pages, textOf, roles, bodySize)
+  markReferences(pages, textOf, roles)
 
   // La salvaguarda es sobre el total: cada regla por separado puede ser
   // razonable y el conjunto seguir siendo demasiado.
@@ -145,6 +149,137 @@ function looksLikeIndex (lines) {
   // muchos pies acaban en un numero ("3x3 conv, 64").
   const numbered = lines.filter(l => ENDS_IN_NUMBER.test(l.text)).length
   return lines.length >= 8 && numbered >= lines.length * 0.6
+}
+
+// --- Paginas de referencia ---------------------------------------------------
+
+// Con menos renglones no hay tabla que valga: es una pagina normal corta.
+const MIN_REFERENCE_LINES = 12
+
+// Cuantos renglones de prosa de verdad se toleran. Una pagina del cuerpo de un
+// libro de fisica esta llena de ecuaciones cortas, pero siempre las acompanan
+// parrafos que ocupan buena parte de sus renglones. En una tabla densa la
+// prosa que hay son notas al pie: la de constantes de "Fisica Universitaria"
+// trae 8 renglones de fuentes y advertencias entre 115. El tope es por eso
+// proporcional, con un minimo absoluto para las paginas justas de renglones.
+const REFERENCE_MAX_PROSE = 2
+const REFERENCE_MAX_PROSE_SHARE = 0.1
+
+// Densidad de cifras y simbolos de formula sobre los caracteres con tinta. La
+// prosa ronda el 1-2% incluso citando fechas; una tabla de conversiones o de
+// constantes pasa del 20%. El requisito de simbolos es ademas la salvaguarda
+// contra la poesia: versos cortos y sin parrafos, pero sin un solo numero.
+const REFERENCE_SYMBOL_SHARE = 0.12
+
+// Senal alternativa: renglones que son SOLO un numero ("1.1", "359"). En las
+// listas de actividades y estrategias los numeros van en columnas propias y
+// salen como renglones sueltos; la densidad de simbolos no los ve porque el
+// grueso de la tinta esta en los titulos de al lado.
+const REFERENCE_NUMERIC_LINES = 0.3
+
+const PROSE_MIN_CHARS = 55
+const PROSE_LETTER_SHARE = 0.7
+
+/**
+ * Tablas de conversion, constantes fisicas, listas de actividades con su
+ * numero: paginas para consultar, no para recorrer renglon a renglon. En
+ * "Fisica Universitaria" producian hasta 19 paradas por pagina, varias
+ * cortando una tabla por la mitad.
+ */
+function markReferences (pages, textOf, roles) {
+  for (let i = 0; i < pages.length; i++) {
+    if (roles.has(i)) continue
+    if (isReferencePage(textOf(pages[i]))) roles.set(i, 'reference')
+  }
+}
+
+function isReferencePage (lines) {
+  if (lines.length < MIN_REFERENCE_LINES) return false
+
+  let prose = 0
+  let numeric = 0
+  let ink = 0
+  let symbols = 0
+  for (const line of lines) {
+    const text = line.text
+    if (text.length >= PROSE_MIN_CHARS && letterShare(text) >= PROSE_LETTER_SHARE) prose++
+    if (/^[\d.,\s-]+$/.test(text)) numeric++
+    for (const ch of text) {
+      if (/\s/.test(ch)) continue
+      ink++
+      if (/[0-9=×+*/·°%±†‡§]/.test(ch)) symbols++
+    }
+  }
+
+  if (prose > Math.max(REFERENCE_MAX_PROSE, lines.length * REFERENCE_MAX_PROSE_SHARE)) return false
+  if (numeric >= lines.length * REFERENCE_NUMERIC_LINES) return true
+  return ink > 0 && symbols / ink >= REFERENCE_SYMBOL_SHARE
+}
+
+// --- Portadillas de capitulo -------------------------------------------------
+
+// Tipo "display": el titulo de una portadilla se compone varias veces mas
+// grande que el cuerpo. Un titulo de capitulo corriente ronda 1.3 cuerpos;
+// el de la portadilla de "Fisica Universitaria" mide 3.
+const OPENER_DISPLAY_RATIO = 2.2
+
+// Una portadilla es un poster, no una pagina de texto: si la prosa domina,
+// es solo un capitulo que abre con el titulo en grande y se lee normal.
+const OPENER_MAX_PROSE_SHARE = 0.4
+
+/**
+ * Primeras paginas de capitulo compuestas como un poster: titulo gigante,
+ * foto, recuadro de metas. Sus renglones sueltos daban una docena de paradas
+ * caoticas; enteras se miran de un vistazo, como la cubierta.
+ *
+ * Solo se examinan las paginas donde de verdad arranca un capitulo (eso lo
+ * sabe quien llama, que ya construyo los capitulos), y la marca vive solo en
+ * pageRoles: no toca los bloques, para que findBodyStart no se salte el
+ * primer capitulo entero.
+ *
+ * @param {Array<{lines:Array}>} pages
+ * @param {Array<number>} candidatePages paginas donde arranca un capitulo
+ * @param {number} bodySize cuerpo del documento
+ * @returns {Set<number>}
+ */
+export function detectOpeners (pages, candidatePages, bodySize) {
+  const openers = new Set()
+  if (!bodySize) return openers
+
+  for (const index of candidatePages) {
+    if (!Number.isInteger(index) || openers.has(index)) continue
+    const page = pages[index]
+    if (!page) continue
+
+    const lines = page.lines.filter(l => !l.figure && l.text)
+    if (!lines.length) continue
+
+    const maxSize = Math.max(...lines.map(l => l.fontSize ?? 0))
+    if (maxSize < bodySize * OPENER_DISPLAY_RATIO) continue
+
+    // El tipo gigante solo no basta: una novela con numeros de capitulo
+    // decorativos sobre una pagina de prosa se lee renglon a renglon.
+    const hasFigure = page.lines.some(l => l.figure)
+    const columned = lines.some(l => l.columned)
+    const prose = lines.filter(l =>
+      l.text.length >= PROSE_MIN_CHARS && letterShare(l.text) >= PROSE_LETTER_SHARE).length
+
+    if (hasFigure || columned || prose / lines.length < OPENER_MAX_PROSE_SHARE) {
+      openers.add(index)
+    }
+  }
+  return openers
+}
+
+function letterShare (text) {
+  let letters = 0
+  let ink = 0
+  for (const ch of text) {
+    if (/\s/.test(ch)) continue
+    ink++
+    if (/\p{L}/u.test(ch)) letters++
+  }
+  return ink ? letters / ink : 0
 }
 
 const averageLength = lines =>

@@ -42,9 +42,16 @@ export async function extractPage (doc, pageNumber, { withDrawings = false } = {
 
   // Solo se piden los dibujos cuando hacen falta: la lista de operaciones es
   // bastante mas cara de obtener que el texto.
-  const drawings = withDrawings
-    ? mergeDrawings(extractDrawings(await page.getOperatorList(), viewport.transform, pdfjsLib.OPS), 10, viewport.width * viewport.height)
+  const raw = withDrawings
+    ? extractDrawings(await page.getOperatorList(), viewport.transform, pdfjsLib.OPS)
     : []
+  const drawings = withDrawings
+    ? mergeDrawings(raw, 10, viewport.width * viewport.height)
+    : []
+  // Las cajas de imagen tambien crudas: mergeDrawings aparta lo que cubre casi
+  // toda la pagina, que es exactamente la imagen de un escaneo. Quien quiera
+  // saber si la pagina ES una imagen necesita verlas antes de ese filtro.
+  const images = raw.filter(d => d.image)
 
   const items = []
   for (const item of content.items) {
@@ -72,7 +79,7 @@ export async function extractPage (doc, pageNumber, { withDrawings = false } = {
   }
 
   page.cleanup()
-  return { width: viewport.width, height: viewport.height, items, drawings }
+  return { width: viewport.width, height: viewport.height, items, drawings, images }
 }
 
 /** Indice del PDF, si el documento lo declara. */

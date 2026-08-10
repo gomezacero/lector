@@ -24,6 +24,17 @@ files:
   - '!node_modules/pdfjs-dist/build/*.min.mjs'
   - '!node_modules/pdfjs-dist/build/pdf.sandbox.mjs'
   - '!node_modules/pdfjs-dist/*.md'
+  # El OCR local: los idiomas van en vendor/ y el motor como dependencia. Del
+  # paquete npm sobran los fuentes y el bundle UMD (se usa el ESM); el nucleo
+  # WASM se queda entero porque el worker elige la variante segun la CPU.
+  - vendor/**/*
+  - '!node_modules/tesseract.js/{src,scripts,docs,examples,benchmarks}/**'
+  - '!node_modules/tesseract.js/dist/tesseract.min.js'
+  # El modelo de layout NO se empaqueta todavia: el ONNX disponible es AGPL y
+  # esta aplicacion es MIT. La integracion se enciende sola cuando el modelo
+  # esta presente; sin el, las heuristicas mandan como siempre.
+  - '!vendor/layout/**'
+  - '!node_modules/onnxruntime-web/**'
 
 win:
   target: portable

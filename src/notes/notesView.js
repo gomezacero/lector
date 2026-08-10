@@ -16,10 +16,12 @@ export function createNotesView ({ onClose, onGo, onDelete, onEdit }) {
   function noteCard (note, book) {
     const editor = h('textarea', {
       placeholder: 'Escribe una nota…',
-      value: note.text,
       onblur: event => onEdit(note.id, event.target.value.trim()),
       onclick: event => event.stopPropagation()
     })
+    // Como propiedad y no como atributo: <textarea> no tiene atributo value,
+    // asi que por setAttribute el texto guardado llegaria siempre vacio.
+    editor.value = note.text ?? ''
 
     return h('div', { class: 'note', onclick: () => onGo(note) },
       h('p', { class: 'note-quote', text: `«${note.quote}»` }),
@@ -49,9 +51,18 @@ export function createNotesView ({ onClose, onGo, onDelete, onEdit }) {
       body.replaceChildren(...notes.map(note => noteCard(note, book)))
     },
 
-    open: () => panel.classList.add('is-open'),
-    close: () => panel.classList.remove('is-open'),
-    toggle: () => panel.classList.toggle('is-open'),
+    open,
+    close,
+    toggle: () => (panel.classList.contains('is-open') ? close() : open()),
     get isOpen () { return panel.classList.contains('is-open') }
+  }
+
+  function open () { panel.classList.add('is-open') }
+
+  function close () {
+    // Cerrar con el foco aun en una nota (Esc, Ctrl+B) no dispara blur por si
+    // solo: se fuerza para que lo escrito llegue a onEdit antes de ocultar.
+    if (panel.contains(document.activeElement)) document.activeElement.blur()
+    panel.classList.remove('is-open')
   }
 }

@@ -2,6 +2,8 @@
 // biblioteca, el lector, los ajustes y las notas, y se decide que se ve.
 
 import { buildBook, CACHE_VERSION } from '/src/pdf/pipeline.js'
+import { migrateBook, validateBook, reanchor } from '/src/pdf/migrate.js'
+import { blockAtOffset, percentAt, chapterAtOffset } from '/src/reader/progress.js'
 import { createReader } from '/src/reader/reader.js'
 import { createRegionReader } from '/src/reader/regionReader.js'
 import { attachNavigation } from '/src/reader/navigation.js'
@@ -15,6 +17,8 @@ import { confirmAction, readableSize } from '/src/ui/confirm.js'
 import { resolveMode, MODES, isFlowMode } from '/src/reader/mode.js'
 import { createBookSheet } from '/src/library/bookSheet.js'
 import { makeCover } from '/src/pdf/pageRender.js'
+import { createOcrRun } from '/src/ocr/ocrRun.js'
+import { createLayoutRun, layoutAvailable } from '/src/layout/layoutRun.js'
 
 const $ = id => document.getElementById(id)
 const HUD_IDLE_MS = 2200
@@ -27,6 +31,7 @@ const el = {
   contentDim: $('content-dim'),
   hud: $('hud'),
   hudChapter: $('hud-chapter'),
+  hudOcr: $('hud-ocr'),
   hudProgress: $('hud-progress'),
   hudMode: $('hud-mode'),
   hudBookmark: $('hud-bookmark'),
@@ -48,6 +53,9 @@ let lastOffset = 0 // ultimo punto de lectura, para conservarlo al cambiar de vi
 let bookSheet = null
 let pendingSave = null // ultima escritura en la biblioteca, para no leerla antes de tiempo
 let hudTimer = null
+let ocrRun = null // reconocimiento en marcha del libro abierto
+const ocrDeclined = new Set() // libros cuyo OCR se rechazo, solo esta sesion
+let layoutRun = null // analisis de layout en marcha del libro abierto
 
 // --- Avisos y carga --------------------------------------------------------
 
@@ -140,19 +148,29 @@ async function openBook (filePath, entry, options) {
 async function openLoaded (loaded, entry, { sheet = false } = {}) {
   try {
     showLoading('Abriendo el libro…')
-    const book = await loadOrBuild(loaded)
+    const { book, previous } = await loadOrBuild(loaded)
 
     // Abrir por el dialogo un libro que ya esta en la biblioteca no trae su
     // ficha: sin recuperarla aqui, el progreso y el modo se sobrescribirian y
     // se perderia por donde iba la lectura.
     const known = entry ?? entries.find(e => e.id === loaded.id)
 
-    // Un PDF escaneado es una imagen por pagina: no hay texto que extraer y
-    // abrirlo dejaria la pantalla en blanco sin explicar por que.
-    if (!book.blocks.length) {
+    // Antes de que el progreso viejo toque el libro nuevo.
+    if (previous) await reanchorStored(loaded.id, previous, book, known)
+
+    // Sin texto y sin paginas escaneadas no hay nada que ensenar: ni bloques
+    // que re-maquetar ni imagen que hojear. Un escaneado si sigue adelante,
+    // en modo pagina.
+    if (!readable(book)) {
       el.body.dataset.view = 'library'
-      toast('Este PDF no contiene texto, probablemente sea un escaneo. No se puede leer con esta aplicación.', 7000)
+      toast('Este PDF no contiene ni texto ni páginas que mostrar. No se puede leer con esta aplicación.', 7000)
       return
+    }
+
+    if (book.stats?.suspectPages > 0 && !known) {
+      // Solo la primera vez: el aviso repetido en cada apertura cansa mas de
+      // lo que ayuda, y el libro no va a cambiar.
+      toast(`Ojo: ${book.stats.suspectPages === 1 ? 'una página trae' : `${book.stats.suspectPages} páginas traen`} texto dudoso; si algo se lee raro, prueba la vista de página.`, 6000)
     }
 
     current = {
@@ -161,6 +179,9 @@ async function openLoaded (loaded, entry, { sheet = false } = {}) {
       title: book.title,
       author: book.author,
       pageCount: book.pageCount,
+      // La estanteria lo dice en la tarjeta: un escaneado se hojea, pero aun
+      // no se puede leer linea a linea.
+      scanned: isScanned(book),
       addedAt: known?.addedAt ?? Date.now(),
       lastOpenedAt: Date.now(),
       progress: known?.progress ?? null,
@@ -172,7 +193,14 @@ async function openLoaded (loaded, entry, { sheet = false } = {}) {
 
     notes = createNotesStore(loaded.id)
     await notes.load()
-    openedBook = { book, path: loaded.path, bytes: loaded.bytes }
+    openedBook = {
+      book,
+      path: loaded.path,
+      bytes: loaded.bytes,
+      // Cajas del modelo de layout ya analizadas, si las hay: la vista de
+      // pagina las prefiere a las heuristicas en esas paginas.
+      layouts: await window.lector.layout.read(loaded.id)
+    }
 
 
     // La ficha solo aparece la primera vez: reabrir un libro conocido lleva
@@ -213,22 +241,238 @@ async function drawCoverOf (book) {
   }
 }
 
+/**
+ * Devuelve el libro listo para leer y, cuando hubo que reprocesarlo, tambien
+ * el cache anterior: es la unica ocasion de re-anclar el progreso y las notas
+ * contra el texto viejo antes de que desaparezca.
+ * @returns {Promise<{book: Object, previous: Object|null}>}
+ */
 async function loadOrBuild (loaded) {
   const cached = await window.lector.book.readCache(loaded.id)
-  if (cached?.version === CACHE_VERSION) return cached
+  // El OCR guardado sobrevive a todo reproceso: si cubre las paginas
+  // escaneadas del cache, este se reconstruye para incorporarlo aunque la
+  // version este al dia (pasa al reabrir un libro cuyo OCR termino con la
+  // aplicacion cerrada o a punto de cerrarse).
+  const ocr = await window.lector.ocr.read(loaded.id)
+  const ocrPending = cached?.stats?.scannedPages > 0 && ocr?.pages &&
+    Object.keys(ocr.pages).length >= cached.stats.scannedPages
+
+  // Un cache al dia pero roto —un fichero a medio escribir, una edicion a
+  // mano— se reprocesa en vez de dejar el lector con datos sin sentido.
+  if (cached?.version === CACHE_VERSION && !validateBook(cached).length && !ocrPending) {
+    return { book: cached, previous: null }
+  }
+
+  // Un cache de una version anterior puede transformarse en sitio cuando el
+  // cambio no movio ni el texto ni los offsets; si no, cae al reproceso.
+  if (!ocrPending && typeof cached?.version === 'number' && cached.version < CACHE_VERSION) {
+    const migrated = migrateBook(cached, CACHE_VERSION)
+    if (migrated.book && !validateBook(migrated.book).length) {
+      await window.lector.book.writeCache(loaded.id, migrated.book)
+      return { book: migrated.book, previous: null }
+    }
+  }
 
   const book = await buildBook(loaded.bytes, {
     fileName: loaded.fileName,
+    ocrItemsByPage: ocr?.pages,
     onProgress: (done, total) => showLoading(`Preparando el libro… página ${done} de ${total}`)
   })
-  // Un PDF sin texto no llega a entrar en la biblioteca, asi que guardar su
+  // Un PDF ilegible no llega a entrar en la biblioteca, asi que guardar su
   // cache dejaria un fichero que ninguna entrada nombra y que el borrado nunca
-  // podria alcanzar. Tampoco ahorra nada: no hay nada que releer.
-  if (book.blocks.length) await window.lector.book.writeCache(loaded.id, book)
-  return book
+  // podria alcanzar. Un escaneado sin texto si entra, y si se guarda.
+  if (readable(book)) await window.lector.book.writeCache(loaded.id, book)
+  return { book, previous: cached ?? null }
+}
+
+// Se puede leer si trae texto o, al menos, paginas que ensenar tal cual.
+const readable = book => book.blocks.length > 0 ||
+  (book.pageKinds ?? []).some(k => k === 'scanned' || k === 'mixed')
+
+const isScanned = book =>
+  (book.stats?.scannedPages ?? 0) / Math.max(1, book.pageCount) > 0.5
+
+/**
+ * Tras un reproceso los offsets pueden haberse movido: el punto de lectura y
+ * las notas se buscan de nuevo por su texto —y por su pagina como repuesto—
+ * antes de que nada los use. El porcentaje y el capitulo se recalculan; la
+ * fecha no, porque re-anclar no es leer.
+ */
+async function reanchorStored (id, oldBook, book, known) {
+  if (known?.progress) {
+    const offset = reanchor(oldBook, book, known.progress)
+    known.progress = {
+      ...known.progress,
+      offset,
+      percent: percentAt(book, offset),
+      chapter: chapterAtOffset(book, offset)
+    }
+  }
+
+  const stored = (await window.lector.notes.read(id)) ?? []
+  if (stored.length) {
+    for (const note of stored) {
+      // La cita que la nota ya guardaba para su lista es tambien su ancla.
+      note.offset = reanchor(oldBook, book, { offset: note.offset, context: note.quote })
+      note.block = blockAtOffset(book, note.offset)
+      note.char = Math.max(0, note.offset - (book.blocks[note.block]?.start ?? 0))
+    }
+    await window.lector.notes.write(id, stored)
+  }
+}
+
+// --- OCR de escaneados -----------------------------------------------------
+
+function setOcrChip (text) {
+  el.hudOcr.textContent = text ?? ''
+  el.hudOcr.hidden = !text
+}
+
+/**
+ * Ofrece reconocer el texto de las paginas escaneadas del libro abierto.
+ *
+ * Pregunta solo la primera vez: son minutos de CPU y es una decision del
+ * lector. Una pasada ya empezada se reanuda sin preguntar, y al terminar el
+ * libro se reconstruye con el texto reconocido sin perder el punto.
+ */
+async function maybeStartOcr () {
+  const book = openedBook?.book
+  if (!book || ocrRun || !current) return
+  if (!(book.stats?.scannedPages > 0)) return
+  if (ocrDeclined.has(current.id)) return
+
+  const stored = await window.lector.ocr.read(current.id)
+  const resumed = Object.keys(stored?.pages ?? {}).length > 0
+
+  if (!resumed) {
+    const confirmed = await confirmAction({
+      title: '¿Reconocer el texto de este libro?',
+      lines: [
+        'Es un escaneado: el texto se puede reconocer aquí mismo, sin salir de tu equipo.',
+        'Tarda unos minutos y puedes seguir hojeando mientras tanto.',
+        'Al terminar podrás leerlo línea a línea y anotar frases.'
+      ],
+      confirmLabel: 'Reconocer el texto'
+    })
+    if (!confirmed) {
+      ocrDeclined.add(current.id)
+      return
+    }
+  }
+
+  const id = current.id
+  ocrRun = createOcrRun({
+    id,
+    book,
+    bytes: openedBook.bytes,
+    onProgress: (done, total) => setOcrChip(`Reconociendo texto… ${done}/${total}`),
+    onDone: () => finishOcr(id),
+    onError: err => {
+      console.error(err)
+      ocrRun = null
+      setOcrChip(null)
+      toast(`El reconocimiento falló: ${err.message}`, 6000)
+    }
+  })
+  setOcrChip('Reconociendo texto…')
+  wakeHud()
+  void ocrRun.start()
+}
+
+/** Con todo reconocido, el libro se reconstruye ya con su texto. */
+async function finishOcr (id) {
+  ocrRun = null
+  setOcrChip(null)
+  // Si el libro ya no esta abierto, no se pierde nada: loadOrBuild aplica el
+  // OCR guardado en la proxima apertura.
+  if (!openedBook || current?.id !== id) return
+
+  showLoading('Aplicando el texto reconocido…')
+  try {
+    const previous = openedBook.book
+    const ocr = await window.lector.ocr.read(id)
+    const book = await buildBook(openedBook.bytes, { ocrItemsByPage: ocr?.pages })
+    await window.lector.book.writeCache(id, book)
+    // El progreso provisional (pagina a pagina) cae en el primer bloque de la
+    // misma pagina del texto nuevo; las notas, por su cita o su pagina.
+    await reanchorStored(id, previous, book, current)
+    await notes.load()
+
+    openedBook.book = book
+    current = { ...current, title: book.title, scanned: isScanned(book) }
+    entries = await window.lector.library.upsert({
+      id, title: current.title, scanned: current.scanned, progress: current.progress
+    })
+
+    if (el.body.dataset.view === 'reader') {
+      await applyMode(resolveMode(book, current.readingMode), book, current.progress, openedBook.bytes)
+      notesView.render(notes.all, book)
+    }
+    toast('Texto reconocido: ya puedes leer este libro línea a línea.', 6000)
+  } catch (err) {
+    console.error(err)
+    toast(`No se pudo aplicar el texto reconocido: ${err.message}`, 6000)
+  } finally {
+    hideLoading()
+  }
+}
+
+/**
+ * Analiza en segundo plano las paginas complejas del libro abierto —hoy, sus
+ * portadillas— con el modelo de layout, si esta instalado. Sin dialogo: son
+ * segundos, no minutos, y el resultado solo mejora las paradas.
+ */
+async function maybeStartLayout () {
+  const book = openedBook?.book
+  if (!book || layoutRun || ocrRun || !current) return
+
+  const pages = (book.pageRoles ?? [])
+    .map((role, page) => role === 'opener' ? page : -1)
+    .filter(page => page >= 0)
+    .filter(page => !openedBook.layouts?.pages?.[page])
+  if (!pages.length) return
+  if (!await layoutAvailable()) return
+
+  const id = current.id
+  layoutRun = createLayoutRun({
+    id,
+    bytes: openedBook.bytes,
+    pages,
+    onProgress: (done, total) => setOcrChip(`Analizando páginas… ${done}/${total}`),
+    onDone: stored => finishLayout(id, stored),
+    onError: err => {
+      // El modelo es un extra: si falla, las heuristicas siguen mandando.
+      console.warn('layout:', err.message)
+      layoutRun = null
+      setOcrChip(null)
+    }
+  })
+  void layoutRun.start()
+}
+
+/** Con las cajas listas, la vista de pagina reconstruye sus paradas. */
+async function finishLayout (id, stored) {
+  layoutRun = null
+  setOcrChip(null)
+  if (!openedBook || current?.id !== id) return
+
+  openedBook.layouts = stored
+  // Solo la vista de pagina usa las cajas; el flujo no se toca. Se recoloca
+  // en el mismo offset: las paradas cambian, el punto de lectura no.
+  if (el.body.dataset.view === 'reader' && el.body.dataset.mode === 'page') {
+    reader.setLayouts?.(stored)
+    await reader.open(openedBook.book, { offset: lastOffset }, notes, openedBook.bytes)
+    reader.refreshStatus()
+  }
 }
 
 async function backToLibrary () {
+  // Lo reconocido hasta ahora queda guardado y se reanuda al reabrir.
+  ocrRun?.cancel()
+  ocrRun = null
+  layoutRun?.cancel()
+  layoutRun = null
+  setOcrChip(null)
   if (reader?.isOpen) reader.close()
   // El cierre guarda el punto de lectura; sin esperarlo, la estanteria se
   // repinta con los datos de antes y el progreso parece no haberse movido.
@@ -260,6 +504,10 @@ async function enterReader () {
     await applyMode(resolveMode(book, current.readingMode), book, current.progress, bytes)
     notesView.render(notes.all, book)
     wakeHud()
+    // Con el lector ya en pantalla: el reconocimiento y el analisis de
+    // layout son de fondo.
+    void maybeStartOcr()
+    void maybeStartLayout()
   } catch (err) {
     // Sin esto, un fallo al abrir deja la pantalla en blanco sin decir nada.
     console.error(err)
@@ -280,6 +528,7 @@ async function applyMode (mode, book, progress, bytes) {
   el.hudMode.title = `${MODES[mode].hint}. Pulsa o usa V para cambiar de vista.`
 
   reader.setFocusShape(settings.all)
+  reader.setLayouts?.(openedBook?.layouts ?? null)
   await reader.open(book, progress, notes, bytes, mode === 'sentence' ? 'sentence' : 'line')
   settingsPanel?.refresh()
 }
@@ -300,6 +549,12 @@ async function switchMode (next) {
 }
 
 async function toggleMode () {
+  // Un escaneado sin OCR no tiene texto que re-maquetar: V no lleva a ninguna
+  // parte y conviene decir por que en vez de no hacer nada.
+  if (openedBook?.book?.provisional) {
+    toast('Este libro es un escaneado sin texto reconocido: solo se puede hojear la página original.', 5000)
+    return
+  }
   const next = el.body.dataset.mode === 'page' ? 'flow' : 'page' // V alterna entre re-maquetado y pagina
   // El modo es del libro, no de la aplicacion: cambiarlo aqui no toca los demas.
   settings.update({ readingMode: next })
@@ -468,6 +723,16 @@ async function start () {
     settings: () => { if (reader.isOpen) showPanel('settings') },
     notes: () => { if (reader.isOpen) showPanel('notes') }
   })
+
+  // El almacen avisa si tuvo que apartar un fichero danado: hay que decirlo.
+  window.lector.onStorageWarning(message => toast(message, 8000))
+
+  // Lo que se escape a cualquier catch acaba en el log de userData; empaquetada,
+  // la consola del renderer no la ve nadie.
+  window.addEventListener('error', event =>
+    window.lector.log.error(`${event.message} (${event.filename}:${event.lineno})`))
+  window.addEventListener('unhandledrejection', event =>
+    window.lector.log.error(`unhandledrejection: ${event.reason?.stack ?? event.reason}`))
 
   // Guardar el punto de lectura aunque se cierre la ventana de golpe.
   window.addEventListener('beforeunload', () => { if (reader.isOpen) reader.close() })

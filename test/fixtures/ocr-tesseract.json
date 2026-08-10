@@ -1,0 +1,4032 @@
+{
+ "scale": 4,
+ "width": 595,
+ "height": 842,
+ "confidence": 0.96,
+ "blocks": [
+  {
+   "bbox": {
+    "x0": 311,
+    "y0": 165,
+    "x1": 1632,
+    "y1": 3160
+   },
+   "paragraphs": [
+    {
+     "bbox": {
+      "x0": 314,
+      "y0": 165,
+      "x1": 824,
+      "y1": 188
+     },
+     "lines": [
+      {
+       "bbox": {
+        "x0": 314,
+        "y0": 165,
+        "x1": 824,
+        "y1": 188
+       },
+       "baseline": {
+        "x0": 314,
+        "y0": 188,
+        "x1": 824,
+        "y1": 188
+       },
+       "rowAttributes": {
+        "rowHeight": 43.502895,
+        "descenders": 10.497108,
+        "ascenders": 11.502892
+       },
+       "words": [
+        {
+         "text": "LA",
+         "confidence": 96,
+         "bbox": {
+          "x0": 314,
+          "y0": 165,
+          "x1": 351,
+          "y1": 188
+         }
+        },
+        {
+         "text": "CASA",
+         "confidence": 96,
+         "bbox": {
+          "x0": 361,
+          "y0": 165,
+          "x1": 447,
+          "y1": 188
+         }
+        },
+        {
+         "text": "DE",
+         "confidence": 96,
+         "bbox": {
+          "x0": 458,
+          "y0": 165,
+          "x1": 499,
+          "y1": 188
+         }
+        },
+        {
+         "text": "LAS",
+         "confidence": 96,
+         "bbox": {
+          "x0": 512,
+          "y0": 165,
+          "x1": 568,
+          "y1": 188
+         }
+        },
+        {
+         "text": "HORAS",
+         "confidence": 93,
+         "bbox": {
+          "x0": 581,
+          "y0": 165,
+          "x1": 691,
+          "y1": 188
+         }
+        },
+        {
+         "text": "LENTAS",
+         "confidence": 93,
+         "bbox": {
+          "x0": 704,
+          "y0": 165,
+          "x1": 824,
+          "y1": 188
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "bbox": {
+      "x0": 315,
+      "y0": 284,
+      "x1": 788,
+      "y1": 342
+     },
+     "lines": [
+      {
+       "bbox": {
+        "x0": 315,
+        "y0": 284,
+        "x1": 788,
+        "y1": 342
+       },
+       "baseline": {
+        "x0": 315,
+        "y0": 329,
+        "x1": 788,
+        "y1": 328
+       },
+       "rowAttributes": {
+        "rowHeight": 60.133327,
+        "descenders": 15.133328,
+        "ascenders": 14
+       },
+       "words": [
+        {
+         "text": "Capitulo",
+         "confidence": 96,
+         "bbox": {
+          "x0": 315,
+          "y0": 284,
+          "x1": 548,
+          "y1": 342
+         }
+        },
+        {
+         "text": "primero",
+         "confidence": 96,
+         "bbox": {
+          "x0": 568,
+          "y0": 284,
+          "x1": 788,
+          "y1": 342
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "bbox": {
+      "x0": 312,
+      "y0": 458,
+      "x1": 1568,
+      "y1": 828
+     },
+     "lines": [
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 458,
+        "x1": 1471,
+        "y1": 500
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 490,
+        "x1": 1471,
+        "y1": 490
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "La",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 459,
+          "x1": 361,
+          "y1": 490
+         }
+        },
+        {
+         "text": "casa",
+         "confidence": 96,
+         "bbox": {
+          "x0": 373,
+          "y0": 469,
+          "x1": 451,
+          "y1": 490
+         }
+        },
+        {
+         "text": "se",
+         "confidence": 96,
+         "bbox": {
+          "x0": 465,
+          "y0": 469,
+          "x1": 500,
+          "y1": 490
+         }
+        },
+        {
+         "text": "levantaba",
+         "confidence": 96,
+         "bbox": {
+          "x0": 514,
+          "y0": 458,
+          "x1": 689,
+          "y1": 490
+         }
+        },
+        {
+         "text": "al",
+         "confidence": 96,
+         "bbox": {
+          "x0": 702,
+          "y0": 458,
+          "x1": 733,
+          "y1": 490
+         }
+        },
+        {
+         "text": "final",
+         "confidence": 96,
+         "bbox": {
+          "x0": 747,
+          "y0": 458,
+          "x1": 829,
+          "y1": 490
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 842,
+          "y0": 458,
+          "x1": 883,
+          "y1": 490
+         }
+        },
+        {
+         "text": "un",
+         "confidence": 96,
+         "bbox": {
+          "x0": 896,
+          "y0": 469,
+          "x1": 942,
+          "y1": 490
+         }
+        },
+        {
+         "text": "camino",
+         "confidence": 96,
+         "bbox": {
+          "x0": 955,
+          "y0": 458,
+          "x1": 1087,
+          "y1": 490
+         }
+        },
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1102,
+          "y0": 469,
+          "x1": 1166,
+          "y1": 500
+         }
+        },
+        {
+         "text": "nadie",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1178,
+          "y0": 458,
+          "x1": 1277,
+          "y1": 490
+         }
+        },
+        {
+         "text": "recordaba",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1289,
+          "y0": 458,
+          "x1": 1471,
+          "y1": 490
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 312,
+        "y0": 523,
+        "x1": 1523,
+        "y1": 565
+       },
+       "baseline": {
+        "x0": 312,
+        "y0": 555,
+        "x1": 1523,
+        "y1": 555
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "haber",
+         "confidence": 96,
+         "bbox": {
+          "x0": 312,
+          "y0": 523,
+          "x1": 415,
+          "y1": 555
+         }
+        },
+        {
+         "text": "construido.",
+         "confidence": 96,
+         "bbox": {
+          "x0": 427,
+          "y0": 523,
+          "x1": 629,
+          "y1": 555
+         }
+        },
+        {
+         "text": "Sus",
+         "confidence": 96,
+         "bbox": {
+          "x0": 646,
+          "y0": 524,
+          "x1": 708,
+          "y1": 555
+         }
+        },
+        {
+         "text": "ventanas",
+         "confidence": 96,
+         "bbox": {
+          "x0": 721,
+          "y0": 527,
+          "x1": 881,
+          "y1": 555
+         }
+        },
+        {
+         "text": "miraban",
+         "confidence": 96,
+         "bbox": {
+          "x0": 894,
+          "y0": 523,
+          "x1": 1044,
+          "y1": 555
+         }
+        },
+        {
+         "text": "al",
+         "confidence": 95,
+         "bbox": {
+          "x0": 1057,
+          "y0": 523,
+          "x1": 1088,
+          "y1": 555
+         }
+        },
+        {
+         "text": "valle",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1100,
+          "y0": 523,
+          "x1": 1189,
+          "y1": 555
+         }
+        },
+        {
+         "text": "con",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1203,
+          "y0": 534,
+          "x1": 1268,
+          "y1": 555
+         }
+        },
+        {
+         "text": "esa",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1280,
+          "y0": 534,
+          "x1": 1338,
+          "y1": 555
+         }
+        },
+        {
+         "text": "paciencia",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1349,
+          "y0": 523,
+          "x1": 1523,
+          "y1": 565
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 589,
+        "x1": 1477,
+        "y1": 631
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 621,
+        "x1": 1477,
+        "y1": 621
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 600,
+          "x1": 377,
+          "y1": 631
+         }
+        },
+        {
+         "text": "solo",
+         "confidence": 96,
+         "bbox": {
+          "x0": 392,
+          "y0": 589,
+          "x1": 465,
+          "y1": 621
+         }
+        },
+        {
+         "text": "tienen",
+         "confidence": 96,
+         "bbox": {
+          "x0": 478,
+          "y0": 589,
+          "x1": 591,
+          "y1": 621
+         }
+        },
+        {
+         "text": "las",
+         "confidence": 96,
+         "bbox": {
+          "x0": 603,
+          "y0": 589,
+          "x1": 652,
+          "y1": 621
+         }
+        },
+        {
+         "text": "cosas",
+         "confidence": 96,
+         "bbox": {
+          "x0": 666,
+          "y0": 600,
+          "x1": 763,
+          "y1": 621
+         }
+        },
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 777,
+          "y0": 600,
+          "x1": 841,
+          "y1": 631
+         }
+        },
+        {
+         "text": "llevan",
+         "confidence": 95,
+         "bbox": {
+          "x0": 855,
+          "y0": 589,
+          "x1": 966,
+          "y1": 621
+         }
+        },
+        {
+         "text": "mucho",
+         "confidence": 96,
+         "bbox": {
+          "x0": 978,
+          "y0": 589,
+          "x1": 1101,
+          "y1": 621
+         }
+        },
+        {
+         "text": "tiempo",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1115,
+          "y0": 589,
+          "x1": 1241,
+          "y1": 631
+         }
+        },
+        {
+         "text": "en",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1255,
+          "y0": 600,
+          "x1": 1297,
+          "y1": 621
+         }
+        },
+        {
+         "text": "el",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1310,
+          "y0": 589,
+          "x1": 1341,
+          "y1": 621
+         }
+        },
+        {
+         "text": "mismo",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1354,
+          "y0": 589,
+          "x1": 1477,
+          "y1": 621
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 314,
+        "y0": 654,
+        "x1": 1463,
+        "y1": 696
+       },
+       "baseline": {
+        "x0": 314,
+        "y0": 686,
+        "x1": 1463,
+        "y1": 686
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "sitio,",
+         "confidence": 96,
+         "bbox": {
+          "x0": 314,
+          "y0": 654,
+          "x1": 401,
+          "y1": 693
+         }
+        },
+        {
+         "text": "y",
+         "confidence": 97,
+         "bbox": {
+          "x0": 414,
+          "y0": 665,
+          "x1": 437,
+          "y1": 696
+         }
+        },
+        {
+         "text": "el",
+         "confidence": 96,
+         "bbox": {
+          "x0": 450,
+          "y0": 654,
+          "x1": 481,
+          "y1": 686
+         }
+        },
+        {
+         "text": "viento",
+         "confidence": 96,
+         "bbox": {
+          "x0": 494,
+          "y0": 654,
+          "x1": 607,
+          "y1": 686
+         }
+        },
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 621,
+          "y0": 665,
+          "x1": 685,
+          "y1": 696
+         }
+        },
+        {
+         "text": "bajaba",
+         "confidence": 96,
+         "bbox": {
+          "x0": 698,
+          "y0": 654,
+          "x1": 818,
+          "y1": 696
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 831,
+          "y0": 654,
+          "x1": 872,
+          "y1": 686
+         }
+        },
+        {
+         "text": "la",
+         "confidence": 96,
+         "bbox": {
+          "x0": 886,
+          "y0": 654,
+          "x1": 918,
+          "y1": 686
+         }
+        },
+        {
+         "text": "sierra",
+         "confidence": 96,
+         "bbox": {
+          "x0": 931,
+          "y0": 654,
+          "x1": 1031,
+          "y1": 686
+         }
+        },
+        {
+         "text": "las",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1044,
+          "y0": 654,
+          "x1": 1093,
+          "y1": 686
+         }
+        },
+        {
+         "text": "encontraba",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1107,
+          "y0": 654,
+          "x1": 1307,
+          "y1": 686
+         }
+        },
+        {
+         "text": "siempre",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1321,
+          "y0": 654,
+          "x1": 1463,
+          "y1": 696
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 720,
+        "x1": 1568,
+        "y1": 762
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 752,
+        "x1": 1568,
+        "y1": 752
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "entornadas,",
+         "confidence": 92,
+         "bbox": {
+          "x0": 313,
+          "y0": 720,
+          "x1": 521,
+          "y1": 759
+         }
+        },
+        {
+         "text": "como",
+         "confidence": 96,
+         "bbox": {
+          "x0": 536,
+          "y0": 731,
+          "x1": 635,
+          "y1": 752
+         }
+        },
+        {
+         "text": "si",
+         "confidence": 96,
+         "bbox": {
+          "x0": 650,
+          "y0": 720,
+          "x1": 678,
+          "y1": 752
+         }
+        },
+        {
+         "text": "alguien",
+         "confidence": 96,
+         "bbox": {
+          "x0": 692,
+          "y0": 720,
+          "x1": 826,
+          "y1": 762
+         }
+        },
+        {
+         "text": "acabara",
+         "confidence": 96,
+         "bbox": {
+          "x0": 838,
+          "y0": 720,
+          "x1": 978,
+          "y1": 752
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 990,
+          "y0": 720,
+          "x1": 1031,
+          "y1": 752
+         }
+        },
+        {
+         "text": "asomarse",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1045,
+          "y0": 731,
+          "x1": 1214,
+          "y1": 752
+         }
+        },
+        {
+         "text": "y",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1227,
+          "y0": 731,
+          "x1": 1249,
+          "y1": 762
+         }
+        },
+        {
+         "text": "hubiera",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1261,
+          "y0": 720,
+          "x1": 1399,
+          "y1": 752
+         }
+        },
+        {
+         "text": "decidido",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1412,
+          "y0": 720,
+          "x1": 1568,
+          "y1": 752
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 797,
+        "x1": 697,
+        "y1": 828
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 818,
+        "x1": 697,
+        "y1": 818
+       },
+       "rowAttributes": {
+        "rowHeight": 43.502895,
+        "descenders": 10.497108,
+        "ascenders": 11.502892
+       },
+       "words": [
+        {
+         "text": "esperar",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 797,
+          "x1": 445,
+          "y1": 828
+         }
+        },
+        {
+         "text": "un",
+         "confidence": 96,
+         "bbox": {
+          "x0": 456,
+          "y0": 797,
+          "x1": 502,
+          "y1": 818
+         }
+        },
+        {
+         "text": "poco",
+         "confidence": 96,
+         "bbox": {
+          "x0": 513,
+          "y0": 797,
+          "x1": 602,
+          "y1": 828
+         }
+        },
+        {
+         "text": "mas.",
+         "confidence": 96,
+         "bbox": {
+          "x0": 615,
+          "y0": 797,
+          "x1": 697,
+          "y1": 818
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "bbox": {
+      "x0": 312,
+      "y0": 851,
+      "x1": 1632,
+      "y1": 1221
+     },
+     "lines": [
+      {
+       "bbox": {
+        "x0": 385,
+        "y0": 851,
+        "x1": 1632,
+        "y1": 893
+       },
+       "baseline": {
+        "x0": 385,
+        "y0": 883,
+        "x1": 1632,
+        "y1": 883
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "Marta",
+         "confidence": 96,
+         "bbox": {
+          "x0": 385,
+          "y0": 852,
+          "x1": 494,
+          "y1": 883
+         }
+        },
+        {
+         "text": "llego",
+         "confidence": 95,
+         "bbox": {
+          "x0": 507,
+          "y0": 851,
+          "x1": 596,
+          "y1": 893
+         }
+        },
+        {
+         "text": "un",
+         "confidence": 96,
+         "bbox": {
+          "x0": 609,
+          "y0": 862,
+          "x1": 655,
+          "y1": 883
+         }
+        },
+        {
+         "text": "martes",
+         "confidence": 96,
+         "bbox": {
+          "x0": 667,
+          "y0": 855,
+          "x1": 788,
+          "y1": 883
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 802,
+          "y0": 851,
+          "x1": 843,
+          "y1": 883
+         }
+        },
+        {
+         "text": "noviembre",
+         "confidence": 96,
+         "bbox": {
+          "x0": 856,
+          "y0": 851,
+          "x1": 1051,
+          "y1": 883
+         }
+        },
+        {
+         "text": "con",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1065,
+          "y0": 862,
+          "x1": 1130,
+          "y1": 883
+         }
+        },
+        {
+         "text": "dos",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1143,
+          "y0": 851,
+          "x1": 1204,
+          "y1": 883
+         }
+        },
+        {
+         "text": "maletas",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1217,
+          "y0": 851,
+          "x1": 1356,
+          "y1": 883
+         }
+        },
+        {
+         "text": "y",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1369,
+          "y0": 862,
+          "x1": 1392,
+          "y1": 893
+         }
+        },
+        {
+         "text": "la",
+         "confidence": 97,
+         "bbox": {
+          "x0": 1405,
+          "y0": 851,
+          "x1": 1437,
+          "y1": 883
+         }
+        },
+        {
+         "text": "certeza",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1450,
+          "y0": 855,
+          "x1": 1579,
+          "y1": 883
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1591,
+          "y0": 851,
+          "x1": 1632,
+          "y1": 883
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 917,
+        "x1": 1516,
+        "y1": 959
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 949,
+        "x1": 1516,
+        "y1": 949
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 928,
+          "x1": 377,
+          "y1": 959
+         }
+        },
+        {
+         "text": "se",
+         "confidence": 93,
+         "bbox": {
+          "x0": 392,
+          "y0": 928,
+          "x1": 427,
+          "y1": 949
+         }
+        },
+        {
+         "text": "marcharia",
+         "confidence": 93,
+         "bbox": {
+          "x0": 440,
+          "y0": 917,
+          "x1": 624,
+          "y1": 949
+         }
+        },
+        {
+         "text": "antes",
+         "confidence": 96,
+         "bbox": {
+          "x0": 637,
+          "y0": 921,
+          "x1": 728,
+          "y1": 949
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 743,
+          "y0": 917,
+          "x1": 784,
+          "y1": 949
+         }
+        },
+        {
+         "text": "Navidad.",
+         "confidence": 96,
+         "bbox": {
+          "x0": 795,
+          "y0": 917,
+          "x1": 961,
+          "y1": 949
+         }
+        },
+        {
+         "text": "Habia",
+         "confidence": 96,
+         "bbox": {
+          "x0": 976,
+          "y0": 917,
+          "x1": 1085,
+          "y1": 949
+         }
+        },
+        {
+         "text": "heredado",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1097,
+          "y0": 917,
+          "x1": 1264,
+          "y1": 949
+         }
+        },
+        {
+         "text": "el",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1278,
+          "y0": 917,
+          "x1": 1309,
+          "y1": 949
+         }
+        },
+        {
+         "text": "edificio",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1322,
+          "y0": 917,
+          "x1": 1460,
+          "y1": 949
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 97,
+         "bbox": {
+          "x0": 1475,
+          "y0": 917,
+          "x1": 1516,
+          "y1": 949
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 312,
+        "y0": 982,
+        "x1": 1545,
+        "y1": 1024
+       },
+       "baseline": {
+        "x0": 312,
+        "y0": 1014,
+        "x1": 1545,
+        "y1": 1014
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "una",
+         "confidence": 96,
+         "bbox": {
+          "x0": 312,
+          "y0": 993,
+          "x1": 379,
+          "y1": 1014
+         }
+        },
+        {
+         "text": "tia",
+         "confidence": 96,
+         "bbox": {
+          "x0": 390,
+          "y0": 982,
+          "x1": 436,
+          "y1": 1014
+         }
+        },
+        {
+         "text": "a",
+         "confidence": 96,
+         "bbox": {
+          "x0": 449,
+          "y0": 993,
+          "x1": 468,
+          "y1": 1014
+         }
+        },
+        {
+         "text": "la",
+         "confidence": 96,
+         "bbox": {
+          "x0": 481,
+          "y0": 982,
+          "x1": 513,
+          "y1": 1014
+         }
+        },
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 525,
+          "y0": 993,
+          "x1": 589,
+          "y1": 1024
+         }
+        },
+        {
+         "text": "apenas",
+         "confidence": 96,
+         "bbox": {
+          "x0": 603,
+          "y0": 993,
+          "x1": 726,
+          "y1": 1024
+         }
+        },
+        {
+         "text": "recordaba,",
+         "confidence": 96,
+         "bbox": {
+          "x0": 739,
+          "y0": 982,
+          "x1": 929,
+          "y1": 1021
+         }
+        },
+        {
+         "text": "una",
+         "confidence": 96,
+         "bbox": {
+          "x0": 943,
+          "y0": 993,
+          "x1": 1010,
+          "y1": 1014
+         }
+        },
+        {
+         "text": "mujer",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1021,
+          "y0": 982,
+          "x1": 1129,
+          "y1": 1024
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1141,
+          "y0": 982,
+          "x1": 1182,
+          "y1": 1014
+         }
+        },
+        {
+         "text": "manos",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1195,
+          "y0": 993,
+          "x1": 1313,
+          "y1": 1014
+         }
+        },
+        {
+         "text": "secas",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1328,
+          "y0": 993,
+          "x1": 1422,
+          "y1": 1014
+         }
+        },
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1436,
+          "y0": 993,
+          "x1": 1500,
+          "y1": 1024
+         }
+        },
+        {
+         "text": "le",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1514,
+          "y0": 982,
+          "x1": 1545,
+          "y1": 1014
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 312,
+        "y0": 1048,
+        "x1": 1525,
+        "y1": 1090
+       },
+       "baseline": {
+        "x0": 312,
+        "y0": 1080,
+        "x1": 1525,
+        "y1": 1080
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "regalaba",
+         "confidence": 96,
+         "bbox": {
+          "x0": 312,
+          "y0": 1048,
+          "x1": 468,
+          "y1": 1090
+         }
+        },
+        {
+         "text": "libros",
+         "confidence": 96,
+         "bbox": {
+          "x0": 481,
+          "y0": 1048,
+          "x1": 583,
+          "y1": 1080
+         }
+        },
+        {
+         "text": "con",
+         "confidence": 96,
+         "bbox": {
+          "x0": 597,
+          "y0": 1059,
+          "x1": 662,
+          "y1": 1080
+         }
+        },
+        {
+         "text": "dedicatorias",
+         "confidence": 96,
+         "bbox": {
+          "x0": 675,
+          "y0": 1048,
+          "x1": 895,
+          "y1": 1080
+         }
+        },
+        {
+         "text": "demasiado",
+         "confidence": 96,
+         "bbox": {
+          "x0": 909,
+          "y0": 1048,
+          "x1": 1103,
+          "y1": 1080
+         }
+        },
+        {
+         "text": "largas",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1117,
+          "y0": 1048,
+          "x1": 1224,
+          "y1": 1090
+         }
+        },
+        {
+         "text": "y",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1237,
+          "y0": 1059,
+          "x1": 1260,
+          "y1": 1090
+         }
+        },
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1273,
+          "y0": 1059,
+          "x1": 1337,
+          "y1": 1090
+         }
+        },
+        {
+         "text": "murio",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1350,
+          "y0": 1048,
+          "x1": 1458,
+          "y1": 1080
+         }
+        },
+        {
+         "text": "sin",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1473,
+          "y0": 1048,
+          "x1": 1525,
+          "y1": 1080
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 1114,
+        "x1": 1468,
+        "y1": 1156
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 1146,
+        "x1": 1468,
+        "y1": 1146
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "avisar",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 1114,
+          "x1": 422,
+          "y1": 1146
+         }
+        },
+        {
+         "text": "a",
+         "confidence": 96,
+         "bbox": {
+          "x0": 435,
+          "y0": 1125,
+          "x1": 454,
+          "y1": 1146
+         }
+        },
+        {
+         "text": "nadie,",
+         "confidence": 96,
+         "bbox": {
+          "x0": 466,
+          "y0": 1114,
+          "x1": 574,
+          "y1": 1153
+         }
+        },
+        {
+         "text": "con",
+         "confidence": 96,
+         "bbox": {
+          "x0": 589,
+          "y0": 1125,
+          "x1": 654,
+          "y1": 1146
+         }
+        },
+        {
+         "text": "la",
+         "confidence": 96,
+         "bbox": {
+          "x0": 667,
+          "y0": 1114,
+          "x1": 699,
+          "y1": 1146
+         }
+        },
+        {
+         "text": "discrecion",
+         "confidence": 96,
+         "bbox": {
+          "x0": 712,
+          "y0": 1114,
+          "x1": 900,
+          "y1": 1146
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 912,
+          "y0": 1114,
+          "x1": 953,
+          "y1": 1146
+         }
+        },
+        {
+         "text": "quien",
+         "confidence": 96,
+         "bbox": {
+          "x0": 967,
+          "y0": 1114,
+          "x1": 1068,
+          "y1": 1156
+         }
+        },
+        {
+         "text": "no",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1080,
+          "y0": 1125,
+          "x1": 1124,
+          "y1": 1146
+         }
+        },
+        {
+         "text": "quiere",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1139,
+          "y0": 1114,
+          "x1": 1251,
+          "y1": 1156
+         }
+        },
+        {
+         "text": "molestar",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1264,
+          "y0": 1114,
+          "x1": 1423,
+          "y1": 1146
+         }
+        },
+        {
+         "text": "ni",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1434,
+          "y0": 1114,
+          "x1": 1468,
+          "y1": 1146
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 314,
+        "y0": 1179,
+        "x1": 594,
+        "y1": 1221
+       },
+       "baseline": {
+        "x0": 314,
+        "y0": 1211,
+        "x1": 594,
+        "y1": 1211
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "siquiera",
+         "confidence": 96,
+         "bbox": {
+          "x0": 314,
+          "y0": 1179,
+          "x1": 458,
+          "y1": 1221
+         }
+        },
+        {
+         "text": "en",
+         "confidence": 96,
+         "bbox": {
+          "x0": 471,
+          "y0": 1190,
+          "x1": 513,
+          "y1": 1211
+         }
+        },
+        {
+         "text": "eso.",
+         "confidence": 95,
+         "bbox": {
+          "x0": 525,
+          "y0": 1190,
+          "x1": 594,
+          "y1": 1211
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "bbox": {
+      "x0": 311,
+      "y0": 1245,
+      "x1": 1549,
+      "y1": 1615
+     },
+     "lines": [
+      {
+       "bbox": {
+        "x0": 385,
+        "y0": 1245,
+        "x1": 1549,
+        "y1": 1287
+       },
+       "baseline": {
+        "x0": 385,
+        "y0": 1277,
+        "x1": 1549,
+        "y1": 1277
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "El",
+         "confidence": 96,
+         "bbox": {
+          "x0": 385,
+          "y0": 1245,
+          "x1": 424,
+          "y1": 1277
+         }
+        },
+        {
+         "text": "notario",
+         "confidence": 96,
+         "bbox": {
+          "x0": 437,
+          "y0": 1245,
+          "x1": 565,
+          "y1": 1277
+         }
+        },
+        {
+         "text": "le",
+         "confidence": 96,
+         "bbox": {
+          "x0": 580,
+          "y0": 1245,
+          "x1": 610,
+          "y1": 1277
+         }
+        },
+        {
+         "text": "habia",
+         "confidence": 96,
+         "bbox": {
+          "x0": 623,
+          "y0": 1245,
+          "x1": 723,
+          "y1": 1277
+         }
+        },
+        {
+         "text": "advertido",
+         "confidence": 96,
+         "bbox": {
+          "x0": 735,
+          "y0": 1245,
+          "x1": 906,
+          "y1": 1277
+         }
+        },
+        {
+         "text": "que",
+         "confidence": 97,
+         "bbox": {
+          "x0": 921,
+          "y0": 1256,
+          "x1": 985,
+          "y1": 1287
+         }
+        },
+        {
+         "text": "la",
+         "confidence": 96,
+         "bbox": {
+          "x0": 999,
+          "y0": 1245,
+          "x1": 1031,
+          "y1": 1277
+         }
+        },
+        {
+         "text": "propiedad",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1042,
+          "y0": 1245,
+          "x1": 1226,
+          "y1": 1287
+         }
+        },
+        {
+         "text": "necesitaba",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1238,
+          "y0": 1245,
+          "x1": 1429,
+          "y1": 1277
+         }
+        },
+        {
+         "text": "obras.",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1442,
+          "y0": 1245,
+          "x1": 1549,
+          "y1": 1277
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 311,
+        "y0": 1310,
+        "x1": 1369,
+        "y1": 1352
+       },
+       "baseline": {
+        "x0": 311,
+        "y0": 1342,
+        "x1": 1369,
+        "y1": 1342
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "No",
+         "confidence": 96,
+         "bbox": {
+          "x0": 311,
+          "y0": 1311,
+          "x1": 367,
+          "y1": 1342
+         }
+        },
+        {
+         "text": "le",
+         "confidence": 96,
+         "bbox": {
+          "x0": 381,
+          "y0": 1310,
+          "x1": 412,
+          "y1": 1342
+         }
+        },
+        {
+         "text": "dijo",
+         "confidence": 96,
+         "bbox": {
+          "x0": 426,
+          "y0": 1310,
+          "x1": 495,
+          "y1": 1352
+         }
+        },
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 509,
+          "y0": 1321,
+          "x1": 573,
+          "y1": 1352
+         }
+        },
+        {
+         "text": "necesitaba,",
+         "confidence": 96,
+         "bbox": {
+          "x0": 586,
+          "y0": 1310,
+          "x1": 786,
+          "y1": 1349
+         }
+        },
+        {
+         "text": "sobre",
+         "confidence": 96,
+         "bbox": {
+          "x0": 802,
+          "y0": 1310,
+          "x1": 899,
+          "y1": 1342
+         }
+        },
+        {
+         "text": "todo,",
+         "confidence": 96,
+         "bbox": {
+          "x0": 912,
+          "y0": 1310,
+          "x1": 1002,
+          "y1": 1349
+         }
+        },
+        {
+         "text": "alguien",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1017,
+          "y0": 1310,
+          "x1": 1151,
+          "y1": 1352
+         }
+        },
+        {
+         "text": "dispuesto",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1164,
+          "y0": 1310,
+          "x1": 1335,
+          "y1": 1352
+         }
+        },
+        {
+         "text": "a",
+         "confidence": 97,
+         "bbox": {
+          "x0": 1350,
+          "y0": 1321,
+          "x1": 1369,
+          "y1": 1342
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 1376,
+        "x1": 1530,
+        "y1": 1418
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 1408,
+        "x1": 1530,
+        "y1": 1408
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "escucharla.",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 1376,
+          "x1": 515,
+          "y1": 1408
+         }
+        },
+        {
+         "text": "Las",
+         "confidence": 96,
+         "bbox": {
+          "x0": 530,
+          "y0": 1377,
+          "x1": 594,
+          "y1": 1408
+         }
+        },
+        {
+         "text": "casas",
+         "confidence": 96,
+         "bbox": {
+          "x0": 608,
+          "y0": 1387,
+          "x1": 703,
+          "y1": 1408
+         }
+        },
+        {
+         "text": "viejas",
+         "confidence": 96,
+         "bbox": {
+          "x0": 716,
+          "y0": 1376,
+          "x1": 822,
+          "y1": 1418
+         }
+        },
+        {
+         "text": "hablan",
+         "confidence": 96,
+         "bbox": {
+          "x0": 835,
+          "y0": 1376,
+          "x1": 957,
+          "y1": 1408
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 970,
+          "y0": 1376,
+          "x1": 1011,
+          "y1": 1408
+         }
+        },
+        {
+         "text": "noche,",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1024,
+          "y0": 1376,
+          "x1": 1143,
+          "y1": 1415
+         }
+        },
+        {
+         "text": "cuando",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1158,
+          "y0": 1376,
+          "x1": 1288,
+          "y1": 1408
+         }
+        },
+        {
+         "text": "la",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1302,
+          "y0": 1376,
+          "x1": 1334,
+          "y1": 1408
+         }
+        },
+        {
+         "text": "madera",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1346,
+          "y0": 1376,
+          "x1": 1481,
+          "y1": 1408
+         }
+        },
+        {
+         "text": "se",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1494,
+          "y0": 1387,
+          "x1": 1530,
+          "y1": 1408
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 1442,
+        "x1": 1491,
+        "y1": 1484
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 1474,
+        "x1": 1491,
+        "y1": 1474
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "contrae",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 1446,
+          "x1": 446,
+          "y1": 1474
+         }
+        },
+        {
+         "text": "y",
+         "confidence": 97,
+         "bbox": {
+          "x0": 459,
+          "y0": 1453,
+          "x1": 482,
+          "y1": 1484
+         }
+        },
+        {
+         "text": "las",
+         "confidence": 97,
+         "bbox": {
+          "x0": 495,
+          "y0": 1442,
+          "x1": 543,
+          "y1": 1474
+         }
+        },
+        {
+         "text": "tuberias",
+         "confidence": 96,
+         "bbox": {
+          "x0": 556,
+          "y0": 1442,
+          "x1": 700,
+          "y1": 1474
+         }
+        },
+        {
+         "text": "recuerdan",
+         "confidence": 96,
+         "bbox": {
+          "x0": 713,
+          "y0": 1442,
+          "x1": 895,
+          "y1": 1474
+         }
+        },
+        {
+         "text": "el",
+         "confidence": 96,
+         "bbox": {
+          "x0": 907,
+          "y0": 1442,
+          "x1": 939,
+          "y1": 1474
+         }
+        },
+        {
+         "text": "agua",
+         "confidence": 96,
+         "bbox": {
+          "x0": 952,
+          "y0": 1453,
+          "x1": 1038,
+          "y1": 1484
+         }
+        },
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1050,
+          "y0": 1453,
+          "x1": 1114,
+          "y1": 1484
+         }
+        },
+        {
+         "text": "las",
+         "confidence": 93,
+         "bbox": {
+          "x0": 1128,
+          "y0": 1442,
+          "x1": 1177,
+          "y1": 1474
+         }
+        },
+        {
+         "text": "atraveso",
+         "confidence": 91,
+         "bbox": {
+          "x0": 1191,
+          "y0": 1446,
+          "x1": 1341,
+          "y1": 1474
+         }
+        },
+        {
+         "text": "durante",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1356,
+          "y0": 1442,
+          "x1": 1491,
+          "y1": 1474
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 1507,
+        "x1": 1475,
+        "y1": 1549
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 1539,
+        "x1": 1475,
+        "y1": 1539
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "decadas,",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 1507,
+          "x1": 467,
+          "y1": 1546
+         }
+        },
+        {
+         "text": "y",
+         "confidence": 96,
+         "bbox": {
+          "x0": 481,
+          "y0": 1518,
+          "x1": 503,
+          "y1": 1549
+         }
+        },
+        {
+         "text": "hay",
+         "confidence": 96,
+         "bbox": {
+          "x0": 515,
+          "y0": 1507,
+          "x1": 581,
+          "y1": 1549
+         }
+        },
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 594,
+          "y0": 1518,
+          "x1": 658,
+          "y1": 1549
+         }
+        },
+        {
+         "text": "llevar",
+         "confidence": 96,
+         "bbox": {
+          "x0": 672,
+          "y0": 1507,
+          "x1": 776,
+          "y1": 1539
+         }
+        },
+        {
+         "text": "alli",
+         "confidence": 96,
+         "bbox": {
+          "x0": 789,
+          "y0": 1507,
+          "x1": 845,
+          "y1": 1539
+         }
+        },
+        {
+         "text": "varios",
+         "confidence": 96,
+         "bbox": {
+          "x0": 858,
+          "y0": 1507,
+          "x1": 969,
+          "y1": 1539
+         }
+        },
+        {
+         "text": "inviernos",
+         "confidence": 96,
+         "bbox": {
+          "x0": 983,
+          "y0": 1507,
+          "x1": 1151,
+          "y1": 1539
+         }
+        },
+        {
+         "text": "para",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1164,
+          "y0": 1518,
+          "x1": 1243,
+          "y1": 1549
+         }
+        },
+        {
+         "text": "distinguir",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1256,
+          "y0": 1507,
+          "x1": 1432,
+          "y1": 1549
+         }
+        },
+        {
+         "text": "el",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1444,
+          "y0": 1507,
+          "x1": 1475,
+          "y1": 1539
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 1573,
+        "x1": 662,
+        "y1": 1615
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 1605,
+        "x1": 662,
+        "y1": 1605
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "crujido",
+         "confidence": 95,
+         "bbox": {
+          "x0": 313,
+          "y0": 1573,
+          "x1": 441,
+          "y1": 1615
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 455,
+          "y0": 1573,
+          "x1": 496,
+          "y1": 1605
+         }
+        },
+        {
+         "text": "la",
+         "confidence": 96,
+         "bbox": {
+          "x0": 510,
+          "y0": 1573,
+          "x1": 542,
+          "y1": 1605
+         }
+        },
+        {
+         "text": "queja.",
+         "confidence": 96,
+         "bbox": {
+          "x0": 555,
+          "y0": 1573,
+          "x1": 662,
+          "y1": 1615
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "bbox": {
+      "x0": 312,
+      "y0": 1638,
+      "x1": 1608,
+      "y1": 2074
+     },
+     "lines": [
+      {
+       "bbox": {
+        "x0": 385,
+        "y0": 1638,
+        "x1": 1608,
+        "y1": 1680
+       },
+       "baseline": {
+        "x0": 385,
+        "y0": 1670,
+        "x1": 1608,
+        "y1": 1670
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "Durante",
+         "confidence": 96,
+         "bbox": {
+          "x0": 385,
+          "y0": 1639,
+          "x1": 531,
+          "y1": 1670
+         }
+        },
+        {
+         "text": "las",
+         "confidence": 96,
+         "bbox": {
+          "x0": 545,
+          "y0": 1638,
+          "x1": 594,
+          "y1": 1670
+         }
+        },
+        {
+         "text": "primeras",
+         "confidence": 96,
+         "bbox": {
+          "x0": 606,
+          "y0": 1638,
+          "x1": 766,
+          "y1": 1680
+         }
+        },
+        {
+         "text": "semanas",
+         "confidence": 96,
+         "bbox": {
+          "x0": 781,
+          "y0": 1649,
+          "x1": 933,
+          "y1": 1670
+         }
+        },
+        {
+         "text": "se",
+         "confidence": 96,
+         "bbox": {
+          "x0": 948,
+          "y0": 1649,
+          "x1": 983,
+          "y1": 1670
+         }
+        },
+        {
+         "text": "dedico",
+         "confidence": 96,
+         "bbox": {
+          "x0": 997,
+          "y0": 1638,
+          "x1": 1117,
+          "y1": 1670
+         }
+        },
+        {
+         "text": "a",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1122,
+          "y0": 1634,
+          "x1": 1140,
+          "y1": 1684
+         }
+        },
+        {
+         "text": "abrir",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1163,
+          "y0": 1638,
+          "x1": 1249,
+          "y1": 1670
+         }
+        },
+        {
+         "text": "habitaciones.",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1261,
+          "y0": 1638,
+          "x1": 1499,
+          "y1": 1670
+         }
+        },
+        {
+         "text": "Cada",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1515,
+          "y0": 1638,
+          "x1": 1608,
+          "y1": 1670
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 312,
+        "y0": 1704,
+        "x1": 1523,
+        "y1": 1746
+       },
+       "baseline": {
+        "x0": 312,
+        "y0": 1736,
+        "x1": 1523,
+        "y1": 1736
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "puerta",
+         "confidence": 96,
+         "bbox": {
+          "x0": 312,
+          "y0": 1708,
+          "x1": 427,
+          "y1": 1746
+         }
+        },
+        {
+         "text": "daba",
+         "confidence": 96,
+         "bbox": {
+          "x0": 440,
+          "y0": 1704,
+          "x1": 526,
+          "y1": 1736
+         }
+        },
+        {
+         "text": "a",
+         "confidence": 96,
+         "bbox": {
+          "x0": 538,
+          "y0": 1715,
+          "x1": 557,
+          "y1": 1736
+         }
+        },
+        {
+         "text": "un",
+         "confidence": 96,
+         "bbox": {
+          "x0": 569,
+          "y0": 1715,
+          "x1": 615,
+          "y1": 1736
+         }
+        },
+        {
+         "text": "cuarto",
+         "confidence": 96,
+         "bbox": {
+          "x0": 628,
+          "y0": 1708,
+          "x1": 740,
+          "y1": 1736
+         }
+        },
+        {
+         "text": "lleno",
+         "confidence": 95,
+         "bbox": {
+          "x0": 754,
+          "y0": 1704,
+          "x1": 843,
+          "y1": 1736
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 858,
+          "y0": 1704,
+          "x1": 899,
+          "y1": 1736
+         }
+        },
+        {
+         "text": "muebles",
+         "confidence": 96,
+         "bbox": {
+          "x0": 911,
+          "y0": 1704,
+          "x1": 1063,
+          "y1": 1736
+         }
+        },
+        {
+         "text": "cubiertos",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1077,
+          "y0": 1704,
+          "x1": 1243,
+          "y1": 1736
+         }
+        },
+        {
+         "text": "con",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1257,
+          "y0": 1715,
+          "x1": 1323,
+          "y1": 1736
+         }
+        },
+        {
+         "text": "sabanas,",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1336,
+          "y0": 1704,
+          "x1": 1486,
+          "y1": 1743
+         }
+        },
+        {
+         "text": "y",
+         "confidence": 97,
+         "bbox": {
+          "x0": 1500,
+          "y0": 1715,
+          "x1": 1523,
+          "y1": 1746
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 312,
+        "y0": 1770,
+        "x1": 1538,
+        "y1": 1812
+       },
+       "baseline": {
+        "x0": 312,
+        "y0": 1802,
+        "x1": 1538,
+        "y1": 1802
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "bajo",
+         "confidence": 96,
+         "bbox": {
+          "x0": 312,
+          "y0": 1770,
+          "x1": 390,
+          "y1": 1812
+         }
+        },
+        {
+         "text": "cada",
+         "confidence": 96,
+         "bbox": {
+          "x0": 404,
+          "y0": 1770,
+          "x1": 487,
+          "y1": 1802
+         }
+        },
+        {
+         "text": "sabana",
+         "confidence": 96,
+         "bbox": {
+          "x0": 501,
+          "y0": 1770,
+          "x1": 624,
+          "y1": 1802
+         }
+        },
+        {
+         "text": "habia",
+         "confidence": 96,
+         "bbox": {
+          "x0": 636,
+          "y0": 1770,
+          "x1": 735,
+          "y1": 1802
+         }
+        },
+        {
+         "text": "un",
+         "confidence": 96,
+         "bbox": {
+          "x0": 746,
+          "y0": 1781,
+          "x1": 792,
+          "y1": 1802
+         }
+        },
+        {
+         "text": "objeto",
+         "confidence": 96,
+         "bbox": {
+          "x0": 805,
+          "y0": 1770,
+          "x1": 917,
+          "y1": 1812
+         }
+        },
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 932,
+          "y0": 1781,
+          "x1": 996,
+          "y1": 1812
+         }
+        },
+        {
+         "text": "parecia",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1008,
+          "y0": 1770,
+          "x1": 1141,
+          "y1": 1812
+         }
+        },
+        {
+         "text": "esperar",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1154,
+          "y0": 1781,
+          "x1": 1286,
+          "y1": 1812
+         }
+        },
+        {
+         "text": "precisamente",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1296,
+          "y0": 1770,
+          "x1": 1538,
+          "y1": 1812
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 1835,
+        "x1": 1441,
+        "y1": 1877
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 1867,
+        "x1": 1441,
+        "y1": 1867
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "esa",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 1846,
+          "x1": 371,
+          "y1": 1867
+         }
+        },
+        {
+         "text": "mano",
+         "confidence": 96,
+         "bbox": {
+          "x0": 383,
+          "y0": 1846,
+          "x1": 483,
+          "y1": 1867
+         }
+        },
+        {
+         "text": "y",
+         "confidence": 96,
+         "bbox": {
+          "x0": 496,
+          "y0": 1846,
+          "x1": 519,
+          "y1": 1877
+         }
+        },
+        {
+         "text": "ninguna",
+         "confidence": 96,
+         "bbox": {
+          "x0": 531,
+          "y0": 1835,
+          "x1": 679,
+          "y1": 1877
+         }
+        },
+        {
+         "text": "otra.",
+         "confidence": 96,
+         "bbox": {
+          "x0": 692,
+          "y0": 1839,
+          "x1": 770,
+          "y1": 1867
+         }
+        },
+        {
+         "text": "Un",
+         "confidence": 96,
+         "bbox": {
+          "x0": 785,
+          "y0": 1836,
+          "x1": 841,
+          "y1": 1867
+         }
+        },
+        {
+         "text": "reloj",
+         "confidence": 96,
+         "bbox": {
+          "x0": 853,
+          "y0": 1835,
+          "x1": 933,
+          "y1": 1877
+         }
+        },
+        {
+         "text": "sin",
+         "confidence": 96,
+         "bbox": {
+          "x0": 950,
+          "y0": 1835,
+          "x1": 1002,
+          "y1": 1867
+         }
+        },
+        {
+         "text": "agujas.",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1015,
+          "y0": 1835,
+          "x1": 1140,
+          "y1": 1877
+         }
+        },
+        {
+         "text": "Una",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1154,
+          "y0": 1836,
+          "x1": 1231,
+          "y1": 1867
+         }
+        },
+        {
+         "text": "silla",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1244,
+          "y0": 1835,
+          "x1": 1319,
+          "y1": 1867
+         }
+        },
+        {
+         "text": "con",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1332,
+          "y0": 1846,
+          "x1": 1397,
+          "y1": 1867
+         }
+        },
+        {
+         "text": "el",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1410,
+          "y0": 1835,
+          "x1": 1441,
+          "y1": 1867
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 1901,
+        "x1": 1439,
+        "y1": 1943
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 1933,
+        "x1": 1439,
+        "y1": 1933
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "asiento",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 1901,
+          "x1": 441,
+          "y1": 1933
+         }
+        },
+        {
+         "text": "hundido",
+         "confidence": 96,
+         "bbox": {
+          "x0": 454,
+          "y0": 1901,
+          "x1": 603,
+          "y1": 1933
+         }
+        },
+        {
+         "text": "por",
+         "confidence": 96,
+         "bbox": {
+          "x0": 616,
+          "y0": 1912,
+          "x1": 678,
+          "y1": 1943
+         }
+        },
+        {
+         "text": "el",
+         "confidence": 96,
+         "bbox": {
+          "x0": 690,
+          "y0": 1901,
+          "x1": 721,
+          "y1": 1933
+         }
+        },
+        {
+         "text": "peso",
+         "confidence": 96,
+         "bbox": {
+          "x0": 733,
+          "y0": 1912,
+          "x1": 817,
+          "y1": 1943
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 831,
+          "y0": 1901,
+          "x1": 872,
+          "y1": 1933
+         }
+        },
+        {
+         "text": "una",
+         "confidence": 96,
+         "bbox": {
+          "x0": 884,
+          "y0": 1912,
+          "x1": 951,
+          "y1": 1933
+         }
+        },
+        {
+         "text": "costumbre.",
+         "confidence": 96,
+         "bbox": {
+          "x0": 964,
+          "y0": 1901,
+          "x1": 1163,
+          "y1": 1933
+         }
+        },
+        {
+         "text": "Un",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1177,
+          "y0": 1902,
+          "x1": 1233,
+          "y1": 1933
+         }
+        },
+        {
+         "text": "espejo",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1246,
+          "y0": 1901,
+          "x1": 1361,
+          "y1": 1943
+         }
+        },
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1375,
+          "y0": 1912,
+          "x1": 1439,
+          "y1": 1943
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 1966,
+        "x1": 1513,
+        "y1": 2008
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 1998,
+        "x1": 1513,
+        "y1": 1998
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "devolvia",
+         "confidence": 92,
+         "bbox": {
+          "x0": 313,
+          "y0": 1966,
+          "x1": 471,
+          "y1": 1998
+         }
+        },
+        {
+         "text": "la",
+         "confidence": 96,
+         "bbox": {
+          "x0": 483,
+          "y0": 1966,
+          "x1": 515,
+          "y1": 1998
+         }
+        },
+        {
+         "text": "habitacion",
+         "confidence": 96,
+         "bbox": {
+          "x0": 527,
+          "y0": 1966,
+          "x1": 718,
+          "y1": 1998
+         }
+        },
+        {
+         "text": "con",
+         "confidence": 95,
+         "bbox": {
+          "x0": 731,
+          "y0": 1977,
+          "x1": 796,
+          "y1": 1998
+         }
+        },
+        {
+         "text": "un",
+         "confidence": 96,
+         "bbox": {
+          "x0": 808,
+          "y0": 1977,
+          "x1": 854,
+          "y1": 1998
+         }
+        },
+        {
+         "text": "retraso",
+         "confidence": 96,
+         "bbox": {
+          "x0": 865,
+          "y0": 1970,
+          "x1": 989,
+          "y1": 1998
+         }
+        },
+        {
+         "text": "minimo,",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1002,
+          "y0": 1966,
+          "x1": 1154,
+          "y1": 2005
+         }
+        },
+        {
+         "text": "casi",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1169,
+          "y0": 1966,
+          "x1": 1239,
+          "y1": 1998
+         }
+        },
+        {
+         "text": "imperceptible,",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1252,
+          "y0": 1966,
+          "x1": 1513,
+          "y1": 2008
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 2032,
+        "x1": 911,
+        "y1": 2074
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 2064,
+        "x1": 911,
+        "y1": 2064
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 2043,
+          "x1": 377,
+          "y1": 2074
+         }
+        },
+        {
+         "text": "Marta",
+         "confidence": 93,
+         "bbox": {
+          "x0": 391,
+          "y0": 2033,
+          "x1": 500,
+          "y1": 2064
+         }
+        },
+        {
+         "text": "atribuyo",
+         "confidence": 92,
+         "bbox": {
+          "x0": 513,
+          "y0": 2032,
+          "x1": 663,
+          "y1": 2074
+         }
+        },
+        {
+         "text": "al",
+         "confidence": 96,
+         "bbox": {
+          "x0": 677,
+          "y0": 2032,
+          "x1": 709,
+          "y1": 2064
+         }
+        },
+        {
+         "text": "cansancio.",
+         "confidence": 96,
+         "bbox": {
+          "x0": 722,
+          "y0": 2032,
+          "x1": 911,
+          "y1": 2064
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "bbox": {
+      "x0": 312,
+      "y0": 2098,
+      "x1": 1504,
+      "y1": 2468
+     },
+     "lines": [
+      {
+       "bbox": {
+        "x0": 384,
+        "y0": 2098,
+        "x1": 1485,
+        "y1": 2140
+       },
+       "baseline": {
+        "x0": 384,
+        "y0": 2130,
+        "x1": 1485,
+        "y1": 2130
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "Fue",
+         "confidence": 96,
+         "bbox": {
+          "x0": 384,
+          "y0": 2099,
+          "x1": 452,
+          "y1": 2130
+         }
+        },
+        {
+         "text": "en",
+         "confidence": 94,
+         "bbox": {
+          "x0": 466,
+          "y0": 2109,
+          "x1": 508,
+          "y1": 2130
+         }
+        },
+        {
+         "text": "el",
+         "confidence": 94,
+         "bbox": {
+          "x0": 521,
+          "y0": 2098,
+          "x1": 552,
+          "y1": 2130
+         }
+        },
+        {
+         "text": "tercer",
+         "confidence": 96,
+         "bbox": {
+          "x0": 565,
+          "y0": 2102,
+          "x1": 669,
+          "y1": 2130
+         }
+        },
+        {
+         "text": "piso",
+         "confidence": 96,
+         "bbox": {
+          "x0": 680,
+          "y0": 2098,
+          "x1": 756,
+          "y1": 2140
+         }
+        },
+        {
+         "text": "donde",
+         "confidence": 96,
+         "bbox": {
+          "x0": 770,
+          "y0": 2098,
+          "x1": 880,
+          "y1": 2130
+         }
+        },
+        {
+         "text": "encontro",
+         "confidence": 96,
+         "bbox": {
+          "x0": 894,
+          "y0": 2102,
+          "x1": 1052,
+          "y1": 2130
+         }
+        },
+        {
+         "text": "los",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1066,
+          "y0": 2098,
+          "x1": 1117,
+          "y1": 2130
+         }
+        },
+        {
+         "text": "cuadernos.",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1131,
+          "y0": 2098,
+          "x1": 1325,
+          "y1": 2130
+         }
+        },
+        {
+         "text": "Estaban",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1340,
+          "y0": 2098,
+          "x1": 1485,
+          "y1": 2130
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 2163,
+        "x1": 1452,
+        "y1": 2205
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 2195,
+        "x1": 1452,
+        "y1": 2195
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "apilados",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 2163,
+          "x1": 464,
+          "y1": 2205
+         }
+        },
+        {
+         "text": "dentro",
+         "confidence": 96,
+         "bbox": {
+          "x0": 478,
+          "y0": 2163,
+          "x1": 593,
+          "y1": 2195
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 607,
+          "y0": 2163,
+          "x1": 648,
+          "y1": 2195
+         }
+        },
+        {
+         "text": "un",
+         "confidence": 93,
+         "bbox": {
+          "x0": 661,
+          "y0": 2174,
+          "x1": 707,
+          "y1": 2195
+         }
+        },
+        {
+         "text": "arcon,",
+         "confidence": 92,
+         "bbox": {
+          "x0": 720,
+          "y0": 2174,
+          "x1": 830,
+          "y1": 2202
+         }
+        },
+        {
+         "text": "atados",
+         "confidence": 96,
+         "bbox": {
+          "x0": 845,
+          "y0": 2163,
+          "x1": 960,
+          "y1": 2195
+         }
+        },
+        {
+         "text": "en",
+         "confidence": 96,
+         "bbox": {
+          "x0": 974,
+          "y0": 2174,
+          "x1": 1016,
+          "y1": 2195
+         }
+        },
+        {
+         "text": "grupos",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1029,
+          "y0": 2174,
+          "x1": 1151,
+          "y1": 2205
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1165,
+          "y0": 2163,
+          "x1": 1206,
+          "y1": 2195
+         }
+        },
+        {
+         "text": "diez",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1220,
+          "y0": 2163,
+          "x1": 1295,
+          "y1": 2195
+         }
+        },
+        {
+         "text": "con",
+         "confidence": 95,
+         "bbox": {
+          "x0": 1309,
+          "y0": 2174,
+          "x1": 1374,
+          "y1": 2195
+         }
+        },
+        {
+         "text": "una",
+         "confidence": 95,
+         "bbox": {
+          "x0": 1385,
+          "y0": 2174,
+          "x1": 1452,
+          "y1": 2195
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 2229,
+        "x1": 1504,
+        "y1": 2271
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 2261,
+        "x1": 1504,
+        "y1": 2261
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "cuerda",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 2229,
+          "x1": 435,
+          "y1": 2261
+         }
+        },
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 447,
+          "y0": 2240,
+          "x1": 511,
+          "y1": 2271
+         }
+        },
+        {
+         "text": "se",
+         "confidence": 96,
+         "bbox": {
+          "x0": 526,
+          "y0": 2240,
+          "x1": 561,
+          "y1": 2261
+         }
+        },
+        {
+         "text": "deshizo",
+         "confidence": 96,
+         "bbox": {
+          "x0": 575,
+          "y0": 2229,
+          "x1": 713,
+          "y1": 2261
+         }
+        },
+        {
+         "text": "en",
+         "confidence": 96,
+         "bbox": {
+          "x0": 727,
+          "y0": 2240,
+          "x1": 769,
+          "y1": 2261
+         }
+        },
+        {
+         "text": "cuanto",
+         "confidence": 96,
+         "bbox": {
+          "x0": 782,
+          "y0": 2233,
+          "x1": 902,
+          "y1": 2261
+         }
+        },
+        {
+         "text": "la",
+         "confidence": 96,
+         "bbox": {
+          "x0": 916,
+          "y0": 2229,
+          "x1": 948,
+          "y1": 2261
+         }
+        },
+        {
+         "text": "toco.",
+         "confidence": 93,
+         "bbox": {
+          "x0": 960,
+          "y0": 2233,
+          "x1": 1047,
+          "y1": 2261
+         }
+        },
+        {
+         "text": "Reconocio",
+         "confidence": 91,
+         "bbox": {
+          "x0": 1062,
+          "y0": 2229,
+          "x1": 1257,
+          "y1": 2261
+         }
+        },
+        {
+         "text": "la",
+         "confidence": 97,
+         "bbox": {
+          "x0": 1271,
+          "y0": 2229,
+          "x1": 1304,
+          "y1": 2261
+         }
+        },
+        {
+         "text": "letra",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1316,
+          "y0": 2229,
+          "x1": 1397,
+          "y1": 2261
+         }
+        },
+        {
+         "text": "de",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1409,
+          "y0": 2229,
+          "x1": 1450,
+          "y1": 2261
+         }
+        },
+        {
+         "text": "su",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1465,
+          "y0": 2240,
+          "x1": 1504,
+          "y1": 2261
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 312,
+        "y0": 2294,
+        "x1": 1477,
+        "y1": 2336
+       },
+       "baseline": {
+        "x0": 312,
+        "y0": 2326,
+        "x1": 1477,
+        "y1": 2326
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "tia",
+         "confidence": 88,
+         "bbox": {
+          "x0": 312,
+          "y0": 2294,
+          "x1": 358,
+          "y1": 2326
+         }
+        },
+        {
+         "text": "en",
+         "confidence": 96,
+         "bbox": {
+          "x0": 371,
+          "y0": 2305,
+          "x1": 413,
+          "y1": 2326
+         }
+        },
+        {
+         "text": "la",
+         "confidence": 96,
+         "bbox": {
+          "x0": 426,
+          "y0": 2294,
+          "x1": 458,
+          "y1": 2326
+         }
+        },
+        {
+         "text": "primera",
+         "confidence": 96,
+         "bbox": {
+          "x0": 469,
+          "y0": 2294,
+          "x1": 612,
+          "y1": 2336
+         }
+        },
+        {
+         "text": "pagina,",
+         "confidence": 96,
+         "bbox": {
+          "x0": 623,
+          "y0": 2294,
+          "x1": 756,
+          "y1": 2336
+         }
+        },
+        {
+         "text": "apretada",
+         "confidence": 96,
+         "bbox": {
+          "x0": 771,
+          "y0": 2294,
+          "x1": 925,
+          "y1": 2336
+         }
+        },
+        {
+         "text": "y",
+         "confidence": 96,
+         "bbox": {
+          "x0": 937,
+          "y0": 2305,
+          "x1": 960,
+          "y1": 2336
+         }
+        },
+        {
+         "text": "ligeramente",
+         "confidence": 96,
+         "bbox": {
+          "x0": 973,
+          "y0": 2294,
+          "x1": 1187,
+          "y1": 2336
+         }
+        },
+        {
+         "text": "inclinada",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1201,
+          "y0": 2294,
+          "x1": 1369,
+          "y1": 2326
+         }
+        },
+        {
+         "text": "hacia",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1380,
+          "y0": 2294,
+          "x1": 1477,
+          "y1": 2326
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 2360,
+        "x1": 1504,
+        "y1": 2402
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 2392,
+        "x1": 1504,
+        "y1": 2392
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "la",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 2360,
+          "x1": 345,
+          "y1": 2392
+         }
+        },
+        {
+         "text": "izquierda,",
+         "confidence": 96,
+         "bbox": {
+          "x0": 358,
+          "y0": 2360,
+          "x1": 537,
+          "y1": 2402
+         }
+        },
+        {
+         "text": "como",
+         "confidence": 96,
+         "bbox": {
+          "x0": 552,
+          "y0": 2371,
+          "x1": 652,
+          "y1": 2392
+         }
+        },
+        {
+         "text": "si",
+         "confidence": 96,
+         "bbox": {
+          "x0": 667,
+          "y0": 2360,
+          "x1": 694,
+          "y1": 2392
+         }
+        },
+        {
+         "text": "escribiera",
+         "confidence": 96,
+         "bbox": {
+          "x0": 708,
+          "y0": 2360,
+          "x1": 886,
+          "y1": 2392
+         }
+        },
+        {
+         "text": "contra",
+         "confidence": 96,
+         "bbox": {
+          "x0": 898,
+          "y0": 2364,
+          "x1": 1012,
+          "y1": 2392
+         }
+        },
+        {
+         "text": "el",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1025,
+          "y0": 2360,
+          "x1": 1056,
+          "y1": 2392
+         }
+        },
+        {
+         "text": "tiempo",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1069,
+          "y0": 2360,
+          "x1": 1195,
+          "y1": 2402
+         }
+        },
+        {
+         "text": "o",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1209,
+          "y0": 2371,
+          "x1": 1229,
+          "y1": 2392
+         }
+        },
+        {
+         "text": "contra",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1243,
+          "y0": 2364,
+          "x1": 1357,
+          "y1": 2392
+         }
+        },
+        {
+         "text": "alguien",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1370,
+          "y0": 2360,
+          "x1": 1504,
+          "y1": 2402
+         }
+        }
+       ]
+      },
+      {
+       "bbox": {
+        "x0": 313,
+        "y0": 2426,
+        "x1": 1003,
+        "y1": 2468
+       },
+       "baseline": {
+        "x0": 313,
+        "y0": 2458,
+        "x1": 1003,
+        "y1": 2458
+       },
+       "rowAttributes": {
+        "rowHeight": 42,
+        "descenders": 10,
+        "ascenders": 11
+       },
+       "words": [
+        {
+         "text": "que",
+         "confidence": 96,
+         "bbox": {
+          "x0": 313,
+          "y0": 2437,
+          "x1": 377,
+          "y1": 2468
+         }
+        },
+        {
+         "text": "la",
+         "confidence": 93,
+         "bbox": {
+          "x0": 391,
+          "y0": 2426,
+          "x1": 423,
+          "y1": 2458
+         }
+        },
+        {
+         "text": "mirara",
+         "confidence": 93,
+         "bbox": {
+          "x0": 435,
+          "y0": 2426,
+          "x1": 555,
+          "y1": 2458
+         }
+        },
+        {
+         "text": "por",
+         "confidence": 96,
+         "bbox": {
+          "x0": 566,
+          "y0": 2437,
+          "x1": 628,
+          "y1": 2468
+         }
+        },
+        {
+         "text": "encima",
+         "confidence": 96,
+         "bbox": {
+          "x0": 640,
+          "y0": 2426,
+          "x1": 772,
+          "y1": 2458
+         }
+        },
+        {
+         "text": "del",
+         "confidence": 96,
+         "bbox": {
+          "x0": 785,
+          "y0": 2426,
+          "x1": 839,
+          "y1": 2458
+         }
+        },
+        {
+         "text": "hombro.",
+         "confidence": 96,
+         "bbox": {
+          "x0": 851,
+          "y0": 2426,
+          "x1": 1003,
+          "y1": 2458
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "bbox": {
+      "x0": 1184,
+      "y0": 3134,
+      "x1": 1194,
+      "y1": 3160
+     },
+     "lines": [
+      {
+       "bbox": {
+        "x0": 1184,
+        "y0": 3134,
+        "x1": 1194,
+        "y1": 3160
+       },
+       "baseline": {
+        "x0": 1184,
+        "y0": 3160,
+        "x1": 1194,
+        "y1": 3160
+       },
+       "rowAttributes": {
+        "rowHeight": 34.268997,
+        "descenders": 8.2689991,
+        "ascenders": 9.0612965
+       },
+       "words": [
+        {
+         "text": "1",
+         "confidence": 96,
+         "bbox": {
+          "x0": 1184,
+          "y0": 3134,
+          "x1": 1194,
+          "y1": 3160
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

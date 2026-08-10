@@ -17,6 +17,11 @@ export function renderChapter (book, chapter, { sharp, dim }, markedBlocks = new
     const block = book.blocks[i]
     if (!block) continue
 
+    if (block.type === 'figure') {
+      fragment.appendChild(figureShell(block, i))
+      continue
+    }
+
     const el = document.createElement(block.type === 'heading' ? 'h2' : 'p')
     el.dataset.block = String(i)
     // textContent y nunca innerHTML: el texto viene de un archivo ajeno.
@@ -37,6 +42,29 @@ export function renderChapter (book, chapter, { sharp, dim }, markedBlocks = new
   const copy = fragment.cloneNode(true)
   sharp.replaceChildren(fragment)
   dim.replaceChildren(copy)
+}
+
+/**
+ * El hueco de una figura, con su proporcion reservada desde el primer pintado:
+ * la imagen llega despues, recortada de la pagina original, y si el alto
+ * cambiara entonces se moverian todas las lineas ya medidas. El clonado de
+ * capas copia el armazon; el recorte se asigna luego a las dos a la vez.
+ */
+function figureShell (block, index) {
+  const el = document.createElement('figure')
+  el.className = 'figure-clip'
+  el.dataset.block = String(index)
+
+  const rect = block.rects?.[0]
+  if (rect?.w > 0 && rect?.h > 0) {
+    el.style.aspectRatio = `${rect.w} / ${rect.h}`
+  }
+
+  const img = document.createElement('img')
+  img.alt = ''
+  img.draggable = false
+  el.appendChild(img)
+  return el
 }
 
 /** Refleja en el DOM que un bloque tiene o deja de tener marcador. */

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <!-- La misma CSP que la aplicacion: esta pagina existe para demostrar que
+       Tesseract arranca bajo ella, no bajo una version relajada. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; connect-src 'self'; worker-src 'self';">
+  <title>OCR (desarrollo)</title>
+</head>
+<body>
+  <script type="module" src="/src/dev/ocr.js"></script>
+</body>
+</html>

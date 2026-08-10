@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync, existsSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { buildRegions } from '../src/reader/regions.js'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
+const fuPath = path.join(here, 'fixtures', 'ingest-Fisica-Universitaria-Sears-Zemansky-12ava-Edicion-Vol1.json')
+const layoutPath = path.join(here, 'fixtures', 'layout-detections.json')
 
 // Un libro a dos columnas de 558x720, como "Fisica Universitaria".
 const PAGE = { w: 558, h: 720 }
@@ -126,6 +133,104 @@ describe('buildRegions', () => {
     }
   })
 
+  it('un escaneado sin bloques da una parada de pagina entera por pagina', () => {
+    const libro = {
+      blocks: [],
+      chars: 3,
+      pageCount: 3,
+      pageSizes: [PAGE, PAGE, PAGE],
+      pageKinds: ['scanned', 'scanned', 'scanned'],
+      provisional: true,
+      stats: { leading: 14 }
+    }
+    const regions = buildRegions(libro)
+
+    expect(regions).toHaveLength(3)
+    regions.forEach((region, i) => {
+      // El offset provisional es el indice de pagina: asi el progreso y el
+      // porcentaje funcionan sin un solo caracter de texto.
+      expect(region.start).toBe(i)
+      expect(region.rect).toMatchObject({ page: i, x: 0, y: 0, w: PAGE.w, h: PAGE.h })
+    })
+  })
+
+  it('en un escaneado tambien la pagina en blanco conserva su parada', () => {
+    // Quitarla descabalaria el hojeo: la pagina 2 pasaria a ser la tercera.
+    const libro = {
+      blocks: [],
+      chars: 3,
+      pageCount: 3,
+      pageSizes: [PAGE, PAGE, PAGE],
+      pageKinds: ['scanned', 'empty', 'scanned'],
+      provisional: true,
+      stats: { leading: 14 }
+    }
+
+    expect(buildRegions(libro)).toHaveLength(3)
+  })
+
+  it('intercala la pagina escaneada de un libro mixto donde toca', () => {
+    const libro = book(
+      block(parrafo, { page: 0 }),
+      block(parrafo, { page: 2 })
+    )
+    libro.pageCount = 3
+    libro.pageKinds = ['text', 'scanned', 'text']
+    const regions = buildRegions(libro)
+
+    expect(regions).toHaveLength(3)
+    expect(regions[1].rect).toMatchObject({ page: 1, x: 0, y: 0 })
+    // La parada sintetica hereda el offset del ultimo bloque anterior: el
+    // progreso guardado ahi sigue cayendo en un sitio con sentido.
+    expect(regions[1].start).toBe(libro.blocks[0].start)
+    // Y los offsets de la lista nunca retroceden.
+    for (let i = 1; i < regions.length; i++) {
+      expect(regions[i].start).toBeGreaterThanOrEqual(regions[i - 1].start)
+    }
+  })
+
+  it('en un libro con texto la pagina en blanco se sigue saltando', () => {
+    const libro = book(
+      block(parrafo, { page: 0 }),
+      block(parrafo, { page: 2 })
+    )
+    libro.pageCount = 3
+    libro.pageKinds = ['text', 'empty', 'text']
+
+    expect(buildRegions(libro)).toHaveLength(2)
+  })
+
+  it('una pagina analizada por el modelo cambia sus paradas por las cajas', () => {
+    const libro = book(
+      block(parrafo, { page: 0 }),
+      block('Un título', { page: 1, y: 40 }),
+      block(parrafo, { page: 1, y: 100 }),
+      block(parrafo, { page: 2 })
+    )
+    libro.pageCount = 3
+    const layouts = {
+      pages: {
+        1: [
+          { label: 'title', score: 0.9, x: 90, y: 30, w: 200, h: 30 },
+          { label: 'picture', score: 0.9, x: 90, y: 300, w: 200, h: 150 },
+          { label: 'text', score: 0.9, x: 95, y: 95, w: 190, h: 40 }
+        ]
+      }
+    }
+    const regions = buildRegions(libro, layouts)
+    const enPagina = regions.filter(r => r.rect.page === 1)
+
+    expect(enPagina.map(r => r.type)).toEqual(['title', 'text', 'picture'])
+    // Cada caja ancla en el bloque que cubre; la foto, sin texto debajo,
+    // hereda el ancla de la parada anterior.
+    expect(enPagina[0].start).toBe(libro.blocks[1].start)
+    expect(enPagina[1].start).toBe(libro.blocks[2].start)
+    expect(enPagina[2].start).toBe(libro.blocks[2].start)
+    // Y las paginas de alrededor siguen como siempre.
+    expect(regions.filter(r => r.rect.page === 0)).toHaveLength(1)
+    expect(regions.filter(r => r.rect.page === 2)).toHaveLength(1)
+  })
+
   it('ensena la cubierta y el indice de una pieza, una parada por pagina', () => {
     const libro = book(
       block('EL TÚNEL', { page: 0, role: 'cover' }),
@@ -140,5 +245,39 @@ describe('buildRegions', () => {
     expect(regions).toHaveLength(3)
     expect(regions[0].rect).toMatchObject({ x: 0, y: 0, w: PAGE.w, h: PAGE.h })
     expect(regions[1].role).toBe('toc')
+  })
+})
+
+// Con el libro real y las detecciones reales del modelo, capturadas por las
+// tareas `ingest` y `layout`. Si faltan, estos tests se saltan.
+describe.skipIf(!existsSync(fuPath) || !existsSync(layoutPath))('cajas reales sobre Fisica Universitaria', () => {
+  const load = file => JSON.parse(readFileSync(file, 'utf8'))
+  const fu = existsSync(fuPath) ? load(fuPath) : null
+  const detections = existsSync(layoutPath) ? load(layoutPath) : []
+  // La portadilla del capitulo 1: pagina 24 del PDF, indice 23.
+  const layouts = { pages: { 23: detections.find(r => r.page === 24)?.detections ?? [] } }
+
+  it('la portadilla pasa de pagina entera a paradas semanticas en orden', () => {
+    const sinModelo = buildRegions(fu).filter(r => r.rect.page === 23)
+    expect(sinModelo).toHaveLength(1)
+    expect(sinModelo[0].role).toBe('opener')
+
+    const conModelo = buildRegions(fu, layouts).filter(r => r.rect.page === 23)
+    expect(conModelo.length).toBeGreaterThan(8)
+    // Arranca por el titulo del capitulo, no por el numero ni por la foto.
+    expect(conModelo[0].type).toBe('section-header')
+    expect(conModelo[0].rect.y).toBeLessThan(60)
+    // Toda parada lleva su ancla de progreso.
+    for (const region of conModelo) {
+      expect(Number.isFinite(region.start)).toBe(true)
+    }
+  })
+
+  it('las paradas del resto del libro no se mueven', () => {
+    const antes = buildRegions(fu)
+    const despues = buildRegions(fu, layouts)
+
+    expect(despues.filter(r => r.rect.page !== 23).length)
+      .toBe(antes.filter(r => r.rect.page !== 23).length)
   })
 })

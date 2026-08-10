@@ -5,7 +5,8 @@ import { openDocument, closeDocument, extractPage, extractOutline, extractMetada
 import { buildLines } from './lines.js'
 import { toBlocks } from './blocks.js'
 import { buildChapters } from './chapters.js'
-import { detectSections, findBodyStart } from './sections.js'
+import { detectSections, detectOpeners, findBodyStart } from './sections.js'
+import { classifyPage } from './pageKind.js'
 
 // Sube este numero al cambiar el pipeline: invalida los libros ya cacheados.
 // v3: corredores de columna medidos en cuerpos de letra, sangria con techo y
@@ -14,21 +15,50 @@ import { detectSections, findBodyStart } from './sections.js'
 // v4: cubierta e indices marcados. Los bloques y los offsets salen identicos
 // —comprobado sobre los seis libros de prueba, bloque a bloque y caracter a
 // caracter—, pero el cache viejo no trae ni los roles ni bodyStart.
-export const CACHE_VERSION = 4
+// v5: pageKinds por pagina y, por bloque, source y confidence cuando no son
+// los implicitos (nativo, 1). Desde aqui las subidas ya no tiran el progreso:
+// migrate.js transforma el cache viejo o re-ancla tras el reproceso.
+// v6: pageKinds clasificados de verdad (texto, escaneo, mixta...). El cache
+// v5 los tenia todos en null y clasificar exige el PDF: se reprocesa.
+// v7: paginas de referencia marcadas y metricas tipograficas por pagina. Los
+// bloques de los preliminares cambian de forma y de texto: se reprocesa, y el
+// progreso y las notas se re-anclan por su texto.
+// v8: portadillas de capitulo en pageRoles. Los offsets no se mueven, pero
+// detectarlas exige las lineas de la pagina: se reprocesa.
+export const CACHE_VERSION = 8
 
 /**
  * @param {Uint8Array} bytes
- * @param {{fileName?:string, onProgress?:(done:number,total:number)=>void}} options
+ * @param {{fileName?:string, onProgress?:(done:number,total:number)=>void,
+ *          ocrItemsByPage?:Object}} options ocrItemsByPage viene del fichero
+ *   .ocr.json: items reconocidos por pagina, con el contrato de extractPage
  * @returns {Promise<Object>} Book
  */
-export async function buildBook (bytes, { fileName = '', onProgress } = {}) {
+export async function buildBook (bytes, { fileName = '', onProgress, ocrItemsByPage } = {}) {
   const doc = await openDocument(bytes)
 
   try {
     const pages = []
     for (let n = 1; n <= doc.numPages; n++) {
       const page = await extractPage(doc, n, { withDrawings: true })
-      pages.push({ width: page.width, height: page.height, lines: buildLines(page, n - 1) })
+      let kind = classifyPage(page).kind
+      let source = page
+
+      // Una pagina escaneada con reconocimiento hecho lee los items del OCR
+      // y pasa a ser 'ocr': texto de verdad, solo que de otra procedencia. El
+      // resto de la cadena no distingue de donde salieron los items.
+      const ocr = ocrItemsByPage?.[n - 1]
+      if (kind === 'scanned' && ocr?.items?.length) {
+        source = { width: page.width, height: page.height, items: ocr.items, drawings: [], images: [] }
+        kind = 'ocr'
+      }
+
+      pages.push({
+        width: page.width,
+        height: page.height,
+        lines: buildLines(source, n - 1),
+        kind
+      })
       onProgress?.(n, doc.numPages)
       // Un libro de 400 paginas congelaria la ventana varios segundos: cada
       // pocas paginas se devuelve el hilo para que el aviso de carga se pinte.
@@ -50,6 +80,24 @@ export async function buildBook (bytes, { fileName = '', onProgress } = {}) {
       }
     }
 
+    // Portadillas: la primera pagina de un capitulo compuesta como un poster
+    // se ensena de una pieza. Se decide aqui porque hace falta saber donde
+    // arrancan los capitulos.
+    const openers = detectOpeners(
+      pages,
+      chapters.map(c => blocks[c.start]?.page).filter(p => !roles.has(p)),
+      metrics.bodySize
+    )
+
+    // Procedencia: los bloques nacidos del OCR llevan su fuente y confianza,
+    // para poder ensenarlo, ordenarlos por calidad o repetir el OCR algun
+    // dia. Los nativos no llevan nada: es el valor implicito.
+    for (const block of blocks) {
+      if (pages[block.page]?.kind !== 'ocr') continue
+      block.source = 'ocr'
+      block.confidence = ocrItemsByPage[block.page]?.confidence ?? 0
+    }
+
     // Offset de caracter acumulado: es el ancla estable del progreso y de las
     // notas, la unica que sobrevive a un cambio de tipografia.
     let chars = 0
@@ -57,6 +105,14 @@ export async function buildBook (bytes, { fileName = '', onProgress } = {}) {
       block.start = chars
       chars += block.text.length + 1
     }
+
+    // Un escaneado puro no tiene ni un bloque, y sin caracteres no habria ni
+    // progreso ni paradas. Ancla provisional: cada pagina vale un caracter,
+    // offset = indice de pagina. El libro queda marcado como provisional; el
+    // dia que un OCR le ponga texto, el progreso se re-ancla por la pagina.
+    const provisional = blocks.length === 0 &&
+      pages.some(p => p.kind === 'scanned' || p.kind === 'mixed')
+    if (provisional) chars = pages.length
 
     return {
       version: CACHE_VERSION,
@@ -73,15 +129,31 @@ export async function buildBook (bytes, { fileName = '', onProgress } = {}) {
       // indice cuyo texto no llega a extraerse —pasa en "El Tunel"— no produce
       // ningun bloque, y la vista de pagina necesita saber igualmente que no
       // es para leerla.
-      pageRoles: pages.map((_, i) => roles.get(i) ?? null),
+      //
+      // Las portadillas SOLO van aqui: en los bloques moverian findBodyStart y
+      // la lectura se saltaria el arranque del primer capitulo.
+      pageRoles: pages.map((_, i) => roles.get(i) ?? (openers.has(i) ? 'opener' : null)),
+      // Que clase de pagina es cada una. De aqui sale si el libro entra como
+      // escaneado, que vista le conviene y sobre que paginas correria un OCR.
+      pageKinds: pages.map(p => p.kind),
       // Donde empieza el libro de verdad. El lector se posa aqui la primera
       // vez, en vez de en la cubierta.
       bodyStart: findBodyStart(blocks, chars),
+      // Solo esta presente —y a true— mientras el libro no tenga texto.
+      ...(provisional ? { provisional: true } : {}),
       stats: {
         // Cuantas paginas se han apartado de la lectura, por si un libro sale
         // con el principio saltado sin motivo.
         coverPages: countPages(roles, 'cover'),
         tocPages: countPages(roles, 'toc'),
+        referencePages: countPages(roles, 'reference'),
+        openerPages: openers.size,
+        // Cuantas paginas son pura imagen: con mayoria, el libro es un
+        // escaneado y se hojea sobre la pagina original. Las ya reconocidas
+        // cuentan aparte: tienen texto y no piden ni OCR ni vista de pagina.
+        scannedPages: pages.filter(p => p.kind === 'scanned').length,
+        ocrPages: pages.filter(p => p.kind === 'ocr').length,
+        suspectPages: pages.filter(p => p.kind === 'suspect').length,
         paragraphStyle: style,
         // Con que se decide si el libro se lee re-maquetado o sobre la pagina
         // original: la prosa corriente no trae ni figuras ni columnas.

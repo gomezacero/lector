@@ -5,6 +5,7 @@
 // la ventana, y cambian en cuanto se toca un ajuste. Los caracteres no.
 
 import { lineAtOffset } from './lineIndex.js'
+import { contextAt } from '../pdf/migrate.js'
 
 /** Bloque que contiene un offset global. Busqueda binaria sobre block.start. */
 export function blockAtOffset (book, offset) {
@@ -57,6 +58,12 @@ export function makeProgress (book, offset) {
     offset,
     percent: percentAt(book, offset),
     chapter: chapterAtOffset(book, offset),
+    // Anclas de repuesto por si el libro se reprocesa y los offsets se
+    // mueven: el texto que empieza justo aqui, y la pagina para cuando ni ese
+    // texto exista ya —un escaneado recien OCRizado, por ejemplo.
+    context: contextAt(book, offset),
+    // En un libro provisional (escaneado sin OCR) el offset ES la pagina.
+    page: book.blocks[blockAtOffset(book, offset)]?.page ?? (book.provisional ? offset : null),
     updatedAt: Date.now()
   }
 }

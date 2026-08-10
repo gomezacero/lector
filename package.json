@@ -8,7 +8,7 @@
     "start": "electron .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "fixtures": "node test/fixtures/make-pdf.mjs && node scripts/run-electron-task.mjs ingest test/fixtures/libro-prueba.pdf",
+    "fixtures": "node test/fixtures/make-pdf.mjs && node test/fixtures/make-scan.mjs && node scripts/run-electron-task.mjs ingest test/fixtures/libro-prueba.pdf && node scripts/run-electron-task.mjs ingest test/fixtures/escaneado-prueba.pdf",
     "smoke": "node scripts/run-electron-task.mjs smoke",
     "verify": "npm run fixtures && npm test",
     "icon": "node scripts/run-electron-task.mjs icon",
@@ -19,9 +19,12 @@
   "devDependencies": {
     "electron": "^43.3.0",
     "electron-builder": "^26.15.3",
+    "jsdom": "^30.0.1",
     "vitest": "^4.1.10"
   },
   "dependencies": {
-    "pdfjs-dist": "^6.2.108"
+    "onnxruntime-web": "^1.27.0",
+    "pdfjs-dist": "^6.2.108",
+    "tesseract.js": "^7.0.0"
   }
 }

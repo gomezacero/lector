@@ -31,6 +31,14 @@ export function startUrlFor (task, arg) {
   if (task === 'ingest') {
     return `app://lector/src/dev/ingest.html?pdf=${encodeURIComponent(arg ?? '')}`
   }
+  if (task === 'ocr') {
+    return `app://lector/src/dev/ocr.html?pdf=${encodeURIComponent(arg ?? '')}`
+  }
+  if (task === 'layout') {
+    // "archivo.pdf#2,3,24" corre el modelo sobre esas paginas.
+    const [pdf, pages] = (arg ?? '').split('#')
+    return `app://lector/src/dev/layout.html?pdf=${encodeURIComponent(pdf)}&pages=${encodeURIComponent(pages ?? '1')}`
+  }
   if (task === 'icon') return 'app://lector/src/dev/icon.html'
   // Trabaja contra el almacen, no contra la interfaz: arrancar la aplicacion
   // solo la pondria a escribir en el userData que la prueba esta midiendo.
@@ -47,6 +55,8 @@ export function startUrlFor (task, arg) {
 
 const TASKS = {
   ingest: ingestTask,
+  ocr: ocrTask,
+  layout: layoutTask,
   diagnose: diagnoseTask,
   read: readTask,
   home: homeTask,
@@ -356,6 +366,99 @@ async function smokeTask (win) {
   return ok ? 0 : 1
 }
 
+/**
+ * Corre Tesseract sobre las primeras paginas de un PDF y deja dos cosas:
+ *
+ *  - test/fixtures/ocr-tesseract.json: la salida real de Tesseract (podada),
+ *    con la que ocr.test.js prueba toItems sin arrancar Electron.
+ *  - test/fixtures/escaneado-texto.pdf: las mismas paginas convertidas en un
+ *    "escaneado" de verdad —una imagen por pagina, sin texto nativo— cuyo
+ *    contenido se conoce, para probar el OCR de la aplicacion contra el.
+ *
+ * Es tambien la prueba de arranque: si la CSP bloquea el worker o el WASM,
+ * es aqui donde se ve el error.
+ */
+async function ocrTask (win, projectRoot, arg) {
+  const result = await poll(win, 'window.__ocr', 300_000)
+  if (!result) {
+    console.error('OCR: la pagina no publico resultado a tiempo')
+    return 1
+  }
+  if (!result.ok) {
+    console.error(`OCR FALLO: ${result.error}`)
+    return 1
+  }
+
+  const outDir = path.join(projectRoot, 'test', 'fixtures')
+  const first = result.results[0]
+  await fs.writeFile(path.join(outDir, 'ocr-tesseract.json'), JSON.stringify({
+    scale: result.scale,
+    width: first.width,
+    height: first.height,
+    confidence: first.confidence,
+    blocks: first.blocks
+  }, null, 1))
+
+  const { buildScanPdf } = await import(`file://${path.join(projectRoot, 'test', 'fixtures', 'make-scan.mjs')}`)
+  const jpegs = result.jpegs.map(j => ({ data: Buffer.from(j.data, 'base64'), width: j.width, height: j.height }))
+  const pageSize = { w: Math.round(first.width), h: Math.round(first.height) }
+  await fs.writeFile(path.join(outDir, 'escaneado-texto.pdf'),
+    buildScanPdf(jpegs, { w: pageSize.w, h: pageSize.h, folio: false }))
+
+  const chars = result.results.reduce((n, r) => n + r.items.reduce((m, i) => m + i.text.length, 0), 0)
+  console.log('\nOCR OK')
+  console.log(`  arranque  : ${(result.booted / 1000).toFixed(1)}s (worker + WASM + idiomas, todo local)`)
+  for (const [i, r] of result.results.entries()) {
+    console.log(`  pagina ${i + 1}  : ${r.items.length} lineas, confianza ${(r.confidence * 100).toFixed(0)}%, ${(r.ms / 1000).toFixed(1)}s`)
+  }
+  console.log(`  caracteres: ${chars}`)
+  console.log(`\n--- primeros bloques reconstruidos por el pipeline ---`)
+  for (const text of result.blockTexts.slice(0, 4)) {
+    console.log(`  ${text.slice(0, 110)}`)
+  }
+  console.log(`\nfixtures en test/fixtures/ocr-tesseract.json y escaneado-texto.pdf`)
+  return 0
+}
+
+/**
+ * Pasa el modelo de layout por paginas concretas y deja cada una anotada en
+ * test/screenshots/layout-p<N>.png: las cajas que ve el modelo, con clase y
+ * confianza. Es la forma de evaluar si el detector merece entrar en la
+ * aplicacion antes de escribir una sola linea de integracion.
+ */
+async function layoutTask (win, projectRoot) {
+  const result = await poll(win, 'window.__layout', 300_000)
+  if (!result) {
+    console.error('LAYOUT: la pagina no publico resultado a tiempo')
+    return 1
+  }
+  if (!result.ok) {
+    console.error(`LAYOUT FALLO: ${result.error}`)
+    return 1
+  }
+
+  const shotDir = path.join(projectRoot, 'test', 'screenshots')
+  await fs.mkdir(shotDir, { recursive: true })
+
+  // Las detecciones crudas tambien como fixture: con ellas se prueba el orden
+  // de lectura y el mapeo a regiones sin arrancar ni Electron ni el modelo.
+  await fs.writeFile(
+    path.join(projectRoot, 'test', 'fixtures', 'layout-detections.json'),
+    JSON.stringify(result.results.map(r => ({ page: r.page, detections: r.detections })), null, 1))
+
+  console.log('\nLAYOUT OK')
+  console.log(`  arranque : ${(result.booted / 1000).toFixed(1)}s (WASM + modelo, todo local)`)
+  for (const r of result.results) {
+    await fs.writeFile(path.join(shotDir, `layout-p${r.page}.png`), Buffer.from(r.image, 'base64'))
+    console.log(`\n  pagina ${r.page} — ${r.detections.length} cajas en ${(r.ms / 1000).toFixed(1)}s`)
+    for (const d of r.detections) {
+      console.log(`    ${d.label.padEnd(15)} ${String(Math.round(d.score * 100)).padStart(3)}%  x=${d.x} y=${d.y} ${d.w}x${d.h}`)
+    }
+  }
+  console.log(`\npaginas anotadas en test/screenshots/layout-p*.png`)
+  return 0
+}
+
 async function ingestTask (win, projectRoot, arg) {
   const result = await poll(win, 'window.__ingest', 60_000)
   if (!result) {
@@ -435,6 +538,12 @@ async function readTask (win, projectRoot) {
     console.log(`\nFICHA DEL LIBRO\n  ${sheet.title}\n  elegido: ${sheet.chosen}\n  ${sheet.why.slice(0, 110)}`)
     check(Boolean(sheet.chosen), 'la ficha no trae ningun modo preseleccionado')
 
+    // LECTOR_TASK_MODE fuerza la vista: la ficha preselecciona la sugerida y
+    // algunos caminos —las figuras dentro del flujo— solo se ven eligiendo
+    // otra a proposito.
+    const forced = ['flow', 'sentence', 'page'].indexOf(process.env.LECTOR_TASK_MODE ?? '')
+    if (forced !== -1) await js(`document.querySelectorAll('.mode-card')[${forced}].click()`)
+
     await js(`document.querySelector('.sheet-start').click()`)
     if (!await poll(win, 'document.body.dataset.view === "reader" || null', 40_000)) {
       console.error('READ: el lector no llego a abrirse desde la ficha')
@@ -443,6 +552,33 @@ async function readTask (win, projectRoot) {
   }
 
   await wait(700)
+
+  // El primer escaneado ofrece reconocer su texto. La tarea lo rechaza para
+  // que el recorrido sea deterministico; con LECTOR_TASK_OCR=1 lo acepta y
+  // espera al libro reconstruido, que es la prueba completa del OCR.
+  if (await js(`Boolean(document.querySelector('dialog.confirm[open]'))`)) {
+    if (process.env.LECTOR_TASK_OCR) {
+      await js(`document.querySelector('dialog.confirm .btn-danger').click()`)
+      const visible = await poll(win, `!document.getElementById('hud-ocr').hidden || null`, 60_000)
+      check(visible, 'el aviso de reconocimiento no llego a verse')
+      console.log('\nOCR EN MARCHA: esperando a que el libro se reconstruya…')
+      const finished = await poll(win, `document.getElementById('hud-ocr').hidden || null`, 600_000)
+      check(finished, 'el reconocimiento no termino a tiempo')
+      await wait(700)
+      const rebuilt = await js(`Number(document.body.dataset.offset) >= 0 && document.body.dataset.view === 'reader'`)
+      check(rebuilt, 'el lector no volvio tras aplicar el texto reconocido')
+    } else {
+      await js(`document.querySelector('dialog.confirm .btn:not(.btn-danger)').click()`)
+    }
+    await wait(400)
+  }
+
+  // El analisis de layout de fondo reconstruye las paradas al terminar; se
+  // le espera para que el recorrido no cambie bajo los pies de la tarea. El
+  // margen inicial da tiempo a que el aviso llegue a aparecer.
+  await wait(4000)
+  await poll(win, `document.getElementById('hud-ocr').hidden || null`, 240_000)
+
   await shoot('01-inicio')
 
   // --- Avanzar linea a linea ----------------------------------------------
@@ -485,6 +621,25 @@ async function readTask (win, projectRoot) {
     check(afterWheel.contentY < 0, 'el texto no se desplazo al bajar el foco')
     check(afterWheel.sameText, 'las dos capas no tienen el mismo texto')
     check(afterWheel.blocksSharp === afterWheel.blocksDim, 'las capas tienen distinto numero de bloques')
+
+    // Las figuras del capitulo llegan como recortes de la pagina original,
+    // asincronos: se les da un momento y despues todas deben estar dibujadas
+    // en las dos capas.
+    const figures = await js(`
+      (() => {
+        const count = layer => {
+          const imgs = [...document.querySelectorAll('#content-' + layer + ' figure.figure-clip img')]
+          return { total: imgs.length, drawn: imgs.filter(i => i.complete && i.naturalWidth > 0).length }
+        }
+        return { sharp: count('sharp'), dim: count('dim') }
+      })()
+    `)
+    if (figures.sharp.total) {
+      console.log(`  figuras: ${figures.sharp.drawn}/${figures.sharp.total} recortes en la capa nitida, ` +
+                  `${figures.dim.drawn}/${figures.dim.total} en la atenuada`)
+      check(figures.sharp.drawn === figures.sharp.total, 'alguna figura del flujo quedo sin recorte')
+      check(figures.dim.drawn === figures.dim.total, 'la capa atenuada no recibio los recortes')
+    }
   }
 
   // --- Cambiar el cuerpo de letra sin perder el sitio ----------------------
@@ -621,7 +776,8 @@ async function readTask (win, projectRoot) {
       count: document.querySelectorAll('.panel .note').length,
       quote: document.querySelector('.panel .note-quote')?.textContent ?? '',
       marked: document.getElementById('hud-bookmark').classList.contains('is-on'),
-      bar: document.querySelectorAll('#content-sharp p[data-marked]').length
+      // Cualquier bloque puede llevar marcador, tambien una figura.
+      bar: document.querySelectorAll('#content-sharp [data-marked]').length
     }))()
   `)
   check(notes.count === 1, `deberia haber una nota, hay ${notes.count}`)

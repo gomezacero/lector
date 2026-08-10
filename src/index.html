@@ -2,8 +2,10 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
+  <!-- 'wasm-unsafe-eval' es para el modelo de layout (onnxruntime compila su
+       WASM en el documento); no habilita eval de JavaScript. -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' blob:; worker-src 'self';">
+        content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' blob:; worker-src 'self';">
   <title>Lector</title>
   <link rel="stylesheet" href="/src/styles/base.css">
   <link rel="stylesheet" href="/src/styles/themes.css">
@@ -41,6 +43,7 @@
     <div class="hud" id="hud">
       <button class="hud-btn" id="hud-library" title="Biblioteca (Ctrl+L)">Biblioteca</button>
       <span class="hud-chapter" id="hud-chapter"></span>
+      <span class="hud-ocr" id="hud-ocr" hidden></span>
       <span class="hud-progress" id="hud-progress"></span>
       <button class="hud-btn" id="hud-mode" title="Cambiar de vista (V)">Flujo</button>
       <button class="hud-btn" id="hud-bookmark" title="Marcar esta línea (M)">Marcar</button>

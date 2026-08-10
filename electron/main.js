@@ -4,9 +4,21 @@ import { promises as fs, rmSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as store from './storage.js'
+import { logLine } from './log.js'
 import { attachErrorLog, runDevTask, startUrlFor } from './devtasks.js'
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+// Empaquetada, la aplicacion es una GUI sin consola: un fallo que solo llegue
+// a stderr no lo ve nadie. Todo lo no capturado queda en userData/logs.
+process.on('uncaughtException', err => {
+  console.error(err)
+  logLine('main', `uncaughtException: ${err?.stack ?? err}`)
+})
+process.on('unhandledRejection', reason => {
+  console.error(reason)
+  logLine('main', `unhandledRejection: ${reason?.stack ?? reason}`)
+})
 
 // El renderer usa modulos ESM nativos, que el protocolo file:// bloquea por CORS.
 // Un scheme propio y privilegiado los sirve sin necesidad de bundler.
@@ -22,7 +34,10 @@ const MIME = {
   '.json': 'application/json',
   '.woff2': 'font/woff2',
   '.svg': 'image/svg+xml',
-  '.map': 'application/json'
+  '.map': 'application/json',
+  // El motor de OCR compila su nucleo con instantiateStreaming, que exige
+  // este tipo exacto; con el generico de reserva el arranque falla.
+  '.wasm': 'application/wasm'
 }
 
 function registerAppProtocol () {
@@ -32,7 +47,8 @@ function registerAppProtocol () {
 
     // Las portadas no viven en el proyecto sino junto a la biblioteca, asi que
     // tienen su propia rama; el resto sale del codigo empaquetado.
-    const cover = decoded.match(/^\/covers\/([a-f0-9]{8,64})\.jpg$/)
+    // El id siempre es 32 hex (sha256 recortado): mismo formato que exige storage.
+    const cover = decoded.match(/^\/covers\/([a-f0-9]{32})\.jpg$/)
     const target = cover
       ? store.coverPath(cover[1])
       : path.join(projectRoot, decoded)
@@ -155,6 +171,23 @@ async function loadPdf (filePath) {
   }
 }
 
+// pdf:load devuelve al renderer el contenido integro de la ruta que le pidan,
+// asi que solo puede servir lo que el usuario haya senalado: rutas elegidas en
+// el dialogo durante esta sesion o presentes en la biblioteca. Las tareas de
+// desarrollo cargan fixtures arbitrarios y trabajan sobre datos propios, por
+// eso quedan fuera de la restriccion.
+const pickedPdfPaths = new Set()
+
+async function allowedPdfPath (filePath) {
+  if (devTask) return true
+  if (typeof filePath !== 'string') return false
+  const resolved = path.resolve(filePath)
+  if (pickedPdfPaths.has(resolved)) return true
+  const known = (await store.readLibrary()).some(b => b.path && path.resolve(b.path) === resolved)
+  if (known) pickedPdfPaths.add(resolved)
+  return known
+}
+
 function registerIpc () {
   ipcMain.handle('pdf:pick', async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
@@ -163,33 +196,68 @@ function registerIpc () {
       filters: [{ name: 'PDF', extensions: ['pdf'] }]
     })
     if (canceled || filePaths.length === 0) return null
+    pickedPdfPaths.add(path.resolve(filePaths[0]))
     return loadPdf(filePaths[0])
   })
 
   ipcMain.handle('pdf:load', async (_e, filePath) => {
     try {
+      if (!(await allowedPdfPath(filePath))) {
+        logLine('main', `pdf:load rechazado: ${String(filePath).slice(0, 200)}`)
+        return { error: 'esa ruta no pertenece a la biblioteca' }
+      }
       return await loadPdf(filePath)
     } catch (err) {
       return { error: err.code === 'ENOENT' ? 'missing' : err.message }
     }
   })
 
-  ipcMain.handle('library:list', () => store.readLibrary())
+  // Tras leer, cualquier aviso del almacen (un fichero corrupto apartado) se
+  // reenvia a la ventana para que lo vea el usuario, no solo el log.
+  const withWarnings = fn => async (...args) => {
+    try {
+      return await fn(...args)
+    } finally {
+      for (const message of store.takeWarnings()) send('storage:warning', message)
+    }
+  }
+
+  ipcMain.handle('library:list', withWarnings(() => store.readLibrary()))
   ipcMain.handle('library:upsert', (_e, entry) => store.upsertLibraryEntry(entry))
   ipcMain.handle('library:remove', (_e, id) => store.removeLibraryEntry(id))
   ipcMain.handle('library:usage', (_e, id) => store.bookUsage(id))
 
-  ipcMain.handle('book:readCache', (_e, id) => store.readBookCache(id))
+  ipcMain.handle('book:readCache', withWarnings((_e, id) => store.readBookCache(id)))
   ipcMain.handle('book:writeCache', (_e, id, book) => store.writeBookCache(id, book))
   ipcMain.handle('book:hasCover', (_e, id) => store.hasCover(id))
   ipcMain.handle('book:writeCover', (_e, id, bytes) => store.writeCover(id, bytes))
 
-  ipcMain.handle('notes:read', (_e, id) => store.readNotes(id))
+  ipcMain.handle('notes:read', withWarnings((_e, id) => store.readNotes(id)))
   ipcMain.handle('notes:write', (_e, id, notes) => store.writeNotes(id, notes))
 
-  ipcMain.handle('settings:read', () => store.readSettings())
+  ipcMain.handle('ocr:read', (_e, id) => store.readOcr(id))
+  ipcMain.handle('ocr:write', (_e, id, data) => store.writeOcr(id, data))
+
+  ipcMain.handle('layout:read', (_e, id) => store.readLayout(id))
+  ipcMain.handle('layout:write', (_e, id, data) => store.writeLayout(id, data))
+
+  ipcMain.handle('settings:read', withWarnings(() => store.readSettings()))
   ipcMain.handle('settings:write', (_e, s) => store.writeSettings(s))
+
+  // Errores del renderer: la unica forma de que queden en el log del usuario.
+  ipcMain.on('log:error', (_e, message) => {
+    if (typeof message === 'string') logLine('renderer', message.slice(0, 4000))
+  })
 }
+
+// Si el renderer muere (un PDF que agota la memoria, un fallo de Chromium),
+// sin esto el usuario se queda mirando una ventana en blanco sin explicacion.
+// Las tareas de desarrollo ya lo escuchan por su cuenta y quieren ver el fallo.
+app.on('render-process-gone', (_e, _contents, details) => {
+  logLine('main', `render-process-gone: ${JSON.stringify(details)}`)
+  if (devTask || details.reason === 'clean-exit' || details.reason === 'killed') return
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.reload()
+})
 
 app.whenReady().then(() => {
   registerAppProtocol()

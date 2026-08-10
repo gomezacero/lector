@@ -1,19 +1,53 @@
 import { app } from 'electron'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
+import { logLine } from './log.js'
 
 // Todo el estado persistente vive bajo userData:
 //   library.json          -> lista de libros con su progreso
 //   settings.json         -> preferencias de lectura
 //   books/<id>.json       -> cache del texto extraido de un PDF
 //   books/<id>.notes.json -> marcadores y notas de ese libro
+//   books/<id>.ocr.json   -> texto reconocido de un escaneado, pagina a pagina
+//   books/<id>.layout.json-> cajas del modelo de layout, pagina a pagina
 //   covers/<id>.jpg       -> portada ya dibujada para la estanteria
 //
-// Los cuatro ficheros por libro (los tres de arriba mas la portada) se borran
-// juntos en removeLibraryEntry. Al anadir un quinto hay que anadirlo alli.
+// Los seis ficheros por libro se borran juntos en removeLibraryEntry. Al
+// anadir un septimo hay que anadirlo alli.
+//
+// Los de OCR y layout sobreviven a las subidas de version del cache a
+// proposito: volver a procesar el libro relee lo ya reconocido y analizado en
+// vez de pagar otra vez los minutos de modelo.
 
 const userData = () => app.getPath('userData')
 const booksDir = () => path.join(userData(), 'books')
+
+// Los id son 32 hex (sha256 recortado, electron/main.js). Llegan del renderer
+// por IPC y acaban en path.join: cualquier otra cosa —un ../, mayusculas, un
+// numero— podria salirse de userData con permiso de escritura y borrado, asi
+// que aqui se corta antes de tocar ninguna ruta.
+const ID_FORMAT = /^[0-9a-f]{32}$/
+function assertId (id) {
+  if (typeof id !== 'string' || !ID_FORMAT.test(id)) {
+    throw new Error(`id de libro invalido: ${String(id).slice(0, 40)}`)
+  }
+}
+
+// Avisos para el usuario (fichero corrupto apartado, etc.). El proceso
+// principal los recoge con takeWarnings() y los reenvia a la ventana; ademas
+// quedan en el log persistente.
+let warnings = []
+export const takeWarnings = () => warnings.splice(0)
+
+function logError (message) {
+  console.error(message)
+  logLine('storage', message)
+}
+
+function warn (message) {
+  warnings.push(message)
+  logError(message)
+}
 
 // Los ajustes viven en dos ambitos.
 //
@@ -48,10 +82,33 @@ export const DEFAULT_SETTINGS = {
 }
 
 async function readJson (file, fallback) {
+  let raw
   try {
-    return JSON.parse(await fs.readFile(file, 'utf8'))
+    raw = await fs.readFile(file, 'utf8')
   } catch (err) {
-    if (err.code !== 'ENOENT') console.error(`No se pudo leer ${file}:`, err.message)
+    if (err.code === 'ENOENT') return fallback
+    // Bloqueado o ilegible sin saber por que: mejor fallar alto que devolver
+    // el fallback y que la siguiente escritura pise un fichero que quiza este
+    // bien. El invoke del renderer vera el rechazo.
+    warn(`No se pudo leer ${path.basename(file)}: ${err.message}`)
+    throw err
+  }
+  try {
+    return JSON.parse(raw)
+  } catch {
+    // Contenido dañado: se aparta con fecha en vez de dejarlo donde esta.
+    // Devolver el fallback sin apartarlo seria fatal —el siguiente guardado
+    // escribiria encima y una biblioteca entera se perderia en silencio—;
+    // apartado, el guardado empieza de cero y los datos siguen recuperables.
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const saved = `${file}.corrupto-${stamp}`
+    try {
+      await fs.rename(file, saved)
+    } catch (err) {
+      warn(`${path.basename(file)} está dañado y no se pudo apartar: ${err.message}`)
+      throw err
+    }
+    warn(`${path.basename(file)} estaba dañado; se guardó una copia como ${path.basename(saved)}.`)
     return fallback
   }
 }
@@ -86,7 +143,7 @@ async function removeTemporaries (dir, prefixes) {
   try {
     names = await fs.readdir(dir)
   } catch (err) {
-    if (err.code !== 'ENOENT') console.error(`No se pudo listar ${dir}:`, err.message)
+    if (err.code !== 'ENOENT') logError(`No se pudo listar ${dir}: ${err.message}`)
     return 0
   }
 
@@ -111,18 +168,32 @@ async function removeFile (file) {
   }
 }
 
+// library.json se escribe desde tres sitios que se solapan (autoguardado del
+// lector, ajustes del libro, refresco de la estanteria) y cada operacion es
+// leer-modificar-escribir: dos a la vez se pierden cambios aunque la escritura
+// en si sea atomica. La cola las pone en fila sin bloquear a nadie.
+let libraryQueue = Promise.resolve()
+function withLibraryLock (fn) {
+  const run = libraryQueue.then(fn)
+  libraryQueue = run.catch(() => {})
+  return run
+}
+
 export async function readLibrary () {
   const list = await readJson(path.join(userData(), 'library.json'), [])
   return Array.isArray(list) ? list : []
 }
 
 export async function upsertLibraryEntry (entry) {
-  const list = await readLibrary()
-  const i = list.findIndex(b => b.id === entry.id)
-  if (i === -1) list.push(entry)
-  else list[i] = { ...list[i], ...entry }
-  await writeJson(path.join(userData(), 'library.json'), list)
-  return list
+  assertId(entry?.id)
+  return withLibraryLock(async () => {
+    const list = await readLibrary()
+    const i = list.findIndex(b => b.id === entry.id)
+    if (i === -1) list.push(entry)
+    else list[i] = { ...list[i], ...entry }
+    await writeJson(path.join(userData(), 'library.json'), list)
+    return list
+  })
 }
 
 /**
@@ -136,18 +207,24 @@ export async function upsertLibraryEntry (entry) {
  * @returns {Promise<{ok:boolean, entries:Array, bytes:number, error?:string}>}
  */
 export async function removeLibraryEntry (id) {
+  assertId(id)
   let bytes = 0
   try {
     bytes += await removeFile(path.join(booksDir(), `${id}.json`))
     bytes += await removeFile(path.join(booksDir(), `${id}.notes.json`))
+    bytes += await removeFile(path.join(booksDir(), `${id}.ocr.json`))
+    bytes += await removeFile(path.join(booksDir(), `${id}.layout.json`))
     bytes += await removeFile(coverPath(id))
-    bytes += await removeTemporaries(booksDir(), [`${id}.json.`, `${id}.notes.json.`])
+    bytes += await removeTemporaries(booksDir(), [`${id}.json.`, `${id}.notes.json.`, `${id}.ocr.json.`, `${id}.layout.json.`])
 
-    const entries = (await readLibrary()).filter(b => b.id !== id)
-    await writeJson(path.join(userData(), 'library.json'), entries)
+    const entries = await withLibraryLock(async () => {
+      const kept = (await readLibrary()).filter(b => b.id !== id)
+      await writeJson(path.join(userData(), 'library.json'), kept)
+      return kept
+    })
     return { ok: true, entries, bytes }
   } catch (err) {
-    console.error(`No se pudo borrar el libro ${id}:`, err.message)
+    logError(`No se pudo borrar el libro ${id}: ${err.message}`)
     return { ok: false, entries: await readLibrary(), bytes, error: err.message }
   }
 }
@@ -193,7 +270,7 @@ export async function sweepOrphans () {
         bytes += await removeFile(file)
         swept++
       } catch (err) {
-        console.error(`No se pudo barrer ${file}:`, err.message)
+        logError(`No se pudo barrer ${file}: ${err.message}`)
       }
     }
   }
@@ -222,7 +299,7 @@ const booksFileId = name => name.match(/^([0-9a-f]{32})\./)?.[1] ?? null
 const coversFileId = name => name.match(/^([0-9a-f]{32})\.jpg$/)?.[1] ?? null
 
 const coversDir = () => path.join(userData(), 'covers')
-export const coverPath = id => path.join(coversDir(), `${id}.jpg`)
+export const coverPath = id => { assertId(id); return path.join(coversDir(), `${id}.jpg`) }
 
 /**
  * Guarda la portada ya dibujada. Llega como bytes crudos desde el renderer.
@@ -233,8 +310,8 @@ export const coverPath = id => path.join(coversDir(), `${id}.jpg`)
  * intentar.
  */
 export async function writeCover (id, bytes) {
-  await fs.mkdir(coversDir(), { recursive: true })
   const file = coverPath(id)
+  await fs.mkdir(coversDir(), { recursive: true })
   const tmp = `${file}.${process.pid}-${++tmpCounter}.tmp`
   try {
     await fs.writeFile(tmp, Buffer.from(bytes))
@@ -261,8 +338,14 @@ export async function hasCover (id) {
  * @returns {Promise<{bytes:number, notes:number}>}
  */
 export async function bookUsage (id) {
+  assertId(id)
   let bytes = 0
-  for (const file of [path.join(booksDir(), `${id}.json`), coverPath(id)]) {
+  for (const file of [
+    path.join(booksDir(), `${id}.json`),
+    path.join(booksDir(), `${id}.ocr.json`),
+    path.join(booksDir(), `${id}.layout.json`),
+    coverPath(id)
+  ]) {
     try {
       bytes += (await fs.stat(file)).size
     } catch { /* todavia no existe */ }
@@ -271,11 +354,21 @@ export async function bookUsage (id) {
   return { bytes, notes: Array.isArray(notes) ? notes.length : 0 }
 }
 
-export const readBookCache = id => readJson(path.join(booksDir(), `${id}.json`), null)
-export const writeBookCache = (id, book) => writeJson(path.join(booksDir(), `${id}.json`), book)
+// async y no arrow directo: assertId debe rechazar la promesa, no reventar al
+// que llama en sincrono (el handler de IPC devuelve estas promesas tal cual).
+const bookFile = (id, suffix) => { assertId(id); return path.join(booksDir(), `${id}${suffix}`) }
 
-export const readNotes = id => readJson(path.join(booksDir(), `${id}.notes.json`), [])
-export const writeNotes = (id, notes) => writeJson(path.join(booksDir(), `${id}.notes.json`), notes)
+export const readBookCache = async id => readJson(bookFile(id, '.json'), null)
+export const writeBookCache = async (id, book) => writeJson(bookFile(id, '.json'), book)
+
+export const readNotes = async id => readJson(bookFile(id, '.notes.json'), [])
+export const writeNotes = async (id, notes) => writeJson(bookFile(id, '.notes.json'), notes)
+
+export const readOcr = async id => readJson(bookFile(id, '.ocr.json'), null)
+export const writeOcr = async (id, data) => writeJson(bookFile(id, '.ocr.json'), data)
+
+export const readLayout = async id => readJson(bookFile(id, '.layout.json'), null)
+export const writeLayout = async (id, data) => writeJson(bookFile(id, '.layout.json'), data)
 
 export async function readSettings () {
   const saved = await readJson(path.join(userData(), 'settings.json'), {})

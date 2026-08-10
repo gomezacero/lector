@@ -9,6 +9,8 @@ import { buildLineIndex, offsetOfLine } from './lineIndex.js'
 import { createFocusController } from './focus.js'
 import { makeProgress, chapterAtOffset, lineForOffset, percentAt, startOffset } from './progress.js'
 import { toSentenceUnits } from './sentences.js'
+import { createFigureClips } from './figureClips.js'
+import { createPageRenderer } from '../pdf/pageRender.js'
 
 const SAVE_DELAY = 900
 
@@ -21,6 +23,8 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
   let chapterIndex = 0
   let saveTimer = null
   let unit = 'line' // 'line' o 'sentence': por que avanza el foco
+  let clips = null // recortes de figura; solo existe si el libro trae figuras
+  let clipToken = 0 // invalida los recortes en vuelo al cambiar de capitulo
 
   // Donde esta leyendo, en caracteres. Es el dato canonico: la linea es solo su
   // representacion con los ajustes de ahora. Solo cambia cuando el lector se
@@ -33,6 +37,27 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
     if (!chapter) return
     renderChapter(book, chapter, layers, notes?.markedBlocks ?? new Set())
     measure()
+    // Los recortes llegan detras, sin bloquear: el hueco ya esta reservado
+    // con su proporcion, asi que la medida de lineas no se mueve.
+    void fillFigures(chapter)
+  }
+
+  /** Pone en las dos capas el recorte original de cada figura del capitulo. */
+  async function fillFigures (chapter) {
+    if (!clips) return
+    const token = ++clipToken
+
+    for (let i = chapter.start; i < chapter.end; i++) {
+      if (book?.blocks[i]?.type !== 'figure') continue
+      const clip = await clips.get(book, i).catch(() => null)
+      // Cambiar de capitulo (o cerrar) deja obsoleto lo que estaba en vuelo.
+      if (token !== clipToken || !book) return
+      if (!clip) continue
+      for (const layer of [contentSharp, contentDim]) {
+        const img = layer.querySelector(`figure[data-block="${i}"] img`)
+        if (img) img.src = clip.url
+      }
+    }
   }
 
   /**
@@ -119,23 +144,34 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
     const line = focus.lines[focus.index]
     if (!line) return null
     const block = book.blocks[line.block]
+    const context = block?.text.slice(line.start, line.start + 200).trim() ?? ''
     return {
       block: line.block,
       char: line.start,
       offset: (block?.start ?? 0) + line.start,
       text: block?.text.slice(line.start, line.end).trim() ?? '',
-      context: block?.text.slice(line.start, line.start + 200).trim() ?? ''
+      // Una figura no tiene texto que citar: sin esto la nota sale como «».
+      context: context || (block?.type === 'figure' ? `Figura de la página ${block.page + 1}` : '')
     }
   }
 
   return {
     /** @param {'line'|'sentence'} [readingUnit] por que avanza el foco */
-    async open (nextBook, progress, notesStore, _bytes, readingUnit = 'line') {
+    async open (nextBook, progress, notesStore, bytes, readingUnit = 'line') {
       book = nextBook
       notes = notesStore
       unit = readingUnit
       anchor = progress?.offset ?? startOffset(nextBook)
       chapterIndex = chapterAtOffset(book, anchor)
+
+      // Solo un libro con figuras abre el PDF: la prosa corriente no lo
+      // necesita y asi no paga ni el worker ni la memoria del renderer.
+      if (bytes && (nextBook.stats?.figures ?? 0) > 0) {
+        const renderer = createPageRenderer()
+        await renderer.open(bytes)
+        clips = createFigureClips(renderer)
+      }
+
       renderCurrentChapter()
       focus.moveTo(lineForOffset(book, focus.lines, anchor), { animate: false })
       emitStatus()
@@ -144,6 +180,9 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
     close () {
       clearTimeout(saveTimer)
       if (book && focus.lineCount) onSave?.(makeProgress(book, anchor))
+      clipToken++
+      clips?.close()
+      clips = null
       book = null
       notes = null
       contentSharp.replaceChildren()

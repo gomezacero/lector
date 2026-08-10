@@ -9,7 +9,7 @@
 // aplicacion no tenga que saber en cual de los dos modos esta.
 
 import { createPageRenderer } from '../pdf/pageRender.js'
-import { chapterAtOffset, percentAt, makeProgress, blockAtOffset, startOffset } from './progress.js'
+import { chapterAtOffset, percentAt, makeProgress, startOffset } from './progress.js'
 import { buildRegions } from './regions.js'
 
 const SAVE_DELAY = 900
@@ -26,6 +26,7 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
   let shownPage = -1
   let saveTimer = null
   let zoom = 1
+  let layouts = null // cajas del modelo de layout, si este libro las tiene
 
 
   function prepareLayers () {
@@ -89,10 +90,14 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
     const feather = Math.max(8, 14 * fit)
 
     stage.style.setProperty('--content-y', `${contentY.toFixed(1)}px`)
+    // Una parada de pagina entera llena la pantalla y sus bordes nitidos
+    // caerian fuera, donde nadie los ve: se recortan al borde. Asi la banda
+    // de foco queda siempre dentro de la pantalla, que es el invariante que
+    // mide la tarea de desarrollo.
     setMask({
       a: box.top - pad - feather,
-      b: box.top - pad,
-      c: box.bottom + pad,
+      b: Math.max(0, box.top - pad),
+      c: Math.min(stage.clientHeight, box.bottom + pad),
       d: box.bottom + pad + feather,
       e: box.left - pad - feather,
       f: box.left - pad,
@@ -148,10 +153,16 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
     }, SAVE_DELAY)
   }
 
+  // La ultima region que empieza en el offset o antes. Se recorre la lista
+  // entera sin atajos: en una pagina analizada por el modelo el orden de
+  // lectura visual puede no ser monotono en offsets (una fotografia hereda el
+  // ancla de la parada anterior) y cortar en el primer salto elegiria mal.
   const regionOfOffset = offset => {
-    const target = blockAtOffset(book, offset)
-    const found = regions.findIndex(r => r.block >= target)
-    return found === -1 ? 0 : found
+    let found = 0
+    for (let i = 0; i < regions.length; i++) {
+      if (regions[i].start <= offset) found = i
+    }
+    return found
   }
 
   return {
@@ -162,10 +173,13 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
       shownPage = -1
 
       await renderer.open(bytes)
-      regions = buildRegions(book)
+      regions = buildRegions(book, layouts)
       prepareLayers()
       await goTo(regionOfOffset(anchor), { animate: false })
     },
+
+    /** Cajas del modelo de layout para este libro; antes de open. */
+    setLayouts (next) { layouts = next },
 
     close () {
       clearTimeout(saveTimer)
@@ -201,7 +215,9 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
         char: 0,
         offset: region.start,
         text: block?.text ?? '',
-        context: (block?.text ?? '').slice(0, 200) || `Figura en la página ${region.rect.page + 1}`
+        context: (block?.text ?? '').slice(0, 200) || (region.type === 'page'
+          ? `Página ${region.rect.page + 1}`
+          : `Figura en la página ${region.rect.page + 1}`)
       }
     },
 

@@ -135,8 +135,9 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
 }
 .page-content h2:first-child { margin-top: 0; }
 
-/* Un marcador se ve como una barra discreta al margen del parrafo. */
-.page-content p[data-marked] {
+/* Un marcador se ve como una barra discreta al margen del bloque, sea un
+   parrafo, un titulo o una figura recortada. */
+.page-content [data-marked] {
   box-shadow: -14px 0 0 -11px var(--accent);
 }
 
@@ -154,12 +155,33 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
 }
 .page-content [data-role='cover']:first-child { margin-top: 1.5em; }
 
-/* El indice se lee igual, pero se distingue del cuerpo: renglones apretados y
-   algo mas tenue, para que quede claro que es una lista y no el libro. */
-.page-content [data-role='toc'] {
+/* El indice y las paginas de referencia se leen igual, pero se distinguen del
+   cuerpo: renglones apretados y algo mas tenues, para que quede claro que son
+   listas y tablas, no el libro. */
+.page-content [data-role='toc'],
+.page-content [data-role='reference'] {
   margin: 0 0 0.15em;
   font-size: 0.94em;
   color: var(--fg-muted);
+}
+
+/* Una figura en el flujo es una lamina: el recorte de la pagina original tal
+   cual, sobre su papel blanco. filter: none es deliberado, para que ningun
+   tema pueda heredarle una inversion que le destroce el color; el marco la
+   separa del texto re-maquetado y explica que no comparte su tipografia. */
+.page-content figure.figure-clip {
+  margin: 1.3em 0;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  filter: none;
+}
+.figure-clip img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* --- HUD ----------------------------------------------------------------- */
@@ -202,6 +224,13 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
   padding: 0 8px;
 }
 .hud-progress { font-variant-numeric: tabular-nums; }
+
+/* Aviso discreto de que el reconocimiento de texto sigue trabajando. */
+.hud-ocr {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 
 /* --- Paneles laterales (ajustes y notas) --------------------------------- */
 

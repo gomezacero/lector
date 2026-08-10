@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  measureBody, findFurniture, stripFurniture,
+  measureBody, measurePageTypography, findFurniture, stripFurniture,
   detectParagraphStyle, joinLines, buildBlocks, toBlocks
 } from '../src/pdf/blocks.js'
 
@@ -30,6 +30,66 @@ describe('measureBody', () => {
     expect(metrics.bodyLeft).toBe(78)
     expect(metrics.bodyRight).toBe(508)
     expect(metrics.leading).toBeCloseTo(16.4, 1)
+  })
+})
+
+describe('metricas por pagina', () => {
+  it('mide cuerpo e interlineado de cada pagina con texto de sobra', () => {
+    const lines = [
+      ...column(Array.from({ length: 9 }, (_, i) => `linea de cuerpo numero ${i}`), { page: 0, leading: 12 }),
+      ...column(Array.from({ length: 9 }, (_, i) => `preliminar con mas aire ${i}`), { page: 1, leading: 18, size: 14 })
+    ]
+    const pages = measurePageTypography(lines)
+
+    expect(pages.get(0).bodySize).toBe(11.5)
+    expect(pages.get(0).leading).toBeCloseTo(12, 1)
+    expect(pages.get(1).bodySize).toBe(14)
+    expect(pages.get(1).leading).toBeCloseTo(18, 1)
+  })
+
+  it('con pocos renglones no inventa medidas: se usara la del documento', () => {
+    const pages = measurePageTypography(column(['una', 'dos', 'tres']))
+
+    expect(pages.has(0)).toBe(false)
+  })
+
+  it('el cuerpo local evita que los preliminares se llenen de falsos titulos', () => {
+    // Un libro de cuerpo 11.5 cuyos preliminares van a 14: antes, cada
+    // renglon corto de 14 pasaba por titulo por ser mayor que el cuerpo
+    // global. El titulo de verdad, a 18, sigue siendolo.
+    const cuerpo = Array.from({ length: 12 }, (_, i) =>
+      `renglon del cuerpo del libro con su texto corriente y su medida ${i}`)
+    const preliminar = [
+      line('SOBRE LOS AUTORES', { page: 1, y: 100, size: 18, width: 200 }),
+      ...column(Array.from({ length: 9 }, (_, i) => `biografia breve del autor ${i}`),
+        { page: 1, top: 140, leading: 19, size: 14, width: 200 })
+    ]
+    const { blocks } = toBlocks([
+      { width: 560, height: PAGE_H, lines: column(cuerpo, { page: 0, leading: 13 }) },
+      { width: 560, height: PAGE_H, lines: preliminar }
+    ])
+
+    const enPreliminar = blocks.filter(b => b.page === 1)
+    expect(enPreliminar[0].type).toBe('heading')
+    expect(enPreliminar.filter(b => b.type === 'heading')).toHaveLength(1)
+  })
+
+  it('el interlineado local evita partir la pagina compuesta con mas aire', () => {
+    // Con el interlineado global (12) el aire de 18 de los preliminares
+    // superaba el umbral de "hueco extra" y cada dos renglones nacia un
+    // parrafo: las biografias de los autores salian en tiras.
+    const cuerpo = Array.from({ length: 12 }, (_, i) =>
+      `renglon del cuerpo del libro con su texto corriente y su medida ${i}`)
+    const bio = Array.from({ length: 8 }, (_, i) =>
+      `parrafo biografico que sigue y sigue sin cambiar de asunto ${i}`)
+    const { blocks } = toBlocks([
+      { width: 560, height: PAGE_H, lines: column(cuerpo, { page: 0, leading: 12 }) },
+      { width: 560, height: PAGE_H, lines: column(bio, { page: 1, leading: 18 }) }
+    ])
+
+    // Un solo bloque toca la pagina 1 (puede venir continuado de la anterior,
+    // eso es un parrafo legitimo): lo roto era que salieran cuatro tiras.
+    expect(blocks.filter(b => b.rects.some(r => r.page === 1))).toHaveLength(1)
   })
 })
 

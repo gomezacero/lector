@@ -28,9 +28,25 @@ contextBridge.exposeInMainWorld('lector', {
     read: id => ipcRenderer.invoke('notes:read', id),
     write: (id, notes) => ipcRenderer.invoke('notes:write', id, notes)
   },
+  ocr: {
+    read: id => ipcRenderer.invoke('ocr:read', id),
+    write: (id, data) => ipcRenderer.invoke('ocr:write', id, data)
+  },
+  layout: {
+    read: id => ipcRenderer.invoke('layout:read', id),
+    write: (id, data) => ipcRenderer.invoke('layout:write', id, data)
+  },
   settings: {
     read: () => ipcRenderer.invoke('settings:read'),
     write: s => ipcRenderer.invoke('settings:write', s)
+  },
+  // Errores del renderer hacia el log persistente del proceso principal.
+  log: {
+    error: message => ipcRenderer.send('log:error', String(message).slice(0, 4000))
+  },
+  // Avisos del almacen (un fichero corrupto apartado): se ensenan al usuario.
+  onStorageWarning: fn => {
+    ipcRenderer.on('storage:warning', (_e, message) => fn(String(message)))
   },
   // Los atajos del menu viven en el proceso principal y llegan aqui como eventos.
   onMenu: handlers => {

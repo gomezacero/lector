@@ -5,10 +5,16 @@ dist/
 
 # Generados por las tareas de desarrollo
 dev-report.txt
+diagnose.json
 test/screenshots/
 test/fixtures/libro-prueba.pdf
 test/fixtures/libro-grande.pdf
 test/fixtures/ingest-*.json
+
+# Binarios vendorizados que no viajan con el repo: los traineddata de
+# Tesseract se descargan aparte y el modelo de layout es AGPL (la aplicacion
+# es MIT), asi que ninguno debe acabar en el historial. Ver el README.
+vendor/
 
 # Cache de herramientas
 .impeccable/

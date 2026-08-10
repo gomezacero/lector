@@ -51,6 +51,59 @@ export function measureBody (lines) {
   }
 }
 
+// --- Metricas por pagina -----------------------------------------------------
+
+// Con menos renglones la moda y la mediana de una pagina son ruido y se usa la
+// medida del documento.
+const MIN_PAGE_LINES = 8
+const MIN_PAGE_GAPS = 5
+
+/**
+ * Cuerpo e interlineado de cada pagina, cuando esta trae texto de sobra para
+ * medirlos.
+ *
+ * Las medidas del documento las domina el cuerpo del libro, y con ellas las
+ * paginas de otra tipografia se juzgan mal: en "Fisica Universitaria" (cuerpo
+ * 7.5pt) los preliminares van a 10pt, asi que sus renglones normales pasaban
+ * por titulos y su interlineado de 15pt superaba el umbral de "hueco extra":
+ * las biografias de los autores salian partidas cada dos renglones.
+ */
+export function measurePageTypography (lines) {
+  const byPage = new Map()
+  for (const line of lines) {
+    if (!byPage.has(line.page)) byPage.set(line.page, [])
+    byPage.get(line.page).push(line)
+  }
+
+  const result = new Map()
+  for (const [page, group] of byPage) {
+    if (group.length < MIN_PAGE_LINES) continue
+
+    const bodySize = mode(group.map(l => l.fontSize), 0.5, group.map(l => l.text.length))
+
+    const gaps = []
+    for (let i = 1; i < group.length; i++) {
+      const gap = group[i].y - group[i - 1].y
+      // Los saltos negativos (vuelta arriba al cambiar de columna) y los
+      // enormes (cruzar una figura) no son interlineado.
+      if (gap > 0 && gap < (bodySize || 12) * 4) gaps.push(gap)
+    }
+
+    result.set(page, {
+      bodySize: bodySize || null,
+      leading: gaps.length >= MIN_PAGE_GAPS ? median(gaps) : null
+    })
+  }
+  return result
+}
+
+/** El cuerpo con el que juzgar una linea: el de su pagina si se pudo medir. */
+const bodySizeAt = (line, metrics) =>
+  metrics.pages?.get(line.page)?.bodySize ?? metrics.bodySize
+
+const leadingAt = (line, metrics) =>
+  metrics.pages?.get(line.page)?.leading ?? metrics.leading
+
 // --- Mobiliario de pagina --------------------------------------------------
 
 /** "Capitulo 4 - 127" y "Capitulo 4 - 128" son el mismo titulillo. */
@@ -147,7 +200,9 @@ export function detectParagraphStyle (lines, metrics) {
 // --- Construccion de bloques ----------------------------------------------
 
 function isHeading (line, metrics) {
-  const bigger = line.fontSize >= metrics.bodySize * 1.12
+  // Contra el cuerpo de SU pagina: en unos preliminares a 10pt dentro de un
+  // libro de 7.5pt, todo renglon corto pasaba por titulo.
+  const bigger = line.fontSize >= bodySizeAt(line, metrics) * 1.12
   const short = line.width < metrics.bodyWidth * 0.8
   return bigger && short && line.text.length < 120
 }
@@ -191,8 +246,10 @@ function startsParagraph (line, prev, metrics, style) {
 
   const samePage = line.page === prev.page
   const verticalGap = samePage ? line.y - prev.y : 0
-  // Un hueco extra siempre separa, sea cual sea el estilo del libro.
-  if (samePage && verticalGap > metrics.leading * 1.45) return true
+  // Un hueco extra siempre separa, sea cual sea el estilo del libro. Se mide
+  // contra el interlineado de la pagina: el del documento parte en trocitos
+  // cualquier pagina compuesta con mas aire que el cuerpo.
+  if (samePage && verticalGap > leadingAt(line, metrics) * 1.45) return true
 
   // Cambiar de columna siempre empieza algo nuevo.
   if (line.columnLeft !== prev.columnLeft) return true
@@ -334,6 +391,9 @@ export function toBlocks (pages) {
   const clean = stripFurniture(all, pageHeight, pages.length, rough)
   const cleanText = clean.filter(line => !line.figure)
   const metrics = measureBody(cleanText)
+  // Ademas de la medida del documento, la de cada pagina: los preliminares y
+  // los apendices suelen ir en otra tipografia y se juzgan contra la suya.
+  metrics.pages = measurePageTypography(cleanText)
   const style = detectParagraphStyle(cleanText, metrics)
 
   return { blocks: buildBlocks(clean, metrics, style), metrics, style }

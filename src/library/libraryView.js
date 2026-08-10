@@ -87,6 +87,7 @@ export function createLibraryView ({ grid, empty, onOpen, onRemove, onSheet }) {
 
         h('p', { class: 'resume-meta', text:
           [`${entry.pageCount} páginas`,
+            entry.scanned ? 'escaneado' : null,
             entry.readingMode ? MODES[entry.readingMode]?.label.toLowerCase() : null,
             whenRead(entry.lastOpenedAt)].filter(Boolean).join(' · ') }),
 
@@ -126,7 +127,10 @@ export function createLibraryView ({ grid, empty, onOpen, onRemove, onSheet }) {
         class: entry.missing ? 'is-missing' : '',
         text: entry.missing ? 'archivo no encontrado' : (read > 0 ? `${percent(read)} · ` : '')
       }),
-      h('span', { text: whenRead(entry.lastOpenedAt) })
+      h('span', { text: whenRead(entry.lastOpenedAt) }),
+      // Que el escaneado se distinga en la estanteria: se hojea igual, pero
+      // explica por que este libro no ofrece la lectura linea a linea.
+      entry.scanned ? h('span', { text: ' · escaneado' }) : null
     ),
 
     entry.readingMode

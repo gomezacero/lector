@@ -10,17 +10,23 @@ import { readFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CHAPTERS, BOOK_TITLE, BOOK_AUTHOR, RUNNING_HEAD } from './fixtures/make-pdf.mjs'
+import { validateBook } from '../src/pdf/migrate.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const bookPath = path.join(here, 'fixtures', 'ingest-libro-prueba.json')
+const scanPath = path.join(here, 'fixtures', 'ingest-escaneado-prueba.json')
 
 let book
+let scan
 
 beforeAll(() => {
-  if (!existsSync(bookPath)) {
-    throw new Error(`Falta ${bookPath}. Ejecuta primero: npm run fixtures`)
+  for (const file of [bookPath, scanPath]) {
+    if (!existsSync(file)) {
+      throw new Error(`Falta ${file}. Ejecuta primero: npm run fixtures`)
+    }
   }
   book = JSON.parse(readFileSync(bookPath, 'utf8'))
+  scan = JSON.parse(readFileSync(scanPath, 'utf8'))
 })
 
 describe('ingesta completa', () => {
@@ -72,5 +78,24 @@ describe('ingesta completa', () => {
       offset += block.text.length + 1
     }
     expect(book.chars).toBe(offset)
+  })
+
+  it('clasifica todas sus paginas como texto y pasa la validacion', () => {
+    expect(book.pageKinds).toEqual(Array(book.pageCount).fill('text'))
+    expect(validateBook(book)).toEqual([])
+  })
+})
+
+describe('ingesta de un escaneado', () => {
+  it('clasifica cada pagina como escaneada y no inventa bloques', () => {
+    expect(scan.pageKinds).toEqual(Array(scan.pageCount).fill('scanned'))
+    expect(scan.blocks).toEqual([])
+    expect(scan.stats.scannedPages).toBe(scan.pageCount)
+  })
+
+  it('queda provisional, con una pagina por caracter de progreso', () => {
+    expect(scan.provisional).toBe(true)
+    expect(scan.chars).toBe(scan.pageCount)
+    expect(validateBook(scan)).toEqual([])
   })
 })

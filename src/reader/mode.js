@@ -22,25 +22,36 @@ export const isFlowMode = mode => mode === 'flow' || mode === 'sentence'
 const FIGURE_SHARE = 0.15
 const COLUMN_SHARE = 0.3
 
+// Con mayoria de paginas que son pura imagen, el libro es un escaneado: no
+// hay texto que re-maquetar y solo la pagina original ensena algo.
+const SCANNED_SHARE = 0.5
+
 /**
  * @param {Object} book
- * @returns {{mode:'flow'|'page', figures:number, columns:number, why:string}}
+ * @returns {{mode:'flow'|'page', figures:number, columns:number, scanned:number, why:string}}
  */
 export function detectMode (book) {
   const pages = Math.max(1, book.pageCount)
   const figures = (book.stats?.figures ?? 0) / pages
   const columns = (book.stats?.columnPages ?? 0) / pages
+  const scanned = (book.stats?.scannedPages ?? 0) / pages
 
+  if (scanned > SCANNED_SHARE) {
+    return { mode: 'page', figures, columns, scanned, why: 'son páginas escaneadas' }
+  }
   if (columns > COLUMN_SHARE) {
-    return { mode: 'page', figures, columns, why: 'el texto va en columnas' }
+    return { mode: 'page', figures, columns, scanned, why: 'el texto va en columnas' }
   }
   if (figures > FIGURE_SHARE) {
-    return { mode: 'page', figures, columns, why: 'tiene figuras en casi todas las páginas' }
+    return { mode: 'page', figures, columns, scanned, why: 'tiene figuras en casi todas las páginas' }
   }
-  return { mode: 'flow', figures, columns, why: 'es texto corrido' }
+  return { mode: 'flow', figures, columns, scanned, why: 'es texto corrido' }
 }
 
 /** Modo a usar teniendo en cuenta lo que haya elegido el lector. */
 export function resolveMode (book, preference) {
+  // Sin texto reconocido no hay nada que re-maquetar: un escaneado solo tiene
+  // vista de pagina, elija lo que elija el lector.
+  if (book?.provisional) return 'page'
   return preference && preference !== 'auto' ? preference : detectMode(book).mode
 }

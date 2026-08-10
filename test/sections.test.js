@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { detectSections, findBodyStart } from '../src/pdf/sections.js'
+import { detectSections, detectOpeners, findBodyStart } from '../src/pdf/sections.js'
 
 // Lineas tal y como las deja buildLines.
 const line = (text, extra = {}) => ({ text, x: 80, xEnd: 480, y: 100, fontSize: 10, ...extra })
@@ -95,6 +95,117 @@ describe('detectSections', () => {
       'y sus resultados sobre el conjunto de validación de mil categorías')))
 
     expect(roles.size).toBe(0)
+  })
+
+  it('marca como referencia una tabla de conversiones', () => {
+    // Como la contracubierta de "Fisica Universitaria": renglones cortos
+    // llenos de cifras y signos de igual, sin un solo parrafo.
+    const roles = detectSections(book(prose(), page(
+      'FACTORES DE CONVERSIÓN',
+      'Longitud',
+      '1 m = 100 cm = 1000 mm',
+      '1 km = 1000 m = 0.6214 mi',
+      '1 m = 3.281 ft = 39.37 in',
+      '1 cm = 0.3937 in',
+      '1 in = 2.540 cm',
+      '1 ft = 30.48 cm',
+      'Masa',
+      '1 kg = 1000 g = 0.0685 slug',
+      '1 g = 6.85 × 10 slug',
+      '1 slug = 14.59 kg',
+      '1 u = 1.661 × 10 kg',
+      '1 lb = 4.448 N')))
+
+    expect(roles.get(1)).toBe('reference')
+  })
+
+  it('marca como referencia una lista de actividades con sus numeros', () => {
+    const roles = detectSections(book(prose(), page(
+      'ESTRATEGIAS PARA RESOLVER PROBLEMAS',
+      '1.1', 'Cómo resolver problemas de física', '3',
+      '1.2', 'Conversiones de unidades', '7',
+      '1.3', 'Suma de vectores', '18',
+      '2.1', 'Movimiento con aceleración constante', '51',
+      '3.1', 'Movimiento de proyectil', '82')))
+
+    expect(roles.get(1)).toBe('reference')
+  })
+
+  it('no marca una pagina del cuerpo aunque venga llena de ecuaciones', () => {
+    // Las ecuaciones cortas van siempre escoltadas por parrafos: eso la salva.
+    const roles = detectSections(book(prose(), page(
+      'La segunda ley de Newton relaciona la fuerza neta que actúa sobre un',
+      'cuerpo con la aceleración que ese cuerpo adquiere, de modo que ambas',
+      'magnitudes resultan proporcionales entre sí para una masa constante',
+      'F = ma',
+      'a = F/m',
+      'v = v0 + at',
+      'x = x0 + v0 t',
+      'v2 = v02 + 2ax',
+      'F12 = -F21',
+      'p = mv',
+      'W = Fd',
+      'K = mv2/2',
+      'donde cada símbolo conserva el significado que se le dio al principio',
+      'del capítulo y las unidades se expresan en el Sistema Internacional')))
+
+    expect(roles.size).toBe(0)
+  })
+
+  it('no confunde con referencia una pagina de versos, que no lleva cifras', () => {
+    const roles = detectSections(book(prose(), page(
+      'Mi mano derecha es una golondrina',
+      'Mi mano izquierda es un ciprés',
+      'Mi cabeza por delante',
+      'es un señor vivo',
+      'y por detrás',
+      'es un señor muerto',
+      'La lluvia cae',
+      'sobre los tejados',
+      'y nadie la mira',
+      'como se mira un río',
+      'La tarde se apaga',
+      'sin hacer ruido',
+      'y el día se va',
+      'como vino')))
+
+    expect(roles.size).toBe(0)
+  })
+
+  it('marca la portadilla de poster: titulo gigante y foto', () => {
+    // Como el arranque de capitulo de "Fisica Universitaria": cuerpo 7.5,
+    // titulo a 22.8, fotografia y recuadro de metas.
+    const portadilla = {
+      lines: [
+        line('UNIDADES,', { fontSize: 22.8 }),
+        line('CANTIDADES FÍSICAS', { fontSize: 22.8 }),
+        { figure: true, rect: { x: 60, y: 175, w: 260, h: 190 } },
+        line('Ser capaz de predecir la trayectoria', { fontSize: 7.9 }),
+        line('de un huracán resulta esencial', { fontSize: 7.9 })
+      ]
+    }
+
+    expect(detectOpeners([prose(), portadilla], [1], 7.5).has(1)).toBe(true)
+  })
+
+  it('no marca el capitulo de una novela, que abre en grande pero es prosa', () => {
+    const capitulo = {
+      lines: [
+        line('XVII', { fontSize: 26 }),
+        ...prose().lines,
+        ...prose().lines
+      ]
+    }
+
+    expect(detectOpeners([capitulo], [0], 11).size).toBe(0)
+  })
+
+  it('no examina mas paginas que las que abren capitulo', () => {
+    const poster = {
+      lines: [line('UN CARTEL CUALQUIERA', { fontSize: 30 }), line('con dos rotulos')]
+    }
+
+    expect(detectOpeners([poster], [], 10).size).toBe(0)
   })
 
   it('sigue el indice por las paginas siguientes, que ya no llevan titulo', () => {
