@@ -27,6 +27,11 @@ describe('hasUnappliedOcr', () => {
   it('una página ya incorporada (kind ocr) no cuenta', () => {
     expect(hasUnappliedOcr(['ocr', 'text'], { 0: items(3) })).toBe(false)
   })
+
+  it('las páginas sospechosas (texto dañado) también cuentan', () => {
+    expect(hasUnappliedOcr(['suspect', 'text'], { 0: items(3) })).toBe(true)
+    expect(hasUnappliedOcr(['suspect', 'text'], { 0: items(0) })).toBe(false)
+  })
 })
 
 describe('unattemptedPages', () => {
@@ -40,5 +45,9 @@ describe('unattemptedPages', () => {
 
   it('sin OCR guardado, todas las escaneadas están por intentar', () => {
     expect(unattemptedPages(['scanned', 'text', 'scanned'], undefined)).toEqual([0, 2])
+  })
+
+  it('las sospechosas entran en la lista de pendientes', () => {
+    expect(unattemptedPages(['suspect', 'text', 'scanned'], undefined)).toEqual([0, 2])
   })
 })

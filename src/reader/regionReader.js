@@ -275,6 +275,7 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
     },
 
     markBlock: () => {},
+    refreshHighlights: () => {},
     refreshStatus: emitStatus,
     get book () { return book },
     get isOpen () { return book !== null }

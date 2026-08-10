@@ -9,6 +9,9 @@ import { createReader } from '/src/reader/reader.js'
 import { createRegionReader } from '/src/reader/regionReader.js'
 import { attachNavigation } from '/src/reader/navigation.js'
 import { createScrubber } from '/src/reader/scrubber.js'
+import { createPace } from '/src/reader/pace.js'
+import { attachHighlighter } from '/src/reader/highlighter.js'
+import { exportNotesMarkdown } from '/src/notes/exportNotes.js'
 import { createSettings } from '/src/settings/settings.js'
 import { createSettingsPanel } from '/src/settings/settingsPanel.js'
 import { createLibraryView } from '/src/library/libraryView.js'
@@ -37,6 +40,7 @@ const el = {
   hudOcr: $('hud-ocr'),
   hudPage: $('hud-page'),
   hudProgress: $('hud-progress'),
+  hudEta: $('hud-eta'),
   chapterMenu: $('chapter-menu'),
   hudMode: $('hud-mode'),
   hudBookmark: $('hud-bookmark'),
@@ -51,6 +55,8 @@ let reader = null // el que esta en uso
 let settingsPanel = null
 let notesView = null
 let scrubber = null
+let pace = null
+let savedCpm = 0
 let notes = null
 let entries = []
 let current = null // entrada de biblioteca del libro abierto
@@ -60,7 +66,6 @@ let bookSheet = null
 let pendingSave = null // ultima escritura en la biblioteca, para no leerla antes de tiempo
 let hudTimer = null
 let ocrRun = null // reconocimiento en marcha del libro abierto
-const ocrDeclined = new Set() // libros cuyo OCR se rechazo, solo esta sesion
 let layoutRun = null // analisis de layout en marcha del libro abierto
 
 // --- Avisos y carga --------------------------------------------------------
@@ -375,10 +380,13 @@ async function reanchorStored (id, oldBook, book, known) {
   const stored = (await window.lector.notes.read(id)) ?? []
   if (stored.length) {
     for (const note of stored) {
+      // Un resaltado conserva su largo: el final viaja con el principio.
+      const span = note.end != null ? Math.max(0, note.end - note.offset) : null
       // La cita que la nota ya guardaba para su lista es tambien su ancla.
       note.offset = reanchor(oldBook, book, { offset: note.offset, context: note.quote }, text)
       note.block = blockAtOffset(book, note.offset)
       note.char = Math.max(0, note.offset - (book.blocks[note.block]?.start ?? 0))
+      if (span != null) note.end = Math.min(note.offset + span, book.chars)
     }
     await window.lector.notes.write(id, stored)
   }
@@ -392,17 +400,18 @@ function setOcrChip (text) {
 }
 
 /**
- * Ofrece reconocer el texto de las paginas escaneadas del libro abierto.
+ * Ofrece reconocer el texto de las paginas escaneadas (o con texto danado)
+ * del libro abierto.
  *
  * Pregunta solo la primera vez: son minutos de CPU y es una decision del
- * lector. Una pasada ya empezada se reanuda sin preguntar, y al terminar el
- * libro se reconstruye con el texto reconocido sin perder el punto.
+ * lector. El "no" se recuerda con el libro, y siempre queda el boton de los
+ * ajustes para cambiar de idea (forced). Una pasada ya empezada se reanuda
+ * sin preguntar, y al terminar el libro se reconstruye sin perder el punto.
  */
-async function maybeStartOcr () {
+async function maybeStartOcr ({ forced = false } = {}) {
   const book = openedBook?.book
   if (!book || ocrRun || !current) return
-  if (!(book.stats?.scannedPages > 0)) return
-  if (ocrDeclined.has(current.id)) return
+  if (!((book.stats?.scannedPages ?? 0) + (book.stats?.suspectPages ?? 0) > 0)) return
 
   const stored = await window.lector.ocr.read(current.id)
   // Sin paginas por intentar no hay nada que reconocer: lo ya reconocido lo
@@ -411,19 +420,28 @@ async function maybeStartOcr () {
   if (!unattemptedPages(book.pageKinds, stored?.pages).length) return
   const resumed = Object.keys(stored?.pages ?? {}).length > 0
 
-  if (!resumed) {
-    const confirmed = await confirmAction({
-      title: '¿Reconocer el texto de este libro?',
-      lines: [
-        'Es un escaneado: el texto se puede reconocer aquí mismo, sin salir de tu equipo.',
-        'Tarda unos minutos y puedes seguir hojeando mientras tanto.',
-        'Al terminar podrás leerlo línea a línea y anotar frases.'
-      ],
-      confirmLabel: 'Reconocer el texto'
-    })
-    if (!confirmed) {
-      ocrDeclined.add(current.id)
-      return
+  if (forced) {
+    if (current.ocrDeclined) {
+      current = { ...current, ocrDeclined: false }
+      entries = await window.lector.library.upsert({ id: current.id, ocrDeclined: false })
+    }
+  } else {
+    if (current.ocrDeclined) return
+    if (!resumed) {
+      const confirmed = await confirmAction({
+        title: '¿Reconocer el texto de este libro?',
+        lines: [
+          'Tiene páginas escaneadas o con texto dañado: se pueden reconocer aquí mismo, sin salir de tu equipo.',
+          'Tarda unos minutos y puedes seguir hojeando mientras tanto.',
+          'Si cambias de idea más tarde, el botón está en Ajustes.'
+        ],
+        confirmLabel: 'Reconocer el texto'
+      })
+      if (!confirmed) {
+        current = { ...current, ocrDeclined: true }
+        entries = await window.lector.library.upsert({ id: current.id, ocrDeclined: true })
+        return
+      }
     }
   }
 
@@ -599,6 +617,8 @@ async function applyMode (mode, book, progress, bytes) {
   reader.setFocusShape(settings.all)
   reader.setLayouts?.(openedBook?.layouts ?? null)
   await reader.open(book, progress, notes, bytes, mode === 'sentence' ? 'sentence' : 'line')
+  // La primera muestra tras abrir o cambiar de vista no debe cruzar saltos.
+  pace?.reset()
   scrubber?.setBook(book)
   settingsPanel?.refresh()
 }
@@ -686,12 +706,42 @@ function onStatus (status) {
   el.hudPage.textContent = status.page ? `p. ${status.page}` : ''
   el.hudPage.hidden = !status.page
   el.hudProgress.textContent = percent(status.percent)
+  updateEta(status)
   el.hudBookmark.classList.toggle('is-on', status.marked)
   el.hudBookmark.setAttribute('aria-pressed', String(Boolean(status.marked)))
   lastOffset = status.offset
   scrubber?.setOffset(status.offset)
   // El punto de lectura exacto, para poder comprobarlo desde fuera.
   el.body.dataset.offset = String(status.offset)
+}
+
+/**
+ * "~8 min": lo que queda de capitulo al ritmo real de este lector. La cifra
+ * solo se ensena cuando hay muestras suficientes, y la velocidad aprendida se
+ * guarda con los ajustes para no empezar de cero en la proxima sesion.
+ */
+function updateEta (status) {
+  const book = openedBook?.book
+  el.hudEta.hidden = true
+  if (!book || book.provisional || status.chapterIndex == null) return
+
+  pace?.record(status.offset, Date.now())
+
+  const chapter = book.chapters[status.chapterIndex]
+  const end = chapter ? (book.blocks[chapter.end]?.start ?? book.chars) : book.chars
+  const minutes = pace?.minutesFor(Math.max(0, end - status.offset))
+  if (minutes == null) return
+
+  el.hudEta.textContent = minutes < 1 ? '<1 min' : `~${Math.round(minutes)} min`
+  el.hudEta.hidden = false
+
+  // Persistir solo cuando la velocidad se ha movido de verdad: cada status
+  // seria una escritura por linea leida.
+  const cpm = Math.round(pace.cpm)
+  if (pace.ready && Math.abs(cpm - savedCpm) > savedCpm * 0.1) {
+    savedCpm = cpm
+    settings.update({ paceCpm: cpm })
+  }
 }
 
 // --- Indice de capitulos -----------------------------------------------------
@@ -752,6 +802,21 @@ function toggleBookmark () {
   notesView.render(notes.all, reader.book)
 }
 
+/** Citas y notas a un .md que elige el lector. */
+async function exportNotes () {
+  const book = reader?.book
+  if (!book || !notes?.all.length) {
+    toast('Aún no hay nada que exportar en este libro.')
+    return
+  }
+  const markdown = exportNotesMarkdown(book, notes.all)
+  if (!markdown) return
+
+  const name = `${(current?.title ?? 'notas').replace(/[\\/:*?"<>|]/g, '')} — notas.md`
+  const saved = await window.lector.notes.export(name, markdown)
+  if (saved) toast(`Notas guardadas en ${saved}`, 6000)
+}
+
 // --- Arranque --------------------------------------------------------------
 
 const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => resolve()))
@@ -770,6 +835,10 @@ async function start () {
     onChange: next => reader?.setFocusShape(next),
     onBookChange: saveBookSettings
   })
+
+  // El ritmo aprendido en otras sesiones es el punto de partida.
+  savedCpm = settings.get('paceCpm') ?? 0
+  pace = createPace(savedCpm)
 
   bookSheet = createBookSheet({
     onStart: async mode => {
@@ -804,7 +873,15 @@ async function start () {
     settings,
     currentMode: () => el.body.dataset.mode ?? 'flow',
     onReadingMode: choice => switchMode(resolveMode(openedBook?.book, choice)),
-    onClose: () => showPanel(null)
+    onClose: () => showPanel(null),
+    // El boton de OCR: visible mientras el libro tenga paginas que reconocer
+    // y no haya ya una pasada en marcha.
+    canRecognize: () => {
+      const stats = openedBook?.book?.stats
+      return Boolean(stats && !ocrRun &&
+        (stats.scannedPages ?? 0) + (stats.suspectPages ?? 0) > 0)
+    },
+    onRecognize: () => { showPanel(null); void maybeStartOcr({ forced: true }) }
   })
   notesView = createNotesView({
     onClose: () => showPanel(null),
@@ -813,10 +890,30 @@ async function start () {
       const note = notes.all.find(n => n.id === id)
       notes.remove(id)
       if (note) reader.markBlock(note.block, notes.markedBlocks.has(note.block))
+      reader.refreshHighlights?.()
       reader.refreshStatus()
       notesView.render(notes.all, reader.book)
     },
-    onEdit: (id, text) => notes.setText(id, text)
+    onEdit: (id, text) => notes.setText(id, text),
+    onExport: exportNotes
+  })
+
+  // Seleccionar texto ofrece resaltarlo con un color.
+  attachHighlighter({
+    container: $('view-reader'),
+    content: el.contentSharp,
+    onHighlight: ({ startBlock, startChar, endBlock, endChar, quote, color }) => {
+      const book = openedBook?.book
+      if (!book || !notes) return
+      const start = (book.blocks[startBlock]?.start ?? 0) + startChar
+      const end = (book.blocks[endBlock]?.start ?? 0) + endChar
+      if (end <= start) return
+      notes.add({ offset: start, end, block: startBlock, char: startChar, quote, kind: 'highlight', color })
+      reader.refreshHighlights?.()
+      reader.refreshStatus()
+      notesView.render(notes.all, book)
+      wakeHud()
+    }
   })
   scrubber = createScrubber({
     onGo: offset => { reader.goToOffset(offset); wakeHud() }

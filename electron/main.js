@@ -279,6 +279,22 @@ function registerIpc () {
   ipcMain.handle('notes:read', withWarnings((_e, id) => store.readNotes(id)))
   ipcMain.handle('notes:write', (_e, id, notes) => store.writeNotes(id, notes))
 
+  // Exportar notas: se escribe SOLO donde el usuario elija en el dialogo.
+  ipcMain.handle('notes:export', async (_e, suggestedName, markdown) => {
+    if (typeof markdown !== 'string' || !markdown.length) return null
+    const name = typeof suggestedName === 'string'
+      ? path.basename(suggestedName).replace(/[\\/:*?"<>|]/g, '') || 'notas.md'
+      : 'notas.md'
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Guardar citas y notas',
+      defaultPath: name,
+      filters: [{ name: 'Markdown', extensions: ['md'] }]
+    })
+    if (canceled || !filePath) return null
+    await fs.writeFile(filePath, markdown, 'utf8')
+    return filePath
+  })
+
   ipcMain.handle('ocr:read', (_e, id) => store.readOcr(id))
   ipcMain.handle('ocr:write', (_e, id, data) => store.writeOcr(id, data))
 

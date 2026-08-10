@@ -5,6 +5,7 @@
 // sin que el lector note la costura.
 
 import { renderChapter, setBlockMarked } from './layout.js'
+import { paintHighlights, clearHighlights } from './highlights.js'
 import { buildLineIndex, offsetOfLine } from './lineIndex.js'
 import { createFocusController } from './focus.js'
 import { makeProgress, chapterAtOffset, lineForOffset, percentAt, startOffset, blockAtOffset } from './progress.js'
@@ -36,6 +37,8 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
     const chapter = book.chapters[chapterIndex]
     if (!chapter) return
     renderChapter(book, chapter, layers, notes?.markedBlocks ?? new Set())
+    // Los rangos de resaltado mueren con el repintado: se vuelven a poner.
+    paintHighlights(layers, book.blocks, chapter, notes?.all ?? [])
     measure()
     // Los recortes llegan detras, sin bloquear: el hueco ya esta reservado
     // con su proporcion, asi que la medida de lineas no se mueve.
@@ -185,6 +188,7 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
     close () {
       clearTimeout(saveTimer)
       if (book && focus.lineCount) onSave?.(makeProgress(book, anchor))
+      clearHighlights()
       clipToken++
       clips?.close()
       clips = null
@@ -222,6 +226,13 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
     },
 
     markBlock: (blockIndex, marked) => setBlockMarked(layers, blockIndex, marked),
+
+    /** Tras crear o borrar un resaltado, sin repintar el capitulo entero. */
+    refreshHighlights () {
+      const chapter = book?.chapters[chapterIndex]
+      if (chapter) paintHighlights(layers, book.blocks, chapter, notes?.all ?? [])
+    },
+
     refreshStatus: emitStatus,
     get book () { return book },
     get isOpen () { return book !== null }

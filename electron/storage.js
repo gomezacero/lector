@@ -81,7 +81,10 @@ export const DEFAULT_SETTINGS = {
   dimOpacity: 0.34,
   focusLines: 1,
   falloffLines: 1.6,
-  textAlign: 'left'
+  textAlign: 'left',
+  // Velocidad de lectura medida (caracteres por minuto). No sale en el panel:
+  // la aplicacion la aprende sola y la usa para estimar lo que queda.
+  paceCpm: 0
 }
 
 async function readJson (file, fallback) {

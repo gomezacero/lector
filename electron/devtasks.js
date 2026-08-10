@@ -564,6 +564,10 @@ async function readTask (win, projectRoot) {
       console.log('\nOCR EN MARCHA: esperando a que el libro se reconstruya…')
       const finished = await poll(win, `document.getElementById('hud-ocr').hidden || null`, 600_000)
       check(finished, 'el reconocimiento no termino a tiempo')
+      // La reconstruccion corre en el worker de ingesta y ya no bloquea la
+      // ventana: lo que marca su final es que el aviso de carga se retire.
+      const applied = await poll(win, `document.getElementById('loading').hidden || null`, 120_000)
+      check(applied, 'el texto reconocido no llego a aplicarse')
       await wait(700)
       const rebuilt = await js(`Number(document.body.dataset.offset) >= 0 && document.body.dataset.view === 'reader'`)
       check(rebuilt, 'el lector no volvio tras aplicar el texto reconocido')
@@ -643,26 +647,32 @@ async function readTask (win, projectRoot) {
   }
 
   // --- Barra de desplazamiento ---------------------------------------------
-  // Un clic hacia el final del carril salta a esa altura del libro.
-  const scrub = await js(`
+  // Dos clics en el carril: uno cerca del principio y otro hacia el final.
+  // Asi la comprobacion no depende de donde estuviera ya la lectura (en un
+  // libro corto, la rueda de antes puede haber llegado al final).
+  const scrubTo = ratio => js(`
     (() => {
       const track = document.querySelector('.scrubber')
       if (!track || track.hidden) return null
       const rect = track.getBoundingClientRect()
-      const opts = { bubbles: true, pointerId: 1, clientX: rect.left + 4, clientY: rect.top + rect.height * 0.85 }
+      const opts = { bubbles: true, pointerId: 1, clientX: rect.left + 4, clientY: rect.top + rect.height * ${ratio} }
       track.dispatchEvent(new PointerEvent('pointerdown', opts))
       const bubble = !track.querySelector('.scrubber-bubble').hidden
       track.dispatchEvent(new PointerEvent('pointerup', opts))
       return { bubble }
     })()
   `)
+  const scrubStart = await scrubTo(0.15)
+  await wait(600)
+  const nearStart = await readState(js)
+  const scrubEnd = await scrubTo(0.85)
   await wait(800)
-  check(scrub !== null, 'la barra de desplazamiento no esta en el lector')
-  check(scrub?.bubble, 'la burbuja de la barra no dice a donde se salta')
   const afterScrub = await readState(js)
-  console.log(`\nBARRA: de ${afterWheel.offset} a ${afterScrub.offset} de un salto`)
-  check(afterScrub.offset > afterWheel.offset,
-    `la barra no salto hacia delante: ${afterWheel.offset} -> ${afterScrub.offset}`)
+  check(scrubStart !== null, 'la barra de desplazamiento no esta en el lector')
+  check(scrubEnd?.bubble, 'la burbuja de la barra no dice a donde se salta')
+  console.log(`\nBARRA: al 15% (${nearStart.offset}) y al 85% (${afterScrub.offset})`)
+  check(afterScrub.offset > nearStart.offset,
+    `la barra no avanzo del 15% al 85%: ${nearStart.offset} -> ${afterScrub.offset}`)
 
   // --- Cambiar el cuerpo de letra sin perder el sitio ----------------------
   let before = afterScrub.offset
@@ -837,9 +847,51 @@ async function readTask (win, projectRoot) {
   check(notes.marked, 'el boton de marcar no quedo activo')
   check(isPageMode || notes.bar === 1, 'el parrafo marcado no se senala al margen')
 
+  // --- Resaltar una seleccion ----------------------------------------------
+  // Solo sobre el texto re-maquetado: en la vista de pagina no hay seleccion.
+  if (!isPageMode) {
+    await js(`document.getElementById('hud-notes').click()`) // cerrar el panel
+    await wait(400)
+    const highlight = await js(`
+      (async () => {
+        const el = document.querySelector('#content-sharp [data-block]')
+        const node = el?.firstChild
+        if (!node || node.nodeType !== Node.TEXT_NODE) return { skipped: true }
+        const range = document.createRange()
+        range.setStart(node, 0)
+        range.setEnd(node, Math.min(40, node.length))
+        const sel = window.getSelection()
+        sel.removeAllRanges()
+        sel.addRange(range)
+        document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+        await new Promise(resolve => setTimeout(resolve, 200))
+        const pop = document.querySelector('.hl-pop')
+        const open = Boolean(pop && !pop.hidden)
+        pop?.querySelector('button')?.click()
+        await new Promise(resolve => setTimeout(resolve, 200))
+        return {
+          open,
+          painted: CSS.highlights?.get('lector-yellow')?.size ?? 0,
+          count: document.querySelectorAll('.panel .note').length
+        }
+      })()
+    `)
+    console.log(`\nRESALTADO: selector ${highlight.open ? 'visible' : 'ausente'}, ` +
+                `${highlight.painted} tramos pintados, ${highlight.count} notas`)
+    check(highlight.open, 'el selector de color no aparecio sobre la seleccion')
+    // Dos tramos: el mismo rango en la capa nitida y en la difuminada.
+    check(highlight.painted >= 2, `el resaltado no se pinto: ${highlight.painted} tramos`)
+    check(highlight.count === 2, `la lista deberia tener marcador y resaltado, hay ${highlight.count}`)
+  }
+
   // --- Volver a la biblioteca y reabrir -----------------------------------
   await js(`document.getElementById('hud-library').click()`)
-  await wait(700)
+  // La franja de "Seguir leyendo" aparece cuando el cierre termina de guardar
+  // y dibujar la portada, que tarda lo que tarde el PDF: se espera a verla en
+  // vez de contar milisegundos (contarlos hacia la tarea intermitente).
+  const resumeReady = await poll(win, `document.querySelector('.resume-go') ? true : null`, 20_000)
+  check(resumeReady, 'la franja de seguir leyendo no llego a aparecer')
+  await wait(300)
   await shoot('05-biblioteca')
 
   // El libro que se acaba de leer ocupa la franja de arriba, no la estanteria.

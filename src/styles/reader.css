@@ -199,6 +199,57 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
   object-fit: contain;
 }
 
+/* --- Resaltados ------------------------------------------------------------ */
+
+/* Pintados con la CSS Custom Highlight API: rangos, no <mark>, para que cada
+   parrafo siga siendo un unico nodo de texto (la medida de lineas depende de
+   ello). Translucidos, legibles sobre los tres temas. */
+::highlight(lector-yellow) { background-color: rgba(235, 195, 60, 0.32); }
+::highlight(lector-green) { background-color: rgba(110, 190, 130, 0.30); }
+::highlight(lector-blue) { background-color: rgba(110, 160, 230, 0.28); }
+
+/* El selector de color que aparece junto a la seleccion. */
+.hl-pop {
+  position: absolute;
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  z-index: 45;
+}
+.hl-pop[hidden] { display: none; }
+
+.hl-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  padding: 0;
+}
+.hl-dot.is-yellow { background: #ebc33c; }
+.hl-dot.is-green { background: #6ebe82; }
+.hl-dot.is-blue { background: #6ea0e6; }
+.hl-dot:hover { transform: scale(1.15); }
+
+/* El punto que identifica un resaltado en la lista de notas. */
+.note-foot-where { display: flex; align-items: center; gap: 6px; }
+.note-color {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.note-color.is-yellow { background: #ebc33c; }
+.note-color.is-green { background: #6ebe82; }
+.note-color.is-blue { background: #6ea0e6; }
+
+.panel-head-actions { display: flex; align-items: center; gap: 6px; }
+.panel-export { padding: 5px 10px; font-size: 12px; }
+
 /* --- HUD ----------------------------------------------------------------- */
 
 .hud {
@@ -250,6 +301,7 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
 .hud-chapter:disabled { cursor: default; }
 
 .hud-page,
+.hud-eta,
 .hud-progress { font-variant-numeric: tabular-nums; }
 
 /* --- Barra de desplazamiento del libro ------------------------------------ */

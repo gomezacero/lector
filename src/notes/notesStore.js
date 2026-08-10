@@ -21,13 +21,19 @@ export function createNotesStore (bookId) {
 
     get all () { return notes },
 
-    /** Bloques con marcador, para pintar la barra al margen. */
-    get markedBlocks () { return new Set(notes.map(n => n.block)) },
+    /** Bloques con marcador, para pintar la barra al margen. Los resaltados
+     *  no cuentan: ya se ven pintados sobre su propio texto. */
+    get markedBlocks () {
+      return new Set(notes.filter(n => n.kind !== 'highlight').map(n => n.block))
+    },
 
     find (offset) { return notes.find(n => n.offset === offset) ?? null },
 
-    add ({ offset, block, char, quote }) {
-      const existing = notes.find(n => n.offset === offset)
+    /**
+     * Un marcador de linea o, con end/kind/color, un resaltado de texto.
+     */
+    add ({ offset, block, char, quote, end, kind, color }) {
+      const existing = notes.find(n => n.offset === offset && (n.kind === kind || (!n.kind && !kind)))
       if (existing) return existing
 
       const note = {
@@ -37,7 +43,10 @@ export function createNotesStore (bookId) {
         char,
         quote: quote.slice(0, QUOTE_CHARS),
         text: '',
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        ...(end != null ? { end } : {}),
+        ...(kind ? { kind } : {}),
+        ...(color ? { color } : {})
       }
       notes.push(note)
       sort()

@@ -13,7 +13,12 @@
 // El bundle ESM de tesseract.js solo tiene export default (el objeto UMD).
 import Tesseract from '/node_modules/tesseract.js/dist/tesseract.esm.min.js'
 
-const { createWorker } = Tesseract
+const { createWorker, createScheduler } = Tesseract
+
+// Varios reconocedores a la vez: cada worker usa un nucleo y un libro de 300
+// paginas tarda un tercio. Con techo, porque cada worker son ~150 MB de
+// memoria y el portatil tambien esta para leer.
+const WORKERS = Math.max(1, Math.min(3, (navigator.hardwareConcurrency ?? 4) - 2))
 
 const OPTIONS = {
   workerPath: '/node_modules/tesseract.js/dist/worker.min.js',
@@ -31,16 +36,22 @@ const LANGS = ['spa', 'eng']
 const LSTM_ONLY = 1
 
 /**
- * @returns {Promise<{recognize:(canvas:HTMLCanvasElement)=>Promise<Array>, terminate:()=>Promise<void>}>}
+ * @returns {Promise<{recognize:(canvas:HTMLCanvasElement)=>Promise<Array>,
+ *   concurrency:number, terminate:()=>Promise<void>}>}
  */
 export async function createOcrEngine () {
-  const worker = await createWorker(LANGS, LSTM_ONLY, OPTIONS)
+  const scheduler = createScheduler()
+  const workers = await Promise.all(
+    Array.from({ length: WORKERS }, () => createWorker(LANGS, LSTM_ONLY, OPTIONS)))
+  for (const worker of workers) scheduler.addWorker(worker)
+
   return {
     /** Reconoce un lienzo ya rasterizado y devuelve los bloques con cajas. */
     async recognize (canvas) {
-      const { data } = await worker.recognize(canvas, {}, { blocks: true, text: false })
+      const { data } = await scheduler.addJob('recognize', canvas, {}, { blocks: true, text: false })
       return data.blocks ?? []
     },
-    terminate: () => worker.terminate()
+    concurrency: WORKERS,
+    terminate: () => scheduler.terminate()
   }
 }

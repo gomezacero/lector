@@ -26,7 +26,9 @@ contextBridge.exposeInMainWorld('lector', {
   },
   notes: {
     read: id => ipcRenderer.invoke('notes:read', id),
-    write: (id, notes) => ipcRenderer.invoke('notes:write', id, notes)
+    write: (id, notes) => ipcRenderer.invoke('notes:write', id, notes),
+    // Exportar citas y notas: el destino lo elige el usuario en el dialogo.
+    export: (suggestedName, markdown) => ipcRenderer.invoke('notes:export', suggestedName, markdown)
   },
   ocr: {
     read: id => ipcRenderer.invoke('ocr:read', id),

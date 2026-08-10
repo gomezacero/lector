@@ -45,7 +45,7 @@ const SLIDERS = {
  * @param {Function} options.currentMode devuelve 'flow' o 'page' en uso ahora
  * @param {Function} options.onReadingMode se llama al cambiar el tipo de lectura
  */
-export function createSettingsPanel ({ settings, currentMode, onReadingMode, onClose }) {
+export function createSettingsPanel ({ settings, currentMode, onReadingMode, onClose, canRecognize, onRecognize }) {
   const body = h('div', { class: 'panel-body' })
 
   const panel = h('aside', { class: 'panel' },
@@ -157,6 +157,15 @@ export function createSettingsPanel ({ settings, currentMode, onReadingMode, onC
         .map(slider),
       // Y estos tres son el efecto en si.
       ...(guided ? SLIDERS.both.map(slider) : []),
+
+      // El OCR se puede lanzar cuando se quiera, aunque se rechazara al abrir.
+      canRecognize?.()
+        ? field('Texto de las páginas', h('button', {
+            class: 'btn',
+            text: 'Reconocer el texto (OCR)',
+            onclick: () => onRecognize?.()
+          }), 'Quedan páginas escaneadas o con texto dañado. El reconocimiento corre aquí, sin salir de tu equipo.')
+        : null,
 
       h('p', { class: 'panel-hint' },
         'Rueda del ratón o ', h('kbd', { text: '↓' }), ' ', h('kbd', { text: '↑' }),

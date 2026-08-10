@@ -49,11 +49,12 @@ export async function buildBook (bytes, { fileName = '', onProgress, ocrItemsByP
       let kind = classifyPage(page).kind
       let source = page
 
-      // Una pagina escaneada con reconocimiento hecho lee los items del OCR
-      // y pasa a ser 'ocr': texto de verdad, solo que de otra procedencia. El
-      // resto de la cadena no distingue de donde salieron los items.
+      // Una pagina escaneada —o sospechosa: texto extraido pero corrupto—
+      // con reconocimiento hecho lee los items del OCR y pasa a ser 'ocr':
+      // texto de verdad, solo que de otra procedencia. El resto de la cadena
+      // no distingue de donde salieron los items.
       const ocr = ocrItemsByPage?.[n - 1]
-      if (kind === 'scanned' && ocr?.items?.length) {
+      if ((kind === 'scanned' || kind === 'suspect') && ocr?.items?.length) {
         source = { width: page.width, height: page.height, items: ocr.items, drawings: [], images: [] }
         kind = 'ocr'
       }

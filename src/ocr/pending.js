@@ -4,6 +4,11 @@
 // cache y lo sera siempre: contarla como pendiente reprocesaria el libro
 // entero en cada apertura.
 
+// Al motor van las paginas sin texto util: las escaneadas (pura imagen) y las
+// sospechosas (texto extraido pero corrupto, la fuente sin mapa de caracteres
+// tipica: ahi el OCR es justo lo que salva el libro).
+const wantsOcr = kind => kind === 'scanned' || kind === 'suspect'
+
 /**
  * ¿Hay texto reconocido que el cache aún no incorpora? Solo entonces merece
  * la pena reconstruir el libro.
@@ -12,13 +17,13 @@
  */
 export const hasUnappliedOcr = (pageKinds, ocrPages) =>
   !!ocrPages && (pageKinds ?? []).some((kind, page) =>
-    kind === 'scanned' && ocrPages[page]?.items?.length > 0)
+    wantsOcr(kind) && ocrPages[page]?.items?.length > 0)
 
 /**
- * Páginas escaneadas que aún no han pasado por el motor. Las intentadas sin
- * texto no vuelven: repetirlas costaría los mismos minutos para nada.
+ * Páginas que aún no han pasado por el motor. Las intentadas sin texto no
+ * vuelven: repetirlas costaría los mismos minutos para nada.
  */
 export const unattemptedPages = (pageKinds, ocrPages) =>
   (pageKinds ?? [])
-    .map((kind, page) => kind === 'scanned' && !ocrPages?.[page] ? page : -1)
+    .map((kind, page) => wantsOcr(kind) && !ocrPages?.[page] ? page : -1)
     .filter(page => page >= 0)

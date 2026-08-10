@@ -3,13 +3,23 @@
 import { h, percent } from '../ui/dom.js'
 import { percentAt } from '../reader/progress.js'
 
-export function createNotesView ({ onClose, onGo, onDelete, onEdit }) {
+export function createNotesView ({ onClose, onGo, onDelete, onEdit, onExport }) {
   const body = h('div', { class: 'panel-body' })
 
   const panel = h('aside', { class: 'panel' },
     h('div', { class: 'panel-head' },
       h('h2', { text: 'Marcadores y notas' }),
-      h('button', { class: 'panel-close', text: '×', title: 'Cerrar', onclick: onClose })
+      h('div', { class: 'panel-head-actions' },
+        onExport
+          ? h('button', {
+              class: 'btn btn-ghost panel-export',
+              text: 'Exportar',
+              title: 'Guardar citas y notas como Markdown',
+              onclick: onExport
+            })
+          : null,
+        h('button', { class: 'panel-close', text: '×', title: 'Cerrar', onclick: onClose })
+      )
     ),
     body
   )
@@ -30,9 +40,13 @@ export function createNotesView ({ onClose, onGo, onDelete, onEdit }) {
       h('p', { class: 'note-quote', text: `«${note.quote}»` }),
       h('div', { class: 'note-editor', onclick: event => event.stopPropagation() }, editor),
       h('div', { class: 'note-foot' },
-        // El mismo porcentaje que el HUD (descuenta los preliminares): dos
-        // numeros distintos para el mismo punto solo siembran dudas.
-        h('span', { text: percent(percentAt(book, note.offset)) }),
+        h('span', { class: 'note-foot-where' },
+          // El punto de color dice que es un resaltado, y de cual.
+          note.kind === 'highlight' ? h('i', { class: `note-color is-${note.color ?? 'yellow'}` }) : null,
+          // El mismo porcentaje que el HUD (descuenta los preliminares): dos
+          // numeros distintos para el mismo punto solo siembran dudas.
+          h('span', { text: percent(percentAt(book, note.offset)) })
+        ),
         h('button', {
           class: 'note-del',
           text: 'Eliminar',

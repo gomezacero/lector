@@ -31,10 +31,14 @@ export function createOcrRun ({ id, book, bytes, onProgress, onDone, onError }) 
   async function start () {
     let doc = null
     let engine = null
+    let stored = null
+    let dirty = false
     try {
-      const stored = (await window.lector.ocr.read(id)) ?? { version: 1, pages: {} }
+      stored = (await window.lector.ocr.read(id)) ?? { version: 1, pages: {} }
+      // Al motor van las escaneadas y las sospechosas (texto corrupto): en
+      // las dos el reconocimiento es la unica via hacia texto de verdad.
       const targets = book.pageKinds
-        .map((kind, index) => kind === 'scanned' ? index : -1)
+        .map((kind, index) => kind === 'scanned' || kind === 'suspect' ? index : -1)
         .filter(index => index >= 0)
       const pending = targets.filter(index => !stored.pages[index])
 
@@ -48,32 +52,52 @@ export function createOcrRun ({ id, book, bytes, onProgress, onDone, onError }) 
 
       let done = targets.length - pending.length
       let sinceSave = 0
+      let cursor = 0
       onProgress?.(done, targets.length)
 
-      for (const pageIndex of pending) {
-        if (cancelled) break
-        const { canvas, scale } = await draw(doc, pageIndex)
-        const blocks = await engine.recognize(canvas)
-        // Reconocer tarda segundos: el libro puede haberse cerrado mientras.
-        if (cancelled) break
-
-        stored.pages[pageIndex] = toItems(blocks, { scale })
-        done++
-        sinceSave++
-        onProgress?.(done, targets.length)
-
-        if (sinceSave >= SAVE_EVERY) {
-          await window.lector.ocr.write(id, stored)
-          sinceSave = 0
+      // Tantas paginas en vuelo como reconocedores: el scheduler reparte y el
+      // rasterizado de la siguiente se solapa con el reconocimiento.
+      const lane = async () => {
+        while (!cancelled) {
+          const at = cursor++
+          if (at >= pending.length) return
+          const pageIndex = pending[at]
+          try {
+            const { canvas, scale } = await draw(doc, pageIndex)
+            const blocks = await engine.recognize(canvas)
+            if (cancelled) return
+            stored.pages[pageIndex] = toItems(blocks, { scale })
+            dirty = true
+          } catch (err) {
+            // Una pagina mala (un canvas que no cabe, un fallo del motor) no
+            // tira el libro entero: se salta y otra sesion la reintentara.
+            console.warn(`OCR: fallo la página ${pageIndex + 1}:`, err?.message ?? err)
+          }
+          done++
+          sinceSave++
+          onProgress?.(done, targets.length)
+          if (sinceSave >= SAVE_EVERY) {
+            sinceSave = 0
+            await window.lector.ocr.write(id, stored)
+            dirty = false
+          }
         }
       }
+      await Promise.all(Array.from({ length: engine.concurrency }, lane))
 
-      // Tambien al cancelar: lo reconocido hasta aqui se reanuda otro dia.
-      if (sinceSave > 0) await window.lector.ocr.write(id, stored)
+      // El resto pendiente se escribe ANTES de avisar: onDone relee el
+      // fichero de disco para reconstruir el libro, y sin esto le faltarian
+      // las ultimas paginas (o todas, en un libro corto).
+      if (dirty) {
+        await window.lector.ocr.write(id, stored)
+        dirty = false
+      }
       if (!cancelled) onDone?.(stored.pages)
     } catch (err) {
       if (!cancelled) onError?.(err)
     } finally {
+      // Tambien al cancelar o tras un fallo: lo reconocido no se tira.
+      if (stored && dirty) await window.lector.ocr.write(id, stored).catch(() => {})
       await engine?.terminate().catch(() => {})
       if (doc) await closeDocument(doc)
     }
