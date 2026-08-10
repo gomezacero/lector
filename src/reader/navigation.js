@@ -42,6 +42,11 @@ export function attachNavigation (target, handlers) {
       if (event.key === 'Escape') handlers.escape?.()
       return
     }
+    // Espacio y Enter activan el boton o el select con foco: robarselos para
+    // mover el texto dejaria los controles inoperables con teclado.
+    if ((tag === 'BUTTON' || tag === 'SELECT') && (event.key === ' ' || event.key === 'Enter')) {
+      return
+    }
     if (event.ctrlKey || event.metaKey || event.altKey) return
 
     const action = KEYS[event.key]

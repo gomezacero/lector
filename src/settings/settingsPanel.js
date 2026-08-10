@@ -56,8 +56,12 @@ export function createSettingsPanel ({ settings, currentMode, onReadingMode, onC
   )
 
   function slider (spec) {
+    // label for + id: sin la pareja, un lector de pantalla anuncia
+    // "control deslizante, 20" sin decir de que es.
+    const id = `set-${spec.key}`
     const value = h('span', { class: 'field-value', text: format(settings.get(spec.key), spec) })
     const input = h('input', {
+      id,
       type: 'range',
       min: spec.min,
       max: spec.max,
@@ -71,13 +75,14 @@ export function createSettingsPanel ({ settings, currentMode, onReadingMode, onC
     })
 
     return h('div', { class: 'field' },
-      h('div', { class: 'field-label' }, h('span', { text: spec.label }), value),
+      h('div', { class: 'field-label' }, h('label', { for: id, text: spec.label }), value),
       input
     )
   }
 
-  const field = (label, control, note) => h('div', { class: 'field' },
-    h('div', { class: 'field-label' }, h('span', { text: label })),
+  const field = (label, control, note, forId) => h('div', { class: 'field' },
+    h('div', { class: 'field-label' },
+      forId ? h('label', { for: forId, text: label }) : h('span', { text: label })),
     control,
     note ? h('p', { class: 'field-note', text: note }) : null
   )
@@ -96,7 +101,7 @@ export function createSettingsPanel ({ settings, currentMode, onReadingMode, onC
           settings.update({ readingMode: id })
           render()
           onReadingMode(id)
-        }),
+        }, 'Tipo de lectura'),
         chosen === 'auto'
           ? `Elegido para este documento: ${MODES[mode]?.label.toLowerCase() ?? mode}.`
           : MODE_NOTES[chosen]
@@ -105,28 +110,30 @@ export function createSettingsPanel ({ settings, currentMode, onReadingMode, onC
       field('Guía de lectura', segmented(
         [{ id: 'on', label: 'Activada' }, { id: 'off', label: 'Desactivada' }],
         guided ? 'on' : 'off',
-        id => { settings.update({ focusEnabled: id === 'on' }); render() }),
+        id => { settings.update({ focusEnabled: id === 'on' }); render() },
+        'Guía de lectura'),
       guided ? null : 'El texto se ve entero y sin desenfoque. Sigues avanzando con la rueda.'),
 
       field('Tema', segmented(THEMES, settings.get('theme'),
-        id => { settings.update({ theme: id }); render() })),
+        id => { settings.update({ theme: id }); render() }, 'Tema')),
 
       // La tipografia y la alineacion no pintan nada sobre la pagina original.
       isFlowMode(mode)
         ? field('Tipografía', h('select', {
+            id: 'set-fontFamily',
             onchange: event => settings.update({ fontFamily: event.target.value })
           }, FONTS.map(font => h('option', {
             value: font.id,
             selected: font.id === settings.get('fontFamily'),
             text: font.label
-          }))))
+          }))), null, 'set-fontFamily')
         : null,
 
       isFlowMode(mode)
         ? field('Alineación', segmented(
             [{ id: 'left', label: 'Izquierda' }, { id: 'justify', label: 'Justificado' }],
             settings.get('textAlign'),
-            id => { settings.update({ textAlign: id }); render() }))
+            id => { settings.update({ textAlign: id }); render() }, 'Alineación'))
         : null,
 
       ...SLIDERS[isFlowMode(mode) ? 'flow' : 'page']
@@ -149,13 +156,16 @@ export function createSettingsPanel ({ settings, currentMode, onReadingMode, onC
   }
 
   render()
+  // Cerrado no debe recibir el tabulador: solo esta apartado con transform,
+  // que no lo saca ni del orden de foco ni del arbol de accesibilidad.
+  panel.inert = true
 
   return {
     element: panel,
     refresh: render,
-    open: () => { render(); panel.classList.add('is-open') },
-    close: () => panel.classList.remove('is-open'),
-    toggle: () => panel.classList.toggle('is-open'),
+    open: () => { render(); panel.inert = false; panel.classList.add('is-open') },
+    close: () => { panel.inert = true; panel.classList.remove('is-open') },
+    toggle () { this.isOpen ? this.close() : this.open() },
     get isOpen () { return panel.classList.contains('is-open') }
   }
 }

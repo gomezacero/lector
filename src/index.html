@@ -28,7 +28,7 @@
   <!-- Ficha del libro: se inserta desde bookSheet.js -->
 
   <!-- Lector -->
-  <section class="view view-reader" id="view-reader">
+  <section class="view view-reader" id="view-reader" aria-label="Lector">
     <div class="stage" id="stage">
       <!-- Dos capas con contenido identico: al compartir layout se alinean solas.
            El blur vive en la capa (alta como la pantalla), no en el texto completo. -->
@@ -42,25 +42,31 @@
 
     <div class="hud" id="hud">
       <button class="hud-btn" id="hud-library" title="Biblioteca (Ctrl+L)">Biblioteca</button>
-      <span class="hud-chapter" id="hud-chapter"></span>
+      <button class="hud-chapter" id="hud-chapter" title="Índice de capítulos"
+              aria-haspopup="menu" aria-expanded="false"></button>
       <span class="hud-ocr" id="hud-ocr" hidden></span>
+      <span class="hud-page" id="hud-page" hidden></span>
       <span class="hud-progress" id="hud-progress"></span>
       <button class="hud-btn" id="hud-mode" title="Cambiar de vista (V)">Flujo</button>
-      <button class="hud-btn" id="hud-bookmark" title="Marcar esta línea (M)">Marcar</button>
+      <button class="hud-btn" id="hud-bookmark" title="Marcar esta línea (M)" aria-pressed="false">Marcar</button>
       <button class="hud-btn" id="hud-notes" title="Notas (Ctrl+B)">Notas</button>
       <button class="hud-btn" id="hud-settings" title="Ajustes (Ctrl+,)">Ajustes</button>
     </div>
+
+    <!-- El indice de capitulos se despliega sobre el HUD -->
+    <div class="chapter-menu" id="chapter-menu" hidden role="menu" aria-label="Capítulos"></div>
   </section>
 
-  <!-- Estado de carga -->
-  <div class="loading" id="loading" hidden>
+  <!-- Estado de carga. aria-live: sin el, el progreso y los avisos no existen
+       para un lector de pantalla. -->
+  <div class="loading" id="loading" hidden role="status" aria-live="polite">
     <div class="loading-inner">
-      <div class="spinner"></div>
+      <div class="spinner" aria-hidden="true"></div>
       <p id="loading-text">Procesando el libro…</p>
     </div>
   </div>
 
-  <div class="toast" id="toast" hidden></div>
+  <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
 
   <script type="module" src="/src/app.js"></script>
 </body>

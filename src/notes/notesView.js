@@ -1,6 +1,7 @@
 // Panel de marcadores y notas. Cada entrada devuelve al punto exacto del libro.
 
 import { h, percent } from '../ui/dom.js'
+import { percentAt } from '../reader/progress.js'
 
 export function createNotesView ({ onClose, onGo, onDelete, onEdit }) {
   const body = h('div', { class: 'panel-body' })
@@ -12,6 +13,8 @@ export function createNotesView ({ onClose, onGo, onDelete, onEdit }) {
     ),
     body
   )
+  // Nace cerrado: fuera del orden de tabulacion hasta que se abra.
+  panel.inert = true
 
   function noteCard (note, book) {
     const editor = h('textarea', {
@@ -27,7 +30,9 @@ export function createNotesView ({ onClose, onGo, onDelete, onEdit }) {
       h('p', { class: 'note-quote', text: `«${note.quote}»` }),
       h('div', { class: 'note-editor', onclick: event => event.stopPropagation() }, editor),
       h('div', { class: 'note-foot' },
-        h('span', { text: percent(book.chars ? note.offset / book.chars : 0) }),
+        // El mismo porcentaje que el HUD (descuenta los preliminares): dos
+        // numeros distintos para el mismo punto solo siembran dudas.
+        h('span', { text: percent(percentAt(book, note.offset)) }),
         h('button', {
           class: 'note-del',
           text: 'Eliminar',
@@ -57,12 +62,17 @@ export function createNotesView ({ onClose, onGo, onDelete, onEdit }) {
     get isOpen () { return panel.classList.contains('is-open') }
   }
 
-  function open () { panel.classList.add('is-open') }
+  function open () {
+    panel.inert = false
+    panel.classList.add('is-open')
+  }
 
   function close () {
     // Cerrar con el foco aun en una nota (Esc, Ctrl+B) no dispara blur por si
     // solo: se fuerza para que lo escrito llegue a onEdit antes de ocultar.
     if (panel.contains(document.activeElement)) document.activeElement.blur()
+    // Cerrado no debe recibir el tabulador: el transform solo lo aparta.
+    panel.inert = true
     panel.classList.remove('is-open')
   }
 }

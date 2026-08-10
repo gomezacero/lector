@@ -7,7 +7,7 @@
 import { renderChapter, setBlockMarked } from './layout.js'
 import { buildLineIndex, offsetOfLine } from './lineIndex.js'
 import { createFocusController } from './focus.js'
-import { makeProgress, chapterAtOffset, lineForOffset, percentAt, startOffset } from './progress.js'
+import { makeProgress, chapterAtOffset, lineForOffset, percentAt, startOffset, blockAtOffset } from './progress.js'
 import { toSentenceUnits } from './sentences.js'
 import { createFigureClips } from './figureClips.js'
 import { createPageRenderer } from '../pdf/pageRender.js'
@@ -80,6 +80,11 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
       chapterIndex,
       percent: percentAt(book, anchor),
       offset: anchor,
+      // La pagina del PDF original donde cae la lectura: para poder citarla
+      // o cotejarla con una referencia, tambien en el texto re-maquetado.
+      page: book.blocks.length
+        ? (book.blocks[blockAtOffset(book, anchor)]?.page ?? 0) + 1
+        : null,
       marked: Boolean(notes?.find(anchor))
     })
   }

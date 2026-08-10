@@ -1,12 +1,17 @@
-/* Tres temas de lectura. El tema se fija con data-theme en <body>. */
+/* Tres temas de lectura. El tema se fija con data-theme en <body>.
+   Los pares texto/fondo cumplen AA (4.5:1); los valores se comprueban al
+   cambiarlos, no a ojo: --fg-muted viste el texto mas pequeno de la app. */
 
-body[data-theme='dark'] {
+/* Valores por defecto (los del tema oscuro): si settings devolviera un tema
+   desconocido, sin esto TODAS las variables quedarian indefinidas y la
+   aplicacion se pintaria en blanco roto, incluido el propio aviso de error. */
+:root {
   --bg: #14161a;
   --surface: #1c1f25;
   --surface-hover: #232730;
   --surface-raised: #262a33;
   --border: #2b303a;
-  --border-strong: #3a4150;
+  --border-strong: #4a5262;
 
   --fg: #e6e3dc;
   --fg-muted: #8b93a1;
@@ -23,23 +28,45 @@ body[data-theme='dark'] {
   --shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
+body[data-theme='dark'] {
+  --bg: #14161a;
+  --surface: #1c1f25;
+  --surface-hover: #232730;
+  --surface-raised: #262a33;
+  --border: #2b303a;
+  --border-strong: #4a5262;
+
+  --fg: #e6e3dc;
+  --fg-muted: #8b93a1;
+
+  --accent: #7aa2f7;
+  --accent-hover: #93b4ff;
+  --accent-fg: #10131a;
+
+  --danger: #c0504a;
+  --warning: #d8a657;
+
+  --read-fg: #ddd8ce;
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
 body[data-theme='light'] {
   --bg: #f7f6f3;
   --surface: #ffffff;
   --surface-hover: #f0eeea;
   --surface-raised: #ffffff;
   --border: #e2ded6;
-  --border-strong: #cbc5b9;
+  --border-strong: #a9a294;
 
   --fg: #23211d;
-  --fg-muted: #77726a;
+  --fg-muted: #6e6961;
 
   --accent: #3b5bdb;
   --accent-hover: #2f4bc4;
   --accent-fg: #ffffff;
 
   --danger: #b03a34;
-  --warning: #a9761f;
+  --warning: #8a5f14;
 
   --read-fg: #1f1d1a;
   --shadow: 0 12px 32px rgba(40, 35, 25, 0.14);
@@ -51,17 +78,17 @@ body[data-theme='sepia'] {
   --surface-hover: #eee2cc;
   --surface-raised: #f9f1e2;
   --border: #ddceb2;
-  --border-strong: #c6b294;
+  --border-strong: #a08a67;
 
   --fg: #3a3129;
-  --fg-muted: #837260;
+  --fg-muted: #6d5c49;
 
-  --accent: #9a6b3f;
-  --accent-hover: #85592f;
+  --accent: #7c5226;
+  --accent-hover: #6a441c;
   --accent-fg: #fdf7ec;
 
   --danger: #a4453d;
-  --warning: #966a17;
+  --warning: #7d5610;
 
   --read-fg: #362d24;
   --shadow: 0 12px 32px rgba(90, 70, 40, 0.18);

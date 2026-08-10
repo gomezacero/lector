@@ -20,6 +20,13 @@ body {
 
 button { font: inherit; color: inherit; }
 
+/* Sin un anillo de foco no se puede navegar con teclado: no se ve donde
+   estas. Solo con :focus-visible, para que el clic de raton no lo pinte. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* --- Vistas -------------------------------------------------------------- */
 
 .view { display: none; height: 100%; }
@@ -68,7 +75,9 @@ body[data-view='sheet']   .view-sheet   { display: block; overflow-y: auto; }
   gap: 4px;
   text-align: left;
   padding: 18px;
-  border: 1px solid var(--border);
+  /* Borde fuerte en los controles: con --border a 1.2:1 sobre el fondo, un
+     boton no se distingue de la superficie en la que esta. */
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
   background: var(--surface);
   cursor: pointer;
@@ -104,7 +113,7 @@ body[data-view='sheet']   .view-sheet   { display: block; overflow-y: auto; }
 /* --- Botones ------------------------------------------------------------- */
 
 .btn {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   background: var(--surface);
   border-radius: 8px;
   padding: 9px 18px;

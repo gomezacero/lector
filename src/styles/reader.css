@@ -28,7 +28,6 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  will-change: transform;
 }
 
 /* Todo lo que no es la linea activa: atenuado y fuera de foco. */
@@ -49,11 +48,15 @@
     #000 var(--mask-c),
     transparent var(--mask-d)
   );
+  /* La MISMA duracion y curva que el desplazamiento del texto (.page-content):
+     la mascara se escribe en coordenadas de pantalla finales, asi que si una
+     de las dos llega antes, la banda nitida viaja desalineada del texto que
+     debe revelar durante la diferencia. */
   transition:
-    --mask-a var(--focus-ms, 150ms) cubic-bezier(0.33, 1, 0.68, 1),
-    --mask-b var(--focus-ms, 150ms) cubic-bezier(0.33, 1, 0.68, 1),
-    --mask-c var(--focus-ms, 150ms) cubic-bezier(0.33, 1, 0.68, 1),
-    --mask-d var(--focus-ms, 150ms) cubic-bezier(0.33, 1, 0.68, 1);
+    --mask-a var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-b var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-c var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-d var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 /* Al recolocar tras un cambio de ajustes no debe animarse nada. */
@@ -71,15 +74,16 @@ body[data-mode='page'] .page-layer-sharp {
     linear-gradient(to right, transparent var(--mask-e), #000 var(--mask-f),
                     #000 var(--mask-g), transparent var(--mask-h));
   mask-composite: intersect;
+  /* Misma duracion que el desplazamiento, por la misma razon que arriba. */
   transition:
-    --mask-a var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
-    --mask-b var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
-    --mask-c var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
-    --mask-d var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
-    --mask-e var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
-    --mask-f var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
-    --mask-g var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1),
-    --mask-h var(--focus-ms, 190ms) cubic-bezier(0.33, 1, 0.68, 1);
+    --mask-a var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-b var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-c var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-d var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-e var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-f var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-g var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1),
+    --mask-h var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 /* La pagina se centra y ocupa el alto disponible; el ancho manda si la pagina
@@ -106,10 +110,13 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
   top: 0;
   left: 50%;
   width: min(var(--read-width, 640px), calc(100% - 96px));
-  padding-top: 38vh;
+  /* El mismo 40% que ANCHOR en focus.js: es el hueco que deja que la primera
+     linea del libro caiga exactamente en el ancla. Si uno cambia, el otro. */
+  padding-top: 40vh;
   padding-bottom: 60vh;
   transform: translate(calc(-50% - var(--panel-shift, 0px)), var(--content-y, 0px));
-  transition: transform var(--scroll-ms, 260ms) cubic-bezier(0.33, 1, 0.68, 1);
+  transition: transform var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1);
+  will-change: transform;
 
   font-family: var(--read-font, 'Sitka Text'), Georgia, serif;
   font-size: var(--read-size, 20px);
@@ -118,6 +125,14 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
   text-align: var(--read-align, left);
   text-wrap: pretty;
   hyphens: none;
+}
+
+/* El texto del libro se puede seleccionar y copiar: citar es parte de leer.
+   Solo la capa nitida; la difuminada es decorado (aria-hidden) y una seleccion
+   doble se copiaria dos veces. */
+.page-layer-sharp .page-content {
+  user-select: text;
+  cursor: text;
 }
 
 .page-content p {
@@ -215,15 +230,65 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
 .hud-btn:hover { background: var(--surface); color: var(--fg); }
 .hud-btn.is-on { color: var(--accent); }
 
+/* El titulo del capitulo es tambien la puerta del indice: un boton discreto. */
 .hud-chapter {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: center;
-  padding: 0 8px;
+  padding: 7px 8px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  border-radius: 7px;
+  cursor: pointer;
 }
+.hud-chapter:hover:not(:disabled) { background: var(--surface); color: var(--fg); }
+.hud-chapter:disabled { cursor: default; }
+
+.hud-page,
 .hud-progress { font-variant-numeric: tabular-nums; }
+
+/* --- Indice de capitulos --------------------------------------------------- */
+
+.chapter-menu {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(52vh, 460px);
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  z-index: 40;
+}
+.chapter-menu[hidden] { display: none; }
+
+.chapter-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chapter-menu button:hover { background: var(--surface-hover); }
+.chapter-menu button.is-on { color: var(--accent); font-weight: 600; }
 
 /* Aviso discreto de que el reconocimiento de texto sigue trabajando. */
 .hud-ocr {
@@ -299,7 +364,7 @@ body.has-panel .hud { right: 336px; }
   width: 100%;
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--fg);
   cursor: pointer;
@@ -330,7 +395,8 @@ body.has-panel .hud { right: 336px; }
 .seg button {
   flex: 1;
   padding: 8px 4px;
-  border: 1px solid var(--border);
+  /* Borde fuerte: con --border el control no se distingue del panel. */
+  border: 1px solid var(--border-strong);
   background: var(--surface);
   border-radius: 8px;
   cursor: pointer;

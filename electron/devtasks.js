@@ -690,6 +690,37 @@ async function readTask (win, projectRoot) {
   await js(`document.getElementById('hud-settings').click()`)
   await wait(400)
 
+  // --- Indice de capitulos ---------------------------------------------------
+  // El titulo del HUD despliega la lista con el capitulo actual senalado y
+  // Escape la cierra. No se navega desde aqui: cambiaria el punto de lectura
+  // del que dependen las comprobaciones de mas abajo.
+  const index = await js(`
+    (() => {
+      const btn = document.getElementById('hud-chapter')
+      if (btn.disabled) return { skipped: true }
+      btn.click()
+      const menu = document.getElementById('chapter-menu')
+      return {
+        open: !menu.hidden,
+        expanded: btn.getAttribute('aria-expanded'),
+        items: menu.querySelectorAll('button').length,
+        current: menu.querySelector('.is-on')?.textContent ?? null
+      }
+    })()
+  `)
+  if (index.skipped) {
+    console.log('\nINDICE: un solo capitulo, sin menu')
+  } else {
+    console.log(`\nINDICE: ${index.items} capitulos, leyendo "${index.current}"`)
+    check(index.open && index.expanded === 'true', 'el indice no se abrio desde el HUD')
+    check(index.items >= 2, 'el indice no lista los capitulos')
+    check(Boolean(index.current), 'el indice no senala el capitulo actual')
+    await js(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`)
+    await wait(200)
+    const menuClosed = await js(`document.getElementById('chapter-menu').hidden`)
+    check(menuClosed, 'Escape no cerro el indice')
+  }
+
   // --- Frase a frase -------------------------------------------------------
   // Solo aplica al texto re-maquetado: sobre la pagina original la unidad ya es
   // la region entera.

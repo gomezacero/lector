@@ -137,8 +137,10 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
 
   function emitStatus () {
     const region = regions[index]
+    const chapterIndex = chapterAtOffset(book, anchor)
     onStatus?.({
-      chapter: book.chapters[chapterAtOffset(book, anchor)]?.title ?? '',
+      chapter: book.chapters[chapterIndex]?.title ?? '',
+      chapterIndex,
       percent: percentAt(book, anchor),
       offset: anchor,
       page: (region?.rect.page ?? 0) + 1,

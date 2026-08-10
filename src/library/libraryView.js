@@ -24,8 +24,12 @@ function whenRead (timestamp) {
   if (days <= 0) return 'hoy'
   if (days === 1) return 'ayer'
   if (days < 7) return `hace ${days} días`
-  if (days < 30) return `hace ${Math.floor(days / 7)} semanas`
-  return `hace ${Math.floor(days / 30)} meses`
+  if (days < 30) {
+    const weeks = Math.floor(days / 7)
+    return weeks === 1 ? 'hace 1 semana' : `hace ${weeks} semanas`
+  }
+  const months = Math.floor(days / 30)
+  return months === 1 ? 'hace 1 mes' : `hace ${months} meses`
 }
 
 export function createLibraryView ({ grid, empty, onOpen, onRemove, onSheet }) {

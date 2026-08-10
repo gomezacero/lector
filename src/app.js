@@ -12,7 +12,7 @@ import { createSettingsPanel } from '/src/settings/settingsPanel.js'
 import { createLibraryView } from '/src/library/libraryView.js'
 import { createNotesStore } from '/src/notes/notesStore.js'
 import { createNotesView } from '/src/notes/notesView.js'
-import { percent } from '/src/ui/dom.js'
+import { percent, h } from '/src/ui/dom.js'
 import { confirmAction, readableSize } from '/src/ui/confirm.js'
 import { resolveMode, MODES, isFlowMode } from '/src/reader/mode.js'
 import { hasUnappliedOcr, unattemptedPages } from '/src/ocr/pending.js'
@@ -33,7 +33,9 @@ const el = {
   hud: $('hud'),
   hudChapter: $('hud-chapter'),
   hudOcr: $('hud-ocr'),
+  hudPage: $('hud-page'),
   hudProgress: $('hud-progress'),
+  chapterMenu: $('chapter-menu'),
   hudMode: $('hud-mode'),
   hudBookmark: $('hud-bookmark'),
   loading: $('loading'),
@@ -495,6 +497,7 @@ async function backToLibrary () {
   // Fuera de un libro mandan los ajustes globales otra vez.
   settings.useBook({})
   showPanel(null)
+  closeChapterMenu()
   // Un aviso de la lectura no tiene sentido ya en la estanteria.
   el.toast.hidden = true
   clearTimeout(toastTimer)
@@ -598,7 +601,10 @@ function saveBookSettings (reading) {
 function wakeHud () {
   el.hud.classList.remove('is-idle')
   clearTimeout(hudTimer)
-  hudTimer = setTimeout(() => el.hud.classList.add('is-idle'), HUD_IDLE_MS)
+  hudTimer = setTimeout(() => {
+    // Con el indice abierto el HUD se queda: es el contexto del menu.
+    if (el.chapterMenu.hidden) el.hud.classList.add('is-idle')
+  }, HUD_IDLE_MS)
 }
 
 // --- Paneles ---------------------------------------------------------------
@@ -621,11 +627,48 @@ const panelIsOpen = which => which === 'settings' ? settingsPanel.isOpen : notes
 
 function onStatus (status) {
   el.hudChapter.textContent = status.chapter
+  el.hudChapter.disabled = (openedBook?.book?.chapters?.length ?? 0) < 2
+  el.hudPage.textContent = status.page ? `p. ${status.page}` : ''
+  el.hudPage.hidden = !status.page
   el.hudProgress.textContent = percent(status.percent)
   el.hudBookmark.classList.toggle('is-on', status.marked)
+  el.hudBookmark.setAttribute('aria-pressed', String(Boolean(status.marked)))
   lastOffset = status.offset
   // El punto de lectura exacto, para poder comprobarlo desde fuera.
   el.body.dataset.offset = String(status.offset)
+}
+
+// --- Indice de capitulos -----------------------------------------------------
+
+/** Despliega la lista de capitulos sobre el HUD; el actual, senalado. */
+function toggleChapterMenu () {
+  if (!el.chapterMenu.hidden) return closeChapterMenu()
+
+  const book = openedBook?.book
+  if (!book || book.chapters.length < 2) return
+
+  const current = chapterAtOffset(book, lastOffset)
+  el.chapterMenu.replaceChildren(...book.chapters.map((chapter, i) =>
+    h('button', {
+      class: i === current ? 'is-on' : '',
+      role: 'menuitem',
+      text: chapter.title,
+      onclick: () => {
+        closeChapterMenu()
+        reader.goToOffset(book.blocks[chapter.start]?.start ?? 0)
+        wakeHud()
+      }
+    })
+  ))
+  el.chapterMenu.hidden = false
+  el.hudChapter.setAttribute('aria-expanded', 'true')
+  el.chapterMenu.querySelector('.is-on')?.scrollIntoView({ block: 'center' })
+  wakeHud()
+}
+
+function closeChapterMenu () {
+  el.chapterMenu.hidden = true
+  el.hudChapter.setAttribute('aria-expanded', 'false')
 }
 
 // --- Marcadores ------------------------------------------------------------
@@ -634,16 +677,21 @@ function toggleBookmark () {
   const line = reader.currentLine()
   if (!line || !notes) return
 
-  const existing = notes.find(line.offset)
+  // El HUD dice "marcado" mirando el ancla exacta (tras saltar a una nota
+  // puede caer a mitad de linea), mientras la linea empieza en otro offset:
+  // se miran los dos, o M crearia un duplicado de un marcador que ya se
+  // ensena como puesto.
+  const existing = notes.find(line.offset) ?? notes.find(lastOffset)
   if (existing) {
     notes.remove(existing.id)
+    reader.markBlock(existing.block, notes.markedBlocks.has(existing.block))
     toast('Marcador quitado')
   } else {
     notes.add({ offset: line.offset, block: line.block, char: line.char, quote: line.context })
+    reader.markBlock(line.block, notes.markedBlocks.has(line.block))
     toast('Línea marcada')
   }
 
-  reader.markBlock(line.block, notes.markedBlocks.has(line.block))
   reader.refreshStatus()
   notesView.render(notes.all, reader.book)
 }
@@ -724,7 +772,8 @@ async function start () {
     bookmark: toggleBookmark,
     mode: toggleMode,
     escape: () => {
-      if (settingsPanel.isOpen || notesView.isOpen) showPanel(null)
+      if (!el.chapterMenu.hidden) closeChapterMenu()
+      else if (settingsPanel.isOpen || notesView.isOpen) showPanel(null)
       else if (reader.isOpen) backToLibrary()
     }
   })
@@ -745,6 +794,14 @@ async function start () {
   $('hud-notes').addEventListener('click', () => showPanel('notes'))
   el.hudMode.addEventListener('click', toggleMode)
   el.hudBookmark.addEventListener('click', toggleBookmark)
+  el.hudChapter.addEventListener('click', toggleChapterMenu)
+  // Un clic fuera cierra el indice, como cualquier menu.
+  document.addEventListener('click', event => {
+    if (el.chapterMenu.hidden) return
+    if (!el.chapterMenu.contains(event.target) && event.target !== el.hudChapter) {
+      closeChapterMenu()
+    }
+  })
 
   window.lector.onMenu({
     'open-pdf': pickAndOpen,

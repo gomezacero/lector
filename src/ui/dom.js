@@ -33,11 +33,17 @@ export function h (tag, props = {}, ...children) {
   return el
 }
 
-/** Botones de un grupo segmentado con uno activo. */
-export function segmented (options, active, onPick) {
-  return h('div', { class: 'seg' },
+/**
+ * Botones de un grupo segmentado con uno activo. Semantica de radiogroup:
+ * la clase is-on solo pinta, y un lector de pantalla necesita saber cual
+ * esta elegido y de que va el grupo.
+ */
+export function segmented (options, active, onPick, label) {
+  return h('div', { class: 'seg', role: 'radiogroup', 'aria-label': label },
     options.map(option => h('button', {
       class: option.id === active ? 'is-on' : '',
+      role: 'radio',
+      'aria-checked': option.id === active ? 'true' : 'false',
       text: option.label,
       onclick: () => onPick(option.id)
     }))
