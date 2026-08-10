@@ -25,16 +25,28 @@ files:
   - '!node_modules/pdfjs-dist/build/pdf.sandbox.mjs'
   - '!node_modules/pdfjs-dist/*.md'
   # El OCR local: los idiomas van en vendor/ y el motor como dependencia. Del
-  # paquete npm sobran los fuentes y el bundle UMD (se usa el ESM); el nucleo
-  # WASM se queda entero porque el worker elige la variante segun la CPU.
+  # paquete npm sobran los fuentes y el bundle UMD (se usa el ESM).
   - vendor/**/*
   - '!node_modules/tesseract.js/{src,scripts,docs,examples,benchmarks}/**'
   - '!node_modules/tesseract.js/dist/tesseract.min.js'
+  # Del nucleo WASM, solo las variantes LSTM: con OEM 1 (src/ocr/engine.js) el
+  # worker compone siempre "…-lstm.wasm.js" (importScripts en worker.min.js),
+  # asi que las clasicas no se cargan nunca: ~24 MB fuera del paquete. Los
+  # *-lstm se quedan enteros: el .wasm.js es justo el fichero que importa.
+  - '!node_modules/tesseract.js-core/tesseract-core.*'
+  - '!node_modules/tesseract.js-core/tesseract-core-simd.*'
+  - '!node_modules/tesseract.js-core/tesseract-core-relaxedsimd.*'
   # El modelo de layout NO se empaqueta todavia: el ONNX disponible es AGPL y
   # esta aplicacion es MIT. La integracion se enciende sola cuando el modelo
   # esta presente; sin el, las heuristicas mandan como siempre.
   - '!vendor/layout/**'
   - '!node_modules/onnxruntime-web/**'
+
+# La interfaz es solo en espanol: los ~100 locales de Chromium eran 47 MB de
+# paquete. en-US se queda porque es el de reserva de Chromium.
+electronLanguages:
+  - es
+  - en-US
 
 win:
   target: portable

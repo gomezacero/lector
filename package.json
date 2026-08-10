@@ -12,6 +12,7 @@
     "smoke": "node scripts/run-electron-task.mjs smoke",
     "verify": "npm run fixtures && npm test",
     "icon": "node scripts/run-electron-task.mjs icon",
+    "audit": "npm audit --omit=dev --audit-level=high",
     "build": "electron-builder"
   },
   "license": "MIT",

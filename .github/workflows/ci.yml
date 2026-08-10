@@ -1,0 +1,46 @@
+# Verificacion continua: regenerar los fixtures con la aplicacion real y
+# correr la suite. Los fixtures no viajan con el repo (son la salida del
+# pipeline sobre PDFs generados): regenerarlos aqui es lo que garantiza que un
+# clon limpio construye y que el pipeline sigue produciendo el texto exacto.
+#
+# El pipeline vive en el renderer, asi que "npm run fixtures" arranca Electron:
+# en Linux necesita un display virtual (xvfb) y user namespaces sin privilegios
+# (Ubuntu 24.04 los restringe por AppArmor).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Permitir el sandbox de Electron
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Regenerar fixtures con la aplicación real
+        run: xvfb-run -a npm run fixtures
+
+      - name: Arranque de la aplicación
+        run: xvfb-run -a npm run smoke
+
+      - run: npm test
+
+      # Aviso, no bloqueo: un CVE nuevo en una dependencia no debe parar el
+      # trabajo, pero sí quedar a la vista en cada ejecución.
+      - name: Auditoría de dependencias
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true

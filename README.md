@@ -18,8 +18,10 @@ después se abre al instante desde la caché.
 | Acción | Tecla |
 |---|---|
 | Bajar / subir una línea | rueda del ratón, `↓` `↑`, `espacio`, `j` `k` |
-| Avanzar una pantalla | `AvPág` / `RePág` |
+| Avanzar una pantalla (o pasar la hoja) | `AvPág` / `RePág` |
 | Cambiar de capítulo | `→` `←` |
+| Índice de capítulos | clic en el título del capítulo (HUD) |
+| Saltar a cualquier punto | la barra del borde derecho, arrastrando o con un clic |
 | Principio / final | `Inicio` / `Fin` |
 | Marcar la línea actual | `M` |
 | Ajustes de lectura | `Ctrl+,` |
@@ -27,7 +29,9 @@ después se abre al instante desde la caché.
 | Biblioteca | `Ctrl+L` o `Esc` |
 
 Los ajustes (tipografía, cuerpo, interlineado, ancho de columna, tema,
-intensidad del desenfoque y del atenuado) se aplican en vivo.
+intensidad del desenfoque y del atenuado) se aplican en vivo. En la vista de
+página, «Parada» elige si el foco se detiene por párrafos o recorre la hoja
+original por grupos de renglones.
 
 ## Cómo funciona
 
@@ -74,9 +78,10 @@ y seguir exactamente en la misma frase.
 npm run build
 ```
 
-Deja `dist/Lector.exe`: un único archivo portable (~88 MB) que se ejecuta con
+Deja `dist/Lector.exe`: un único archivo portable (~100 MB) que se ejecuta con
 doble clic, sin instalar nada. El icono se genera aparte con `npm run icon`,
-que lo dibuja y lo guarda en `build/icon.ico`.
+que lo dibuja y lo guarda en `build/icon.ico`. Contra la aplicación empaquetada
+las tareas de desarrollo exigen la señal extra `LECTOR_ALLOW_TASKS=1`.
 
 ## Desarrollo
 

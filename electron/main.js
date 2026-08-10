@@ -78,8 +78,25 @@ function registerAppProtocol () {
 
 let mainWindow = null
 
-const devTask = process.env.LECTOR_TASK ?? null
+// El arnes de desarrollo ejecuta JavaScript arbitrario en el renderer y borra
+// datos: en la aplicacion empaquetada solo se activa con la segunda senal
+// explicita, para que una variable de entorno colada no baste.
+const tasksAllowed = !app.isPackaged || process.env.LECTOR_ALLOW_TASKS === '1'
+const devTask = tasksAllowed ? (process.env.LECTOR_TASK ?? null) : null
 const devTaskArg = process.env.LECTOR_TASK_ARG ?? null
+
+// Dos instancias escribirian sobre el mismo library.json a la vez. Las tareas
+// de desarrollo quedan fuera: usan datos propios y a veces conviven con la
+// aplicacion abierta.
+if (!devTask && !app.requestSingleInstanceLock()) {
+  app.quit()
+} else if (!devTask) {
+  app.on('second-instance', () => {
+    if (!mainWindow) return
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.focus()
+  })
+}
 
 // Las tareas de desarrollo trabajan sobre datos propios y recien borrados: asi
 // cada ejecucion parte de cero y no tocan la biblioteca de verdad. Van al
@@ -132,6 +149,20 @@ function createWindow () {
     shell.openExternal(url)
     return { action: 'deny' }
   })
+
+  // Y la propia ventana tampoco navega fuera de la aplicacion: un enlace con
+  // target _self o un location.assign no deben sacar al lector de app://.
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (url.startsWith('app://')) return
+    event.preventDefault()
+    if (/^https?:/.test(url)) shell.openExternal(url)
+  })
+
+  // La aplicacion no usa camara, microfono, geolocalizacion ni notificaciones:
+  // denegarlo todo hace verificable la promesa de "no toca nada del sistema".
+  mainWindow.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => {
+    callback(false)
+  })
 }
 
 function send (channel, payload) {
@@ -158,13 +189,17 @@ function buildMenu () {
         { role: 'togglefullscreen', label: 'Pantalla completa' }
       ]
     },
-    {
-      label: 'Ver',
-      submenu: [
-        { role: 'reload', label: 'Recargar' },
-        { role: 'toggleDevTools', label: 'Herramientas de desarrollo' }
-      ]
-    }
+    // Recargar y las DevTools son herramientas de quien desarrolla, no del
+    // lector: empaquetada, la aplicacion no las ensena.
+    ...(app.isPackaged
+      ? []
+      : [{
+          label: 'Ver',
+          submenu: [
+            { role: 'reload', label: 'Recargar' },
+            { role: 'toggleDevTools', label: 'Herramientas de desarrollo' }
+          ]
+        }])
   ]))
 }
 

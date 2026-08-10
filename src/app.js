@@ -7,6 +7,7 @@ import { blockAtOffset, percentAt, chapterAtOffset } from '/src/reader/progress.
 import { createReader } from '/src/reader/reader.js'
 import { createRegionReader } from '/src/reader/regionReader.js'
 import { attachNavigation } from '/src/reader/navigation.js'
+import { createScrubber } from '/src/reader/scrubber.js'
 import { createSettings } from '/src/settings/settings.js'
 import { createSettingsPanel } from '/src/settings/settingsPanel.js'
 import { createLibraryView } from '/src/library/libraryView.js'
@@ -48,6 +49,7 @@ let readers = null // { flow, page }
 let reader = null // el que esta en uso
 let settingsPanel = null
 let notesView = null
+let scrubber = null
 let notes = null
 let entries = []
 let current = null // entrada de biblioteca del libro abierto
@@ -498,6 +500,7 @@ async function backToLibrary () {
   settings.useBook({})
   showPanel(null)
   closeChapterMenu()
+  scrubber?.setBook(null)
   // Un aviso de la lectura no tiene sentido ya en la estanteria.
   el.toast.hidden = true
   clearTimeout(toastTimer)
@@ -545,6 +548,7 @@ async function applyMode (mode, book, progress, bytes) {
   reader.setFocusShape(settings.all)
   reader.setLayouts?.(openedBook?.layouts ?? null)
   await reader.open(book, progress, notes, bytes, mode === 'sentence' ? 'sentence' : 'line')
+  scrubber?.setBook(book)
   settingsPanel?.refresh()
 }
 
@@ -634,6 +638,7 @@ function onStatus (status) {
   el.hudBookmark.classList.toggle('is-on', status.marked)
   el.hudBookmark.setAttribute('aria-pressed', String(Boolean(status.marked)))
   lastOffset = status.offset
+  scrubber?.setOffset(status.offset)
   // El punto de lectura exacto, para poder comprobarlo desde fuera.
   el.body.dataset.offset = String(status.offset)
 }
@@ -762,7 +767,11 @@ async function start () {
     },
     onEdit: (id, text) => notes.setText(id, text)
   })
-  $('view-reader').append(settingsPanel.element, notesView.element)
+  scrubber = createScrubber({
+    onGo: offset => { reader.goToOffset(offset); wakeHud() }
+  })
+  scrubber.setBook(null)
+  $('view-reader').append(scrubber.element, settingsPanel.element, notesView.element)
 
   attachNavigation(el.stage, {
     move: delta => { reader.move(delta); wakeHud() },

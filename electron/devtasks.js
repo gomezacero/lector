@@ -642,8 +642,30 @@ async function readTask (win, projectRoot) {
     }
   }
 
+  // --- Barra de desplazamiento ---------------------------------------------
+  // Un clic hacia el final del carril salta a esa altura del libro.
+  const scrub = await js(`
+    (() => {
+      const track = document.querySelector('.scrubber')
+      if (!track || track.hidden) return null
+      const rect = track.getBoundingClientRect()
+      const opts = { bubbles: true, pointerId: 1, clientX: rect.left + 4, clientY: rect.top + rect.height * 0.85 }
+      track.dispatchEvent(new PointerEvent('pointerdown', opts))
+      const bubble = !track.querySelector('.scrubber-bubble').hidden
+      track.dispatchEvent(new PointerEvent('pointerup', opts))
+      return { bubble }
+    })()
+  `)
+  await wait(800)
+  check(scrub !== null, 'la barra de desplazamiento no esta en el lector')
+  check(scrub?.bubble, 'la burbuja de la barra no dice a donde se salta')
+  const afterScrub = await readState(js)
+  console.log(`\nBARRA: de ${afterWheel.offset} a ${afterScrub.offset} de un salto`)
+  check(afterScrub.offset > afterWheel.offset,
+    `la barra no salto hacia delante: ${afterWheel.offset} -> ${afterScrub.offset}`)
+
   // --- Cambiar el cuerpo de letra sin perder el sitio ----------------------
-  let before = afterWheel.offset
+  let before = afterScrub.offset
 
   // Coste de volver a medir: se paga en cada pixel del deslizador de tamano.
   const cost = await js(`
