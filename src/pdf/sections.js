@@ -46,7 +46,7 @@ const MIN_PAGES_FOR_COVER = 10
 /**
  * @param {Array<{lines:Array}>} pages paginas con sus lineas ya construidas
  * @param {number} [bodySize] cuerpo de letra del libro, para juzgar los titulos
- * @returns {Map<number, 'cover'|'toc'|'reference'>} rol por indice de pagina
+ * @returns {Map<number, 'cover'|'credits'|'toc'|'reference'>} rol por indice de pagina
  */
 export function detectSections (pages, bodySize = 0) {
   const roles = new Map()
@@ -54,7 +54,8 @@ export function detectSections (pages, bodySize = 0) {
 
   const textOf = page => page.lines.filter(l => !l.figure && l.text)
 
-  markCover(pages, textOf, roles)
+  markCover(pages, textOf, roles, bodySize)
+  markCredits(pages, textOf, roles)
   markIndexes(pages, textOf, roles, bodySize)
   markReferences(pages, textOf, roles)
 
@@ -62,6 +63,28 @@ export function detectSections (pages, bodySize = 0) {
   // razonable y el conjunto seguir siendo demasiado.
   if (roles.size > pages.length * MAX_MARKED_SHARE) return new Map()
   return roles
+}
+
+// Avisos editoriales que preceden a la obra. Se exige más de una señal y se
+// limita a las primeras páginas: una novela puede hablar de derechos o de una
+// editorial en su prosa, pero no acumula ISBN, distribución y copyright en la
+// misma página nada más abrir el archivo.
+const CREDIT_SIGNALS = [
+  /\b(?:copyright|derechos (?:morales|reservados)|dominio p[uú]blico)\b/iu,
+  /\b(?:isbn|dep[oó]sito legal)\b/iu,
+  /\b(?:distribuci[oó]n gratuita|prohibida? su venta|todos los derechos)\b/iu,
+  /\b(?:editorial|fundaci[oó]n)\b/iu,
+  /\bcontacto@|\bhttps?:\/\//iu
+]
+
+function markCredits (pages, textOf, roles) {
+  for (let i = 0; i < Math.min(6, pages.length); i++) {
+    if (roles.has(i)) continue
+    const text = textOf(pages[i]).map(line => line.text).join(' ')
+    if (!text) continue
+    const signals = CREDIT_SIGNALS.filter(pattern => pattern.test(text)).length
+    if (signals >= 2) roles.set(i, 'credits')
+  }
 }
 
 /**
@@ -72,7 +95,7 @@ export function detectSections (pages, bodySize = 0) {
  * "Cien anos de soledad", el epigrafe en verso de "La tregua", la dedicatoria
  * firmada de Sabato. Todas caben en cinco renglones y todas se leen.
  */
-function markCover (pages, textOf, roles) {
+function markCover (pages, textOf, roles, bodySize = 0) {
   if (pages.length < MIN_PAGES_FOR_COVER) return
 
   const first = pages.findIndex(page => textOf(page).length || page.lines.length)
@@ -81,8 +104,12 @@ function markCover (pages, textOf, roles) {
   // Un articulo que arranca con el titulo y el resumen en la primera pagina no
   // tiene cubierta que ensenar.
   const lines = textOf(pages[first])
-  if (lines.length > COVER_MAX_LINES) return
-  if (lines.length && averageLength(lines) > COVER_MAX_AVERAGE) return
+  // Algunas digitalizaciones añaden al pie de la cubierta créditos y URLs.
+  // Siguen siendo cubierta cuando arriba hay tipografía de cartel claramente
+  // mayor que el cuerpo del libro; contar todos esos renglones la descartaba.
+  const display = bodySize > 0 && lines.some(line => line.fontSize >= bodySize * 2.2)
+  if (!display && lines.length > COVER_MAX_LINES) return
+  if (!display && lines.length && averageLength(lines) > COVER_MAX_AVERAGE) return
   roles.set(first, 'cover')
 }
 
@@ -110,7 +137,7 @@ function markIndexes (pages, textOf, roles, bodySize) {
     for (let j = i + 1; j < pages.length && seguidas < MAX_CONTINUATION; j++) {
       const next = textOf(pages[j])
       // Una pagina en blanco a mitad de indice no lo corta.
-      if (next.length && !looksLikeIndex(next) && averageLength(next) > CONTINUATION_CHARS) break
+      if (next.length && !looksLikeIndexContinuation(next) && averageLength(next) > CONTINUATION_CHARS) break
       roles.set(j, 'toc')
       seguidas++
       i = j
@@ -131,7 +158,7 @@ function hasIndexTitle (lines, bodySize) {
   const alone = lines.length <= 2
   const body = bodySize || (alone ? 0 : medianSize(lines))
 
-  return lines.slice(0, 3).some(line =>
+  return lines.some(line =>
     TOC_TITLE.test(line.text.trim()) &&
     line.text.trim().length <= 44 &&
     (!body || line.fontSize >= body * 1.1))
@@ -149,6 +176,16 @@ function looksLikeIndex (lines) {
   // muchos pies acaban en un numero ("3x3 conv, 64").
   const numbered = lines.filter(l => ENDS_IN_NUMBER.test(l.text)).length
   return lines.length >= 8 && numbered >= lines.length * 0.6
+}
+
+function looksLikeIndexContinuation (lines) {
+  if (looksLikeIndex(lines)) return true
+
+  // Muchos índices antiguos no imprimen la página destino: una continuación
+  // sigue siendo reconocible por una serie de entradas "1. Título". Esta
+  // señal sólo se usa tras hallar una página que sí dice Índice/Contenido.
+  const enumerated = lines.filter(l => /^\s*\d{1,2}[.)]\s+\p{L}/u.test(l.text)).length
+  return enumerated >= 5 && enumerated >= lines.length * 0.3
 }
 
 // --- Paginas de referencia ---------------------------------------------------

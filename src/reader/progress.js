@@ -36,6 +36,13 @@ export function startOffset (book) {
   return book.blocks?.[book.bodyStart ?? 0]?.start ?? 0
 }
 
+/** Limites de la obra legible, dejando navegables portada e indice. */
+export function readingRange (book) {
+  const from = startOffset(book)
+  const to = book.blocks?.[book.bodyEnd]?.start ?? book.chars
+  return { from, to: Math.max(from + 1, to) }
+}
+
 /**
  * El porcentaje mide el libro, no el fichero.
  *
@@ -46,8 +53,8 @@ export function startOffset (book) {
  * paginas, que miente mas de lo que arregla.
  */
 export function percentAt (book, offset) {
-  const from = startOffset(book)
-  const total = book.chars - from
+  const { from, to } = readingRange(book)
+  const total = to - from
   if (total <= 0) return 0
   return Math.max(0, Math.min(1, (offset - from) / total))
 }

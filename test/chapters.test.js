@@ -49,6 +49,20 @@ describe('buildChapters', () => {
     ])
   })
 
+  it('ignora marcadores que sólo son nombres de PDF concatenados', () => {
+    const blocks = [
+      block('Esto matará a aquello', 2, 'heading'),
+      block('Que nuestros lectores nos perdonen...', 2)
+    ]
+    const outline = [
+      { title: 'SinTitulo2.pdf (p.1-2)', page: 0, depth: 0 },
+      { title: 'SinTitulo1.pdf (p.3-14)', page: 2, depth: 0 }
+    ]
+
+    expect(buildChapters(blocks, outline).map(c => c.title))
+      .toEqual(['Sección 1'])
+  })
+
   it('trocea el libro cuando no hay ninguna estructura', () => {
     const blocks = Array.from({ length: 250 }, (_, i) => block(`parrafo ${i}`, Math.floor(i / 30)))
     const chapters = buildChapters(blocks, [])

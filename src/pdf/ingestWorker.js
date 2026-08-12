@@ -26,6 +26,6 @@ self.onmessage = async ({ data }) => {
     })
     self.postMessage({ lector: 'book', book })
   } catch (err) {
-    self.postMessage({ lector: 'error', error: err?.message ?? String(err) })
+    self.postMessage({ lector: 'error', error: err?.stack ?? err?.message ?? String(err) })
   }
 }

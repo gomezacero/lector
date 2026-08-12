@@ -16,14 +16,51 @@ export function createFocusController ({ stage, sharpLayer }) {
   let index = 0
   let settings = { focusLines: 1, falloffLines: 1.6 }
   let contentY = 0
+  let presentation = 'continuous'
+  let pageStarts = [0]
 
   function setLines (next) {
     lines = next
     index = Math.min(index, Math.max(0, lines.length - 1))
+    measurePages()
   }
 
   function setSettings (next) {
     settings = { ...settings, ...next }
+    measurePages()
+  }
+
+  function setPresentation (next) {
+    presentation = next === 'paged' ? 'paged' : 'continuous'
+    measurePages()
+  }
+
+  function verticalMargin () {
+    return Math.max(24, Math.min(stage.clientHeight * 0.25, settings.verticalMargin ?? 48))
+  }
+
+  /** Limites estables derivados de las unidades ya medidas. */
+  function measurePages () {
+    pageStarts = [0]
+    if (!lines.length || presentation !== 'paged') return
+    const available = Math.max(80, stage.clientHeight - verticalMargin() * 2)
+    let pageTop = lines[0].top
+    for (let i = 1; i < lines.length; i++) {
+      if (lines[i].bottom - pageTop <= available) continue
+      // Si dos frases comparten renglon, nunca se corta entre ellas.
+      if (lines[i].top === lines[i - 1].top) continue
+      pageStarts.push(i)
+      pageTop = lines[i].top
+    }
+  }
+
+  function pageFor (lineIndex) {
+    let found = 0
+    for (let i = 1; i < pageStarts.length; i++) {
+      if (pageStarts[i] > lineIndex) break
+      found = i
+    }
+    return found
   }
 
   /** Alto de la banda nitida: la linea activa mas las que pida el ajuste. */
@@ -56,7 +93,12 @@ export function createFocusController ({ stage, sharpLayer }) {
 
     // Nunca se empuja el contenido hacia abajo: el padding superior de la
     // pagina ya deja sitio para que la primera linea caiga en el ancla.
-    contentY = Math.min(0, anchor - target.top)
+    if (presentation === 'paged') {
+      const first = pageStarts[pageFor(index)] ?? 0
+      contentY = verticalMargin() - (lines[first]?.top ?? 0)
+    } else {
+      contentY = Math.min(0, anchor - target.top)
+    }
 
     const screenTop = target.top + contentY
     const screenBottom = target.bottom + contentY
@@ -92,14 +134,29 @@ export function createFocusController ({ stage, sharpLayer }) {
   return {
     setLines,
     setSettings,
+    setPresentation,
     moveTo,
     refresh: () => moveTo(index, { animate: false }),
     get index () { return index },
     get lineCount () { return lines.length },
     get lines () { return lines },
     get contentOffset () { return contentY },
+    get presentation () { return presentation },
+    get pageIndex () { return pageFor(index) },
+    get pageCount () { return pageStarts.length },
+    movePage (direction) {
+      const page = pageFor(index)
+      if (direction > 0) return pageStarts[Math.min(page + 1, pageStarts.length - 1)]
+      return pageStarts[Math.max(0, page - 1)]
+    },
     /** Cuantas lineas caben en pantalla: lo que avanza una pagina. */
     linesPerScreen () {
+      if (presentation === 'paged') {
+        const page = pageFor(index)
+        const start = pageStarts[page]
+        const end = pageStarts[page + 1] ?? lines.length
+        return Math.max(1, end - start)
+      }
       return Math.max(1, Math.floor(stage.clientHeight / lineHeight()) - 2)
     },
     /** Indice de la primera linea de un bloque, para saltar a una nota. */

@@ -8,9 +8,15 @@ const QUOTE_CHARS = 180
 
 export function createNotesStore (bookId) {
   let notes = []
+  let pending = Promise.resolve()
+  let idSequence = 0
 
   const sort = () => notes.sort((a, b) => a.offset - b.offset)
-  const persist = () => window.lector.notes.write(bookId, notes)
+  const queue = operation => {
+    pending = pending.catch(() => {}).then(operation)
+    pending.catch(err => window.lector.log?.error?.(`notas: ${err.message}`))
+    return pending
+  }
 
   return {
     async load () {
@@ -21,13 +27,25 @@ export function createNotesStore (bookId) {
 
     get all () { return notes },
 
-    /** Bloques con marcador, para pintar la barra al margen. Los resaltados
-     *  no cuentan: ya se ven pintados sobre su propio texto. */
-    get markedBlocks () {
-      return new Set(notes.filter(n => n.kind !== 'highlight').map(n => n.block))
-    },
+    flush: () => pending,
 
     find (offset) { return notes.find(n => n.offset === offset) ?? null },
+
+    /** Encuentra un marcador de lectura, nunca un resaltado. El bloque y el
+     * caracter permiten reconocer la misma linea aunque el locator conservado
+     * apunte unos caracteres dentro de ella. */
+    findBookmark (location) {
+      const offset = typeof location === 'number' ? location : location?.offset
+      const block = typeof location === 'object' ? location?.block : null
+      const char = typeof location === 'object' ? location?.char : null
+      const end = typeof location === 'object' ? location?.end : null
+      return notes.find(note => note.kind !== 'highlight' && (
+        note.offset === offset ||
+        (block != null && char != null && note.block === block && (
+          note.char === char || (end != null && note.char >= char && note.char < end)
+        ))
+      )) ?? null
+    },
 
     /**
      * Un marcador de linea o, con end/kind/color, un resaltado de texto.
@@ -37,7 +55,10 @@ export function createNotesStore (bookId) {
       if (existing) return existing
 
       const note = {
-        id: `${offset}-${Date.now()}`,
+        // Dos acciones distintas pueden ocurrir en el mismo milisegundo
+        // (marcar y resaltar desde automatizacion, doble clic, etc.). Sin la
+        // secuencia compartirian id y borrar una se llevaria tambien la otra.
+        id: `${offset}-${Date.now()}-${idSequence++}`,
         offset,
         block,
         char,
@@ -50,7 +71,7 @@ export function createNotesStore (bookId) {
       }
       notes.push(note)
       sort()
-      persist()
+      queue(() => window.lector.notes.add(bookId, note))
       return note
     },
 
@@ -58,12 +79,12 @@ export function createNotesStore (bookId) {
       const note = notes.find(n => n.id === id)
       if (!note) return
       note.text = text
-      persist()
+      queue(() => window.lector.notes.edit(bookId, id, text))
     },
 
     remove (id) {
       notes = notes.filter(n => n.id !== id)
-      persist()
+      queue(() => window.lector.notes.remove(bookId, id))
     }
   }
 }

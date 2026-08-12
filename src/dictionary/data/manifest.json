@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "developmentSample": false,
+  "languages": ["es", "en"],
+  "sources": {
+    "es": "Wikcionario, dump 2026-08-04 procesado por Wiktextract/Kaikki (CC BY-SA 4.0 / GFDL)",
+    "en": "Open English WordNet (CC BY 4.0)"
+  },
+  "note": "Espanol se distribuye completo en shards locales reproducibles. Ingles conserva su paquete independiente de Open English WordNet."
+}

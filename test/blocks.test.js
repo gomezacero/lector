@@ -96,6 +96,15 @@ describe('metricas por pagina', () => {
 describe('mobiliario de pagina', () => {
   const pages = [0, 1, 2, 3]
 
+  it('elimina un folio inferior aunque el OCR lo mida mayor que el cuerpo', () => {
+    const lines = [
+      ...column(['texto corriente de la página', 'que continúa normalmente']),
+      line('18', { y: 790, size: 14, width: 14 })
+    ]
+    const blocks = buildBlocks(stripFurniture(lines, 842, 20, { bodySize: 10 }), measureBody(lines), 'indent')
+    expect(blocks.some(item => item.text === '18')).toBe(false)
+  })
+
   it('detecta el titulillo que se repite en la mayoria de las paginas', () => {
     const lines = pages.flatMap(p => [
       line('EL JARDIN DE LOS SENDEROS', { y: 40, page: p, size: 8 }),

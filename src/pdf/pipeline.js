@@ -7,6 +7,7 @@ import { toBlocks } from './blocks.js'
 import { buildChapters, splitLongChapters } from './chapters.js'
 import { detectSections, detectOpeners, findBodyStart } from './sections.js'
 import { classifyPage } from './pageKind.js'
+import { refineBookPresentation } from './presentation.js'
 
 // Sube este numero al cambiar el pipeline: invalida los libros ya cacheados.
 // v3: corredores de columna medidos en cuerpos de letra, sangria con techo y
@@ -30,7 +31,19 @@ import { classifyPage } from './pageKind.js'
 // sitio, sin reproceso y sin mover un offset.
 // v10: las fechas de un diario ("Sábado 23 de febrero") cuentan como
 // capitulos cuando no hay estructura mejor. Migracion en sitio.
-export const CACHE_VERSION = 10
+// v11: identidad contrastada con la portada, portada/indice fuera del conteo
+// de capitulos y bodyEnd para que una novela termine antes de su indice final.
+// Todo se deriva del Book v10 sin tocar texto ni offsets: migracion en sitio.
+// v12: decodificadores PDF.js configurados, folios OCR eliminados y jerarquia
+// de no ficcion reconstruida por partes y numeracion. Los folios cambian los
+// offsets, asi que los caches anteriores se reprocesan y se re-anclan.
+// v13: el índice impreso corrige acentos y palabras cortadas de los rótulos;
+// el comienzo automático salta créditos editoriales anteriores al prefacio.
+// v14: esas correcciones se aplican también al texto visible y se recalculan
+// offsets antes de guardar; los caches v13 de desarrollo deben reprocesarse.
+// v15: preliminares legales, marcadores PDF basura e identidad/encabezado de
+// extractos cortos se reconstruyen a partir de la ficha editorial visible.
+export const CACHE_VERSION = 15
 
 /**
  * @param {Uint8Array} bytes
@@ -125,7 +138,7 @@ export async function buildBook (bytes, { fileName = '', onProgress, ocrItemsByP
       pages.some(p => p.kind === 'scanned' || p.kind === 'mixed' || p.kind === 'ocr')
     if (provisional) chars = pages.length
 
-    return {
+    return refineBookPresentation({
       version: CACHE_VERSION,
       title: meta.title || firstHeading(blocks) || cleanFileName(fileName),
       author: meta.author,
@@ -158,6 +171,7 @@ export async function buildBook (bytes, { fileName = '', onProgress, ocrItemsByP
         // Cuantas paginas se han apartado de la lectura, por si un libro sale
         // con el principio saltado sin motivo.
         coverPages: countPages(roles, 'cover'),
+        creditPages: countPages(roles, 'credits'),
         tocPages: countPages(roles, 'toc'),
         referencePages: countPages(roles, 'reference'),
         openerPages: openers.size,
@@ -181,7 +195,7 @@ export async function buildBook (bytes, { fileName = '', onProgress, ocrItemsByP
         leading: Math.round(metrics.leading * 10) / 10,
         words: countWords(blocks)
       }
-    }
+    }, { fileName, version: CACHE_VERSION })
   } finally {
     await closeDocument(doc)
   }

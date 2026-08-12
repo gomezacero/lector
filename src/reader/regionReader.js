@@ -11,6 +11,7 @@
 import { createPageRenderer } from '../pdf/pageRender.js'
 import { chapterAtOffset, percentAt, makeProgress, startOffset } from './progress.js'
 import { buildRegions, splitStops } from './regions.js'
+import { offsetFromLocator } from './readerContract.js'
 
 const SAVE_DELAY = 900
 
@@ -30,6 +31,8 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
   // Renglones por parada, o null para detenerse por parrafos (partiendo solo
   // los desmesurados). Lo fija el ajuste "Parada" con "Lineas en foco".
   let stopLines = null
+  const listeners = new Set()
+  const publish = event => { for (const listener of listeners) listener(event) }
 
   const buildStops = () => splitStops(book, buildRegions(book, layouts), stopLines)
 
@@ -140,17 +143,48 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
     scheduleSave()
   }
 
+  function currentExcerpt () {
+    const region = regions[index]
+    if (!region) return null
+    const block = book.blocks[region.block]
+    const char = Math.max(0, region.start - (block?.start ?? 0))
+    return {
+      block: region.block,
+      char,
+      offset: region.start,
+      text: block?.text ?? '',
+      context: (block?.text ?? '').slice(char, char + 200).trim() || (region.type === 'page'
+        ? `Página ${region.rect.page + 1}`
+        : `Figura en la página ${region.rect.page + 1}`)
+    }
+  }
+
+  function locator () {
+    const region = regions[index]
+    const block = book?.blocks[region?.block]
+    const char = Math.max(0, anchor - (block?.start ?? 0))
+    const context = (block?.text ?? '').slice(char, char + 200).trim()
+    return {
+      offset: anchor,
+      ...(context ? { context } : {}),
+      ...(region?.rect.page != null ? { page: region.rect.page } : {})
+    }
+  }
+
   function emitStatus () {
     const region = regions[index]
+    const excerpt = currentExcerpt()
     const chapterIndex = chapterAtOffset(book, anchor)
-    onStatus?.({
+    const status = {
       chapter: book.chapters[chapterIndex]?.title ?? '',
       chapterIndex,
       percent: percentAt(book, anchor),
       offset: anchor,
       page: (region?.rect.page ?? 0) + 1,
-      marked: Boolean(notes?.find(anchor))
-    })
+      marked: Boolean(notes?.findBookmark?.(excerpt) ?? notes?.findBookmark?.(anchor))
+    }
+    onStatus?.(status)
+    publish({ type: 'locator', locator: locator(), excerpt, status })
   }
 
   function scheduleSave () {
@@ -158,6 +192,13 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
     saveTimer = setTimeout(() => {
       if (book) onSave?.(makeProgress(book, anchor))
     }, SAVE_DELAY)
+  }
+
+  function flush () {
+    clearTimeout(saveTimer)
+    saveTimer = null
+    if (!book || !regions.length) return Promise.resolve()
+    return Promise.resolve(onSave?.(makeProgress(book, anchor)))
   }
 
   // La ultima region que empieza en el offset o antes. Se recorre la lista
@@ -189,14 +230,14 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
     setLayouts (next) { layouts = next },
 
     close () {
-      clearTimeout(saveTimer)
-      if (book && regions.length) onSave?.(makeProgress(book, anchor))
+      const saved = flush()
       renderer.close()
       contentSharp.replaceChildren()
       contentDim.replaceChildren()
       book = null
       notes = null
       regions = []
+      return saved
     },
 
     move: delta => goTo(index + delta),
@@ -229,6 +270,8 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
 
     goToOffset: offset => goTo(regionOfOffset(offset), { animate: false }),
 
+    goToLocator: locator => goTo(regionOfOffset(offsetFromLocator(locator)), { animate: false }),
+
     currentLine () {
       const region = regions[index]
       if (!region) return null
@@ -247,11 +290,23 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
       }
     },
 
+    getLocator: locator,
+
+    getCurrentExcerpt: currentExcerpt,
+
+    subscribe (listener) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    setPresentation () {},
+    getCapabilities: () => ({ textSelection: false, reflowPagination: false, speech: true }),
+
     /** Al cambiar el tamano de la ventana la pagina se redibuja a su medida. */
     async relayout () {
       if (!book || !regions.length) return
       shownPage = -1
       await goTo(index, { animate: false })
+      publish({ type: 'layout', presentation: 'original', locator: locator() })
     },
 
     setFocusShape (settings) {
@@ -273,6 +328,9 @@ export function createRegionReader ({ stage, sharpLayer, contentSharp, contentDi
       zoom = next
       this.relayout()
     },
+
+    setFocusSettings (settings) { this.setFocusShape(settings) },
+    flush,
 
     markBlock: () => {},
     refreshHighlights: () => {},

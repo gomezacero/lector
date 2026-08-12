@@ -14,6 +14,7 @@
 // a volver a medir las lineas.
 
 export const FONTS = [
+  { id: 'Source Serif 4', label: 'Source Serif' },
   { id: 'Sitka Text', label: 'Sitka' },
   { id: 'Georgia', label: 'Georgia' },
   { id: 'Cambria', label: 'Cambria' },
@@ -25,20 +26,35 @@ export const FONTS = [
 export const THEMES = [
   { id: 'dark', label: 'Oscuro' },
   { id: 'light', label: 'Claro' },
-  { id: 'sepia', label: 'Sepia' }
+  { id: 'sepia', label: 'Sepia' },
+  { id: 'contrast', label: 'Alto contraste' },
+  { id: 'custom', label: 'Personalizado' }
 ]
+
+export const TYPOGRAPHY_PRESETS = Object.freeze({
+  compact: { fontSize: 18, lineHeight: 1.5, columnWidth: 720, paragraphSpacing: 0.6, wordSpacing: 0, letterSpacing: 0, fontWeight: 400, verticalMargin: 32 },
+  novel: { fontSize: 20, lineHeight: 1.75, columnWidth: 640, paragraphSpacing: 0.85, wordSpacing: 0, letterSpacing: 0, fontWeight: 400, verticalMargin: 48 },
+  relaxed: { fontSize: 22, lineHeight: 1.9, columnWidth: 600, paragraphSpacing: 1.1, wordSpacing: 0.04, letterSpacing: 0.005, fontWeight: 400, verticalMargin: 64 },
+  legible: { fontSize: 22, lineHeight: 1.9, columnWidth: 560, paragraphSpacing: 1.2, wordSpacing: 0.08, letterSpacing: 0.02, fontWeight: 500, verticalMargin: 72, textAlign: 'left' }
+})
 
 /** Ajustes que se guardan con el libro y no con la aplicacion. */
 export const READING_KEYS = new Set(
-  ['readingMode', 'fontSize', 'lineHeight', 'columnWidth', 'pageZoom', 'pageStop'])
+  ['readingMode', 'presentationMode', 'typographyPreset', 'fontFamily', 'fontSize',
+    'lineHeight', 'columnWidth', 'paragraphSpacing', 'wordSpacing', 'letterSpacing',
+    'fontWeight', 'verticalMargin', 'textAlign', 'pageZoom', 'pageStop'])
+READING_KEYS.add('lastPanel')
 
 // Tocar cualquiera de estos cambia donde caen los saltos de linea.
-const LAYOUT_KEYS = new Set(['fontFamily', 'fontSize', 'lineHeight', 'columnWidth', 'textAlign'])
+const LAYOUT_KEYS = new Set(['fontFamily', 'fontSize', 'lineHeight', 'columnWidth',
+  'paragraphSpacing', 'wordSpacing', 'letterSpacing', 'fontWeight', 'verticalMargin', 'textAlign'])
+const TYPOGRAPHY_KEYS = new Set([...LAYOUT_KEYS])
 
 export function createSettings (initial, { onLayoutChange, onChange, onBookChange } = {}) {
   let globals = { ...initial }
   let book = {} // ajustes del libro abierto, si hay alguno
   let saveTimer = null
+  let pendingWrite = null
 
   const effective = () => ({ ...globals, ...book })
 
@@ -53,6 +69,27 @@ export function createSettings (initial, { onLayoutChange, onChange, onBookChang
     style.setProperty('--read-leading', String(current.lineHeight))
     style.setProperty('--read-width', `${current.columnWidth}px`)
     style.setProperty('--read-align', current.textAlign)
+    style.setProperty('--read-paragraph', `${current.paragraphSpacing ?? 0.85}em`)
+    style.setProperty('--read-word-spacing', `${current.wordSpacing ?? 0}em`)
+    style.setProperty('--read-letter-spacing', `${current.letterSpacing ?? 0}em`)
+    style.setProperty('--read-weight', String(current.fontWeight ?? 400))
+    style.setProperty('--read-vmargin', `${current.verticalMargin ?? 48}px`)
+    style.setProperty('--ui-scale', `${(current.uiScale ?? 100) / 100}`)
+    root.dataset.motion = current.motion ?? 'system'
+    if (current.theme === 'custom') {
+      for (const [css, value] of [
+        ['--bg', current.customBackground], ['--surface', current.customBackground],
+        ['--surface-raised', current.customBackground], ['--fg', current.customForeground],
+        ['--read-fg', current.customForeground], ['--accent', current.customAccent]
+      ]) {
+        if (/^#[0-9a-f]{6}$/i.test(value ?? '')) style.setProperty(css, value)
+        else style.removeProperty(css)
+      }
+    } else {
+      for (const css of ['--bg', '--surface', '--surface-raised', '--fg', '--read-fg', '--accent']) {
+        style.removeProperty(css)
+      }
+    }
     // Con la guia apagada, la capa de fondo queda igual que la nitida y el
     // efecto desaparece: se lee el texto entero, sin tocar nada mas.
     const guided = current.focusEnabled !== false
@@ -64,11 +101,32 @@ export function createSettings (initial, { onLayoutChange, onChange, onBookChang
   // todos en pantalla, pero al disco se baja una sola vez al soltar.
   function persist () {
     clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => window.lector.settings.write(globals), 400)
+    saveTimer = setTimeout(writeGlobals, 400)
+  }
+
+  function writeGlobals () {
+    clearTimeout(saveTimer)
+    saveTimer = null
+    const snapshot = { ...globals }
+    const run = pendingWrite
+      ? pendingWrite.catch(() => {}).then(() => window.lector.settings.write(snapshot))
+      : Promise.resolve(window.lector.settings.write(snapshot))
+    const settled = run.finally(() => {
+      if (pendingWrite === settled) pendingWrite = null
+    })
+    settled.catch(err => window.lector.log?.error?.(`ajustes: ${err.message}`))
+    pendingWrite = settled
+    return settled
   }
 
   function update (patch) {
     const before = effective()
+
+    // Cualquier ajuste manual separa el libro del preset que lo creo.
+    if (!Object.hasOwn(patch, 'typographyPreset') &&
+        Object.keys(patch).some(key => TYPOGRAPHY_KEYS.has(key)) && onBookChange) {
+      patch = { ...patch, typographyPreset: 'custom' }
+    }
 
     for (const [key, value] of Object.entries(patch)) {
       // Los de lectura van al libro abierto; si no hay ninguno, al global, que
@@ -99,6 +157,10 @@ export function createSettings (initial, { onLayoutChange, onChange, onBookChang
     get bookSettings () { return { ...book } },
     get: key => effective()[key],
     update,
+    async flush () {
+      if (saveTimer) await writeGlobals()
+      if (pendingWrite) await pendingWrite
+    },
 
     /**
      * Carga los ajustes del libro que se abre. Sin argumento vuelve a dejar

@@ -6,25 +6,39 @@ import { percentAt } from '../reader/progress.js'
 export function createNotesView ({ onClose, onGo, onDelete, onEdit, onExport }) {
   const body = h('div', { class: 'panel-body' })
 
-  const panel = h('aside', { class: 'panel' },
+  const panel = h('aside', {
+    class: 'panel notes-panel', hidden: true, dataset: { panel: 'notes' },
+    'aria-label': 'Notas y marcadores'
+  },
     h('div', { class: 'panel-head' },
-      h('h2', { text: 'Marcadores y notas' }),
+      h('div', { class: 'panel-title' },
+        h('span', { class: 'panel-eyebrow', text: 'Tu lectura' }),
+        h('h2', { text: 'Notas y marcadores' })),
       h('div', { class: 'panel-head-actions' },
         onExport
           ? h('button', {
-              class: 'btn btn-ghost panel-export',
+              class: 'panel-action panel-export',
               text: 'Exportar',
               title: 'Guardar citas y notas como Markdown',
               onclick: onExport
             })
           : null,
-        h('button', { class: 'panel-close', text: '×', title: 'Cerrar', onclick: onClose })
+        h('button', {
+          class: 'panel-close', text: '×', title: 'Cerrar notas',
+          'aria-label': 'Cerrar notas', onclick: onClose
+        })
       )
     ),
     body
   )
   // Nace cerrado: fuera del orden de tabulacion hasta que se abra.
   panel.inert = true
+  panel.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return
+    event.preventDefault()
+    event.stopPropagation()
+    onClose?.()
+  })
 
   function noteCard (note, book) {
     const editor = h('textarea', {
@@ -61,10 +75,13 @@ export function createNotesView ({ onClose, onGo, onDelete, onEdit, onExport }) 
 
     render (notes, book) {
       if (!notes.length) {
-        body.replaceChildren(h('p', { class: 'notes-empty' },
-          'Aún no hay marcadores. Pulsa ', h('kbd', { text: 'M' }),
-          ' mientras lees para guardar la línea en la que estás.'
-        ))
+        body.replaceChildren(h('div', { class: 'panel-empty' },
+          h('span', { class: 'panel-empty-icon', text: '◇', 'aria-hidden': 'true' }),
+          h('h3', { text: 'Aún no has guardado nada' }),
+          h('p', { class: 'notes-empty' },
+            'Pulsa ', h('kbd', { text: 'M' }),
+            ' o el botón Marcar para guardar la línea actual. También puedes seleccionar texto para resaltarlo.'
+          )))
         return
       }
       body.replaceChildren(...notes.map(note => noteCard(note, book)))
@@ -77,6 +94,7 @@ export function createNotesView ({ onClose, onGo, onDelete, onEdit, onExport }) 
   }
 
   function open () {
+    panel.hidden = false
     panel.inert = false
     panel.classList.add('is-open')
   }
@@ -86,7 +104,8 @@ export function createNotesView ({ onClose, onGo, onDelete, onEdit, onExport }) 
     // solo: se fuerza para que lo escrito llegue a onEdit antes de ocultar.
     if (panel.contains(document.activeElement)) document.activeElement.blur()
     // Cerrado no debe recibir el tabulador: el transform solo lo aparta.
-    panel.inert = true
     panel.classList.remove('is-open')
+    panel.inert = true
+    panel.hidden = true
   }
 }

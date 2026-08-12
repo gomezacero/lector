@@ -65,6 +65,15 @@ describe('migrateBook', () => {
 
     expect(migrateBook(v4, 6)).toEqual({ rebuild: true })
   })
+
+  it('lleva v10 a v11 sin mover bloques ni offsets', () => {
+    const v10 = makeBook(FRASES, { version: 10 })
+    const originalBlocks = structuredClone(v10.blocks)
+    const result = migrateBook(v10, 11)
+    expect(result.book.version).toBe(11)
+    expect(result.book.blocks).toEqual(originalBlocks)
+    expect(result.book.bodyEnd).toBe(v10.blocks.length)
+  })
 })
 
 describe('validateBook', () => {
@@ -84,6 +93,13 @@ describe('validateBook', () => {
     book.pageKinds = [null]
 
     expect(validateBook(book).join(' ')).toContain('pageKinds')
+  })
+
+  it('detecta un bodyEnd fuera de los bloques', () => {
+    const book = makeBook(FRASES)
+    book.bodyEnd = book.blocks.length + 1
+
+    expect(validateBook(book).join(' ')).toContain('bodyEnd')
   })
 
   it('detecta un bloque que apunta a una pagina inexistente', () => {

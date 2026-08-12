@@ -21,6 +21,12 @@ const ABBREVIATIONS = new Set([
 const CLOSERS = '»"\'”’)]'
 const ENDINGS = '.!?…'
 
+// Una frase literaria puede ocupar media pagina —en esta novela ocurre con
+// frecuencia—. Una banda tan alta deja de guiar la mirada. Se conserva la
+// unidad semantica mientras cabe y, cuando no, se ofrece en tramos visuales
+// continuos de un maximo de cuatro renglones.
+const MAX_UNIT_LINES = 4
+
 /**
  * @param {string} text
  * @returns {Array<{start:number, end:number}>} tramos sobre el texto original
@@ -106,23 +112,45 @@ export function toSentenceUnits (lines, blocks) {
       const touched = own.filter(line => line.start < sentence.end && line.end > sentence.start)
       if (!touched.length) continue
 
-      const top = Math.min(...touched.map(l => l.top))
-      const bottom = Math.max(...touched.map(l => l.bottom))
+      for (const band of sentenceBands(touched, sentence)) {
+        const top = Math.min(...band.lines.map(l => l.top))
+        const bottom = Math.max(...band.lines.map(l => l.bottom))
 
-      // Dos frases cortas que caben en los mismos renglones se leen de un
-      // vistazo: pararse dos veces sobre la misma banda es un tartamudeo, no
-      // una guia. Se alarga la parada anterior en vez de abrir otra igual.
-      const prev = units.at(-1)
-      if (prev && prev.block === blockIndex && prev.top === top && prev.bottom === bottom) {
-        prev.end = sentence.end
-        continue
+        // Dos frases cortas que caben en los mismos renglones se leen de un
+        // vistazo: pararse dos veces sobre la misma banda es un tartamudeo, no
+        // una guia. Se alarga la parada anterior en vez de abrir otra igual.
+        const prev = units.at(-1)
+        if (prev && prev.block === blockIndex && prev.top === top && prev.bottom === bottom) {
+          prev.end = band.end
+          continue
+        }
+
+        units.push({ ...band.lines[0], top, bottom, start: band.start, end: band.end })
       }
-
-      units.push({ ...touched[0], top, bottom, start: sentence.start, end: sentence.end })
     }
   }
 
   return units
+}
+
+/** Divide solo las frases que desbordan una banda comoda. Los limites de cada
+ * tramo coinciden con limites de renglon, asi que no se pierde ni se repite
+ * texto al avanzar. */
+function sentenceBands (lines, sentence) {
+  if (lines.length <= MAX_UNIT_LINES) {
+    return [{ lines, start: sentence.start, end: sentence.end }]
+  }
+
+  const bands = []
+  let start = sentence.start
+  for (let i = 0; i < lines.length; i += MAX_UNIT_LINES) {
+    const part = lines.slice(i, i + MAX_UNIT_LINES)
+    const last = i + MAX_UNIT_LINES >= lines.length
+    const end = last ? sentence.end : Math.min(sentence.end, part.at(-1).end)
+    bands.push({ lines: part, start, end })
+    start = end
+  }
+  return bands
 }
 
 /**

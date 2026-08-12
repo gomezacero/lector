@@ -8,27 +8,32 @@
 // provisional, el offset ya ES el indice de pagina).
 
 import { h } from '../ui/dom.js'
-import { blockAtOffset, chapterAtOffset } from './progress.js'
+import { blockAtOffset, chapterAtOffset, readingRange } from './progress.js'
 
 export function createScrubber ({ onGo }) {
   let book = null
   let offset = 0
   let dragging = false
 
-  const thumb = h('div', { class: 'scrubber-thumb' })
+  const fill = h('div', { class: 'scrubber-fill', 'aria-hidden': 'true' })
+  const thumb = h('div', { class: 'scrubber-thumb', 'aria-hidden': 'true' })
   const ticks = h('div', { class: 'scrubber-ticks' })
   const bubble = h('div', { class: 'scrubber-bubble', hidden: true })
   const track = h('div', {
     class: 'scrubber',
     role: 'slider',
+    tabindex: '0',
     'aria-label': 'Posición en el libro',
     'aria-orientation': 'vertical',
     'aria-valuemin': '0',
-    'aria-valuemax': '100'
-  }, ticks, thumb, bubble)
+    'aria-valuemax': '100',
+    title: 'Explorar el libro'
+  }, fill, ticks, thumb, bubble)
 
-  const span = () => Math.max(1, (book?.chars ?? 1) - 1)
-  const ratioOf = at => Math.max(0, Math.min(1, at / span()))
+  const range = () => book ? readingRange(book) : { from: 0, to: 1 }
+  const span = () => Math.max(1, range().to - range().from)
+  const ratioOf = at => Math.max(0, Math.min(1, (at - range().from) / span()))
+  const offsetAt = ratio => Math.round(range().from + ratio * span())
 
   function ratioAt (event) {
     const rect = track.getBoundingClientRect()
@@ -37,8 +42,15 @@ export function createScrubber ({ onGo }) {
 
   function paint () {
     const ratio = ratioOf(offset)
-    thumb.style.top = `${(ratio * 100).toFixed(2)}%`
+    preview(ratio)
     track.setAttribute('aria-valuenow', String(Math.round(ratio * 100)))
+    track.setAttribute('aria-valuetext', `${Math.round(ratio * 100)}% · ${describe(offset)}`)
+    if (document.activeElement === track) showCurrentBubble()
+  }
+
+  function preview (ratio) {
+    thumb.style.top = `${(ratio * 100).toFixed(2)}%`
+    fill.style.height = `${(ratio * 100).toFixed(2)}%`
   }
 
   /** "p. 12 · Capítulo tal": lo justo para saber a donde se salta. */
@@ -53,9 +65,16 @@ export function createScrubber ({ onGo }) {
 
   function showBubble (event) {
     const ratio = ratioAt(event)
-    bubble.textContent = describe(Math.round(ratio * span()))
+    bubble.textContent = `${Math.round(ratio * 100)}% · ${describe(offsetAt(ratio))}`
     bubble.style.top = `${(ratio * 100).toFixed(2)}%`
     bubble.hidden = !bubble.textContent
+  }
+
+  function showCurrentBubble () {
+    const ratio = ratioOf(offset)
+    bubble.textContent = `${Math.round(ratio * 100)}% · ${describe(offset)}`
+    bubble.style.top = `${(ratio * 100).toFixed(2)}%`
+    bubble.hidden = !book
   }
 
   track.addEventListener('pointerdown', event => {
@@ -67,12 +86,12 @@ export function createScrubber ({ onGo }) {
     showBubble(event)
     // El salto de verdad se hace al soltar: en el flujo cada salto re-maqueta
     // un capitulo, y hacerlo en cada pixel del arrastre seria un traqueteo.
-    thumb.style.top = `${(ratioAt(event) * 100).toFixed(2)}%`
+    preview(ratioAt(event))
   })
 
   track.addEventListener('pointermove', event => {
     if (!book) return
-    if (dragging) thumb.style.top = `${(ratioAt(event) * 100).toFixed(2)}%`
+    if (dragging) preview(ratioAt(event))
     showBubble(event)
   })
 
@@ -80,11 +99,34 @@ export function createScrubber ({ onGo }) {
     if (!dragging) return
     dragging = false
     track.classList.remove('is-dragging')
-    onGo(Math.round(ratioAt(event) * span()))
+    onGo(offsetAt(ratioAt(event)))
   })
 
   track.addEventListener('pointerleave', () => {
     if (!dragging) bubble.hidden = true
+  })
+
+  track.addEventListener('pointercancel', () => {
+    dragging = false
+    track.classList.remove('is-dragging')
+    bubble.hidden = true
+    paint()
+  })
+
+  track.addEventListener('focus', showCurrentBubble)
+  track.addEventListener('blur', () => { if (!dragging) bubble.hidden = true })
+  track.addEventListener('keydown', event => {
+    if (!book) return
+    const ratio = ratioOf(offset)
+    const step = event.key === 'PageDown' || event.key === 'PageUp' ? 0.1 : 0.02
+    let next = null
+    if (event.key === 'ArrowDown' || event.key === 'ArrowRight' || event.key === 'PageDown') next = ratio + step
+    if (event.key === 'ArrowUp' || event.key === 'ArrowLeft' || event.key === 'PageUp') next = ratio - step
+    if (event.key === 'Home') next = 0
+    if (event.key === 'End') next = 1
+    if (next == null) return
+    event.preventDefault()
+    onGo(offsetAt(Math.max(0, Math.min(1, next))))
   })
 
   return {
@@ -96,6 +138,7 @@ export function createScrubber ({ onGo }) {
       track.hidden = !book
       if (!book) return
       ticks.replaceChildren(...book.chapters
+        .filter(chapter => !chapter.kind)
         .map(chapter => book.blocks[chapter.start]?.start)
         .filter(at => at != null && at > 0)
         .map(at => h('i', { style: { top: `${(ratioOf(at) * 100).toFixed(2)}%` } })))

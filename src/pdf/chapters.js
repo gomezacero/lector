@@ -27,7 +27,7 @@ function blockAtPage (blocks, page, fromIndex = 0) {
 function fromOutline (blocks, outline) {
   // Los PDF suelen anidar partes y secciones; para leer basta el nivel mas alto.
   const topDepth = Math.min(...outline.map(e => e.depth))
-  const entries = outline.filter(e => e.depth === topDepth)
+  const entries = outline.filter(e => e.depth === topDepth && usefulOutlineTitle(e.title))
 
   const marks = []
   let cursor = 0
@@ -40,6 +40,16 @@ function fromOutline (blocks, outline) {
     cursor = index
   }
   return marks
+}
+
+// Algunos ensambladores conservan como marcadores los nombres de los PDF que
+// concatenaron ("SinTitulo1.pdf (p.3-14)"). No describen la obra y desplazan
+// la estructura tipográfica real, así que no merecen la prioridad del índice.
+function usefulOutlineTitle (title) {
+  const value = String(title ?? '').trim()
+  if (!value) return false
+  if (/^(?:sin\s*t[ií]tulo|untitled)\s*\d*/iu.test(value)) return false
+  return !/\.pdf(?:\s|\(|$)/iu.test(value)
 }
 
 function fromHeadings (blocks) {

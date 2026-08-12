@@ -28,6 +28,16 @@ describe('detectSections', () => {
     expect(roles.has(0)).toBe(false)
   })
 
+  it('acepta una cubierta con créditos al pie cuando tiene tipografía de cartel', () => {
+    const cover = page(
+      line('CÓMO GANAR AMIGOS', { fontSize: 32 }),
+      line('E INFLUIR SOBRE LAS PERSONAS', { fontSize: 26 }),
+      line('DALE CARNEGIE', { fontSize: 24 }),
+      ...Array.from({ length: 8 }, (_, index) => line(`crédito digital ${index}`, { fontSize: 8 })))
+    const roles = detectSections(book(cover), 10)
+    expect(roles.get(0)).toBe('cover')
+  })
+
   it('deja fuera la dedicatoria, que es del autor y se lee', () => {
     // Es corta como una cubierta y va justo detras: solo las separa el orden.
     const roles = detectSections(book(
@@ -50,6 +60,20 @@ describe('detectSections', () => {
     ))
 
     expect(roles.has(2)).toBe(false)
+  })
+
+  it('aparta una ficha legal situada después de una portada gráfica', () => {
+    const graphicCover = { lines: [{ figure: true, rect: { x: 0, y: 0, w: 600, h: 800 } }] }
+    const credits = page(
+      'Nuestra señora de París',
+      'Hugo, Victor Novela',
+      'Se reconocen los derechos morales de Victor Hugo.',
+      'Obra de dominio público. Distribución gratuita.',
+      'Fundación Carlos Slim contacto@pruebat.org')
+    const roles = detectSections(book(graphicCover, credits), 10)
+
+    expect(roles.get(0)).toBe('cover')
+    expect(roles.get(1)).toBe('credits')
   })
 
   it('reconoce un indice por sus puntos guia', () => {
@@ -219,6 +243,16 @@ describe('detectSections', () => {
     expect(roles.get(1)).toBe('toc')
     expect(roles.get(2)).toBe('toc')
     expect(roles.get(3)).toBe('toc')
+  })
+
+  it('sigue un índice numerado aunque no imprima las páginas destino', () => {
+    const roles = detectSections(book(
+      prose(),
+      page({ ...line('Índice'), fontSize: 16 }),
+      page('1. Primer capítulo', '2. Segundo capítulo', '3. Tercer capítulo',
+        '4. Cuarto capítulo', '5. Quinto capítulo', '6. Sexto capítulo')
+    ))
+    expect(roles.get(2)).toBe('toc')
   })
 
   it('corta el indice en cuanto vuelve el texto corrido', () => {

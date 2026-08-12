@@ -16,8 +16,11 @@ const errors = []
 export function attachErrorLog (win) {
   win.webContents.on('console-message', event => {
     const level = ['debug', 'info', 'warning', 'error'][event.level] ?? 'info'
-    if (level === 'error') errors.push(`[error] ${event.message}`)
-    console.log(`[renderer:${level}] ${event.message}`)
+    const source = event.sourceId
+      ? ` (${event.sourceId}${event.lineNumber ? `:${event.lineNumber}` : ''})`
+      : ''
+    if (level === 'error') errors.push(`[error] ${event.message}${source}`)
+    console.log(`[renderer:${level}] ${event.message}${source}`)
   })
   win.webContents.on('did-fail-load', (_e, code, desc, url) => {
     errors.push(`did-fail-load ${code} ${desc} ${url}`)
@@ -59,10 +62,179 @@ const TASKS = {
   layout: layoutTask,
   diagnose: diagnoseTask,
   read: readTask,
+  visual: visualTask,
+  study: studyTask,
+  tts: ttsTask,
   home: homeTask,
   icon: iconTask,
   smoke: smokeTask,
   wipe: wipeTask
+}
+
+/**
+ * Auditoria visual reproducible del lector de novela. Recorre los tres temas
+ * principales y tres anchos de ventana, mide el texto ya compuesto por el
+ * navegador y deja una captura de cada condicion.
+ */
+async function visualTask (win, projectRoot) {
+  const js = expression => win.webContents.executeJavaScript(expression)
+  const view = await poll(win,
+    '["sheet", "reader"].includes(document.body.dataset.view) ? document.body.dataset.view : null',
+    60_000)
+  if (view === 'sheet') await js("document.querySelector('.sheet-start').click()")
+  if (!await poll(win, "document.body.dataset.view === 'reader' || null", 40_000)) return 1
+  if (!await poll(win, "document.querySelector('#content-sharp [data-block]') ? true : null", 40_000)) return 1
+
+  // Una pagina de prosa da una medida mas util que la cubierta. Se usa el
+  // capitulo I si existe, sin depender de offsets particulares del fixture.
+  await js(`(() => {
+    const button = document.getElementById('hud-chapter')
+    if (button?.disabled) return
+    button.click()
+    const chapter = [...document.querySelectorAll('#chapter-menu button')]
+      .find(item => item.textContent.trim() === 'I')
+    chapter?.click()
+  })()`)
+  await wait(500)
+
+  const variants = [
+    { theme: 'dark', width: 1440, height: 900, label: 'oscuro-amplio' },
+    { theme: 'sepia', width: 1024, height: 768, label: 'sepia-medio' },
+    { theme: 'light', width: 700, height: 720, label: 'claro-estrecho' }
+  ]
+  const problems = []
+  const shotDir = path.join(projectRoot, 'test', 'screenshots')
+  await fs.mkdir(shotDir, { recursive: true })
+
+  for (const variant of variants) {
+    win.setSize(variant.width, variant.height)
+    await wait(250)
+    const result = await js(`(async () => {
+      document.body.dataset.theme = ${JSON.stringify(variant.theme)}
+      await new Promise(resolve => setTimeout(resolve, 220))
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      const { buildLineIndex } = await import('/src/reader/lineIndex.js')
+      const content = document.getElementById('content-sharp')
+      const stage = document.getElementById('stage')
+      const hud = document.getElementById('hud')
+      const scrubber = document.querySelector('.scrubber')
+      const contentRect = content.getBoundingClientRect()
+      const hudRect = hud.getBoundingClientRect()
+      const scrubberRect = scrubber.getBoundingClientRect()
+      const style = getComputedStyle(content)
+      const lines = buildLineIndex(content).filter(line => !line.figure)
+      const counts = lines.map(line => Math.max(0, line.end - line.start)).sort((a, b) => a - b)
+      const parseRgb = value => (value.match(/[\\d.]+/g) ?? []).slice(0, 3).map(Number)
+      const luminance = value => parseRgb(value).map(part => part / 255)
+        .map(part => part <= .03928 ? part / 12.92 : ((part + .055) / 1.055) ** 2.4)
+        .reduce((sum, part, index) => sum + part * [.2126, .7152, .0722][index], 0)
+      const foreground = luminance(style.color)
+      const background = luminance(getComputedStyle(document.body).backgroundColor)
+      const contrast = (Math.max(foreground, background) + .05) / (Math.min(foreground, background) + .05)
+      return {
+        viewport: { width: innerWidth, height: innerHeight },
+        content: { width: contentRect.width, left: contentRect.left, right: innerWidth - contentRect.right },
+        fontSize: Number.parseFloat(style.fontSize),
+        leading: Number.parseFloat(style.lineHeight),
+        medianChars: counts[Math.floor(counts.length / 2)] ?? 0,
+        contrast,
+        hudInside: hudRect.left >= 0 && hudRect.right <= innerWidth && hudRect.bottom <= innerHeight,
+        scrubberInside: scrubberRect.left >= 0 && scrubberRect.right <= innerWidth && scrubberRect.bottom <= innerHeight
+      }
+    })()`)
+
+    const image = await win.webContents.capturePage()
+    await fs.writeFile(path.join(shotDir, `visual-${variant.label}.png`), image.toPNG())
+    console.log(`${variant.label}: ${result.viewport.width}x${result.viewport.height}, ` +
+      `columna ${result.content.width.toFixed(0)}px, ${result.medianChars} caracteres/renglon, ` +
+      `interlineado ${(result.leading / result.fontSize).toFixed(2)}, contraste ${result.contrast.toFixed(2)}:1`)
+
+    if (result.content.width > 650 || Math.min(result.content.left, result.content.right) < 36) {
+      problems.push(`${variant.label}: la columna o sus margenes no son comodos`)
+    }
+    if (result.medianChars < 35 || result.medianChars > 80) {
+      problems.push(`${variant.label}: ${result.medianChars} caracteres por renglon`)
+    }
+    if (result.leading / result.fontSize < 1.55 || result.leading / result.fontSize > 2.05) {
+      problems.push(`${variant.label}: interlineado fuera del rango de novela`)
+    }
+    if (result.contrast < 7) problems.push(`${variant.label}: contraste ${result.contrast.toFixed(2)}:1`)
+    if (!result.hudInside || !result.scrubberInside) problems.push(`${variant.label}: controles fuera de la ventana`)
+  }
+
+  if (problems.length) console.log(`PROBLEMAS VISUALES:\n  - ${problems.join('\n  - ')}`)
+  else console.log(`VISUAL OK: capturas en ${shotDir}`)
+  return problems.length ? 1 : 0
+}
+
+/** Sintetiza una frase real con el modelo empaquetado, sin depender del audio. */
+async function ttsTask (win) {
+  const result = await win.webContents.executeJavaScript(`(async () => {
+    const { TtsSession } = await import('/vendor/tts/runtime/piper-tts-web.js')
+    const session = await TtsSession.create({
+      voiceId: 'es_ES-davefx-medium',
+      wasmPaths: {
+        onnxWasm: '/node_modules/onnxruntime-web/dist/',
+        piperData: '/node_modules/@diffusionstudio/piper-wasm/build/piper_phonemize.data',
+        piperWasm: '/node_modules/@diffusionstudio/piper-wasm/build/piper_phonemize.wasm'
+      }
+    })
+    const wav = await session.predict('Muchos años después, el coronel recordaría aquella tarde remota.')
+    return { size: wav.size, type: wav.type }
+  })()`)
+  const ok = result?.size > 10_000 && result.type === 'audio/x-wav'
+  console.log(`${ok ? 'TTS OK' : 'TTS FALLO'}: ${result?.size ?? 0} bytes, ${result?.type ?? 'sin tipo'}`)
+  return ok ? 0 : 1
+}
+
+async function studyTask (win) {
+  const js = expression => win.webContents.executeJavaScript(expression)
+  const view = await poll(win, '["sheet", "reader"].includes(document.body.dataset.view) ? document.body.dataset.view : null', 60_000)
+  if (view === 'sheet') await js("document.querySelector('.sheet-start').click()")
+  if (!await poll(win, "document.body.dataset.view === 'reader' || null", 40_000)) return 1
+  if (!await poll(win, "document.querySelector('#content-sharp [data-block]') ? true : null", 40_000)) return 1
+  await wait(300)
+  const ready = await poll(win, "document.querySelector('.study-panel') ? true : null", 10_000)
+  if (!ready) return 1
+  const result = await js(`(() => {
+    const panel = document.querySelector('.study-panel')
+    panel.querySelector('button').click()
+    const buttons = panel.querySelectorAll('button')
+    buttons[1].click()
+    return panel.querySelector('.study-status').textContent
+  })()`)
+  const search = await js(`(async () => {
+    const original = Number(document.body.dataset.offset)
+    document.getElementById('hud-search').click()
+    const input = document.querySelector('.search-input')
+    input.value = 'ultima'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await new Promise(resolve => setTimeout(resolve, 250))
+    const count = document.querySelectorAll('.search-result').length
+    document.querySelector('.search-result')?.click()
+    await new Promise(resolve => setTimeout(resolve, 100))
+    document.getElementById('hud-back').click()
+    return { count, query: input.value, summary: document.querySelector('.search-summary')?.textContent, original, returned: Number(document.body.dataset.offset) }
+  })()`)
+  const dictionary = await js(`(async () => {
+    document.getElementById('hud-dictionary').click()
+    const input = document.querySelector('.dictionary-head input')
+    input.value = 'maravilla'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await new Promise(resolve => setTimeout(resolve, 250))
+    return document.querySelector('.dictionary-content h3')?.textContent ?? ''
+  })()`)
+  const paged = await js(`(async () => {
+    const panel = document.querySelector('.study-panel')
+    const select = panel.querySelector('select')
+    select.value = 'paged'
+    panel.querySelector('button').click()
+    await new Promise(resolve => setTimeout(resolve, 500))
+    return document.body.dataset.presentation
+  })()`)
+  console.log(`STUDY OK: ${result}; búsqueda ${search.count} (${search.query}: ${search.summary}); diccionario ${dictionary}; presentación ${paged}`)
+  return /guardada/.test(result) && search.count > 0 && search.returned === search.original &&
+    dictionary === 'maravilla' && paged === 'paged' ? 0 : 1
 }
 
 /**
@@ -585,6 +757,50 @@ async function readTask (win, projectRoot) {
 
   await shoot('01-inicio')
 
+  // Las novelas con capitulos romanos tienen una apertura propia. Se visita y
+  // se vuelve para verificarla sin alterar el resto del recorrido.
+  const romanChapter = await js(`(() => {
+    const original = Number(document.body.dataset.offset)
+    document.getElementById('hud-chapter').click()
+    const button = [...document.querySelectorAll('#chapter-menu button')]
+      .find(item => item.textContent.trim() === 'I')
+    if (!button) { document.getElementById('hud-chapter').click(); return null }
+    button.click()
+    return original
+  })()`)
+  if (romanChapter != null) {
+    await wait(500)
+    await shoot('01-capitulo')
+    const opening = await js(`(() => {
+      const heading = document.querySelector('#content-sharp h2[data-heading="ordinal"]')
+      const paragraphs = [...document.querySelectorAll('#content-sharp p:not([data-role])')]
+      const firstStyle = paragraphs[0] ? getComputedStyle(paragraphs[0]) : null
+      const secondStyle = paragraphs[1] ? getComputedStyle(paragraphs[1]) : null
+      return {
+        title: heading?.textContent ?? '',
+        aligned: heading ? getComputedStyle(heading).textAlign : '',
+        kind: document.getElementById('content-sharp').dataset.chapterKind,
+        paragraphStyle: document.getElementById('content-sharp').dataset.paragraphStyle,
+        first: document.querySelector('#content-sharp h2 + p')?.textContent.slice(0, 20) ?? '',
+        firstIndent: Number.parseFloat(firstStyle?.textIndent ?? '0'),
+        secondIndent: Number.parseFloat(secondStyle?.textIndent ?? '0'),
+        secondMargin: Number.parseFloat(secondStyle?.marginBottom ?? '0')
+      }
+    })()`)
+    check(opening.title === 'I' && opening.aligned === 'center' && opening.kind === 'content',
+      'la apertura del capitulo romano no conserva su jerarquia editorial')
+    check(opening.first.startsWith('Muchos años después'),
+      'el capitulo I no empieza en la primera frase de la novela')
+    if (opening.paragraphStyle === 'indent') {
+      check(opening.firstIndent === 0 && opening.secondIndent >= 12 && opening.secondMargin === 0,
+        `la composicion por sangria no se aplico: ${JSON.stringify(opening)}`)
+    }
+    await js(`document.getElementById('hud-back').click()`)
+    await wait(400)
+    check(await js(`Number(document.body.dataset.offset)`) === romanChapter,
+      'volver desde la apertura del capitulo no restauro la dedicatoria')
+  }
+
   // --- Avanzar linea a linea ----------------------------------------------
   const wheel = count => js(`
     (() => {
@@ -622,7 +838,13 @@ async function readTask (win, projectRoot) {
     const { e, f, g, h } = afterWheel.mask
     check(e < f && f <= g && g < h, `el recorte horizontal esta desordenado: ${e}, ${f}, ${g}, ${h}`)
   } else {
-    check(afterWheel.contentY < 0, 'el texto no se desplazo al bajar el foco')
+    if (afterWheel.presentation === 'paged') {
+      check(Math.abs(afterWheel.contentY) < 1,
+        `la página refluida no quedó estable: desplazamiento ${afterWheel.contentY}px`)
+    } else {
+      check(Number.isFinite(afterWheel.contentY) && afterWheel.contentY <= 0,
+        `el desplazamiento del texto no es válido: ${afterWheel.contentY}px`)
+    }
     check(afterWheel.sameText, 'las dos capas no tienen el mismo texto')
     check(afterWheel.blocksSharp === afterWheel.blocksDim, 'las capas tienen distinto numero de bloques')
 
@@ -707,6 +929,16 @@ async function readTask (win, projectRoot) {
   await js(`document.getElementById('hud-settings').click()`)
   await wait(300)
   await setSlider(isPageMode ? 1.6 : 28)
+  const rhythmSetting = await js(`
+    (() => {
+      const section = document.querySelector('[data-settings-section="rhythm"]')
+      const slider = document.getElementById('set-readingTargetWpm')
+      if (!section || !slider) return null
+      slider.value = '60'
+      slider.dispatchEvent(new Event('input', { bubbles: true }))
+      return { open: section.open, min: Number(slider.min), value: Number(slider.value) }
+    })()
+  `)
   await wait(700)
   await shoot('03-ajustes')
 
@@ -716,11 +948,64 @@ async function readTask (win, projectRoot) {
   if (!isPageMode) {
     check(afterResize.fontSize === 28, `el cuerpo no se aplico: ${afterResize.fontSize}px`)
   }
+  check(rhythmSetting?.open && rhythmSetting.min === 40 && rhythmSetting.value === 60,
+    `el ritmo no quedo visible o no acepto 60 ppm: ${JSON.stringify(rhythmSetting)}`)
 
   // Dejarlo como estaba y cerrar el panel.
   await setSlider(isPageMode ? 1 : 20)
   await js(`document.getElementById('hud-settings').click()`)
   await wait(400)
+  const rhythmHud = await js(`
+    (() => {
+      const button = document.getElementById('hud-rhythm')
+      const speed = button.textContent.includes('60 ppm')
+      const previous = button.dataset.paused
+      button.dataset.paused = 'false'
+      const runningIcon = getComputedStyle(button, '::before').content
+      button.dataset.paused = 'true'
+      const pausedIcon = getComputedStyle(button, '::before').content
+      button.dataset.paused = previous
+      return { speed, runningIcon, pausedIcon }
+    })()
+  `)
+  check(rhythmHud.speed, 'la velocidad elegida no llego al control del HUD')
+  check(rhythmHud.runningIcon.includes('⏸') && rhythmHud.pausedIcon.includes('▶'),
+    `faltan los simbolos de pausa/reanudar: ${JSON.stringify(rhythmHud)}`)
+
+  // --- Panel lateral unico -------------------------------------------------
+  // Buscar, Notas y Ajustes comparten el mismo lugar. Cambiar de herramienta
+  // debe desmontar la anterior, y la X ha de devolver todo el ancho al lector.
+  await js(`document.getElementById('hud-search').click()`)
+  await wait(250)
+  await shoot('08-busqueda')
+  const panelFlow = await js(`
+    (() => {
+      const searchOnly = document.querySelectorAll('.panel:not([hidden])').length === 1 &&
+        !document.querySelector('.search-panel').hidden
+      const searchClose = document.querySelector('.search-panel .panel-close')
+      const closeRect = searchClose.getBoundingClientRect()
+      const searchCloseVisible = getComputedStyle(searchClose).display !== 'none' &&
+        closeRect.width > 0 && closeRect.right <= innerWidth
+      searchClose.click()
+      const searchClosed = document.querySelectorAll('.panel:not([hidden])').length === 0
+      document.getElementById('hud-search').click()
+      document.getElementById('hud-notes').click()
+      const notesOnly = document.querySelectorAll('.panel:not([hidden])').length === 1 &&
+        !document.querySelector('.notes-panel').hidden && document.querySelector('.search-panel').hidden
+      document.querySelector('.notes-panel .panel-close').click()
+      return {
+        searchOnly, searchCloseVisible, searchClosed,
+        notesOnly,
+        closed: document.querySelectorAll('.panel:not([hidden])').length === 0 &&
+          !document.body.classList.contains('has-panel')
+      }
+    })()
+  `)
+  check(panelFlow.searchOnly, 'Buscar no quedo como unico panel visible')
+  check(panelFlow.searchCloseVisible && panelFlow.searchClosed,
+    'la X de Buscar no estuvo visible o no cerro el panel')
+  check(panelFlow.notesOnly, 'Notas no sustituyo limpiamente al panel Buscar')
+  check(panelFlow.closed, 'la X del panel no devolvio el lector a su estado cerrado')
 
   // --- Indice de capitulos ---------------------------------------------------
   // El titulo del HUD despliega la lista con el capitulo actual senalado y
@@ -736,6 +1021,7 @@ async function readTask (win, projectRoot) {
         open: !menu.hidden,
         expanded: btn.getAttribute('aria-expanded'),
         items: menu.querySelectorAll('button').length,
+        chapters: menu.querySelectorAll('button:not(.is-auxiliary)').length,
         current: menu.querySelector('.is-on')?.textContent ?? null
       }
     })()
@@ -743,7 +1029,7 @@ async function readTask (win, projectRoot) {
   if (index.skipped) {
     console.log('\nINDICE: un solo capitulo, sin menu')
   } else {
-    console.log(`\nINDICE: ${index.items} capitulos, leyendo "${index.current}"`)
+    console.log(`\nINDICE: ${index.chapters} capitulos, ${index.items} secciones, leyendo "${index.current}"`)
     check(index.open && index.expanded === 'true', 'el indice no se abrio desde el HUD')
     check(index.items >= 2, 'el indice no lista los capitulos')
     check(Boolean(index.current), 'el indice no senala el capitulo actual')
@@ -830,6 +1116,25 @@ async function readTask (win, projectRoot) {
   // --- Marcar la linea actual ---------------------------------------------
   await js(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }))`)
   await wait(300)
+  const markedOnce = await js(`(() => ({
+    marked: document.getElementById('hud-bookmark').getAttribute('aria-pressed'),
+    label: document.getElementById('hud-bookmark').textContent,
+    notes: document.querySelectorAll('.note').length
+  }))()`)
+  check(markedOnce.marked === 'true' && /Quitar/.test(markedOnce.label),
+    'Marcar no comunico que la linea podia desmarcarse')
+  await js(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }))`)
+  await wait(300)
+  const unmarked = await js(`(() => ({
+    marked: document.getElementById('hud-bookmark').getAttribute('aria-pressed'),
+    label: document.getElementById('hud-bookmark').textContent,
+    notes: document.querySelectorAll('.note').length
+  }))()`)
+  check(unmarked.marked === 'false' && unmarked.label.trim() === 'Marcar' && unmarked.notes === 0,
+    'la misma accion no quito la marca de la linea actual')
+  // Se vuelve a dejar una marca para comprobar su panel y su persistencia.
+  await js(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }))`)
+  await wait(300)
   await js(`document.getElementById('hud-notes').click()`)
   await wait(500)
   await shoot('04-notas')
@@ -839,13 +1144,14 @@ async function readTask (win, projectRoot) {
       count: document.querySelectorAll('.panel .note').length,
       quote: document.querySelector('.panel .note-quote')?.textContent ?? '',
       marked: document.getElementById('hud-bookmark').classList.contains('is-on'),
-      // Cualquier bloque puede llevar marcador, tambien una figura.
-      bar: document.querySelectorAll('#content-sharp [data-marked]').length
+      markers: document.querySelectorAll('#content-sharp .reader-bookmark-marker').length,
+      markerHeight: document.querySelector('#content-sharp .reader-bookmark-marker')?.getBoundingClientRect().height ?? 0
     }))()
   `)
   check(notes.count === 1, `deberia haber una nota, hay ${notes.count}`)
   check(notes.marked, 'el boton de marcar no quedo activo')
-  check(isPageMode || notes.bar === 1, 'el parrafo marcado no se senala al margen')
+  check(isPageMode || (notes.markers === 1 && notes.markerHeight <= 10),
+    'el marcador no corresponde a un unico renglon')
 
   // --- Resaltar una seleccion ----------------------------------------------
   // Solo sobre el texto re-maquetado: en la vista de pagina no hay seleccion.
@@ -978,6 +1284,7 @@ function readState (js) {
         chapter: document.getElementById('hud-chapter').textContent,
         progress: document.getElementById('hud-progress').textContent,
         mode: document.body.dataset.mode,
+        presentation: document.body.dataset.presentation,
         image: (() => {
           const img = content.querySelector('img')
           if (!img) return null

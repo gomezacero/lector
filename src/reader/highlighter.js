@@ -15,17 +15,19 @@ const COLORS = [
  * @param {HTMLElement} wiring.container donde vive el selector (posicion relativa)
  * @param {HTMLElement} wiring.content la capa nitida con los bloques
  * @param {Function} wiring.onHighlight ({startBlock, startChar, endBlock, endChar, quote, color})
+ * @param {Function=} wiring.onLookup ({word,rect})
  */
-export function attachHighlighter ({ container, content, onHighlight }) {
+export function attachHighlighter ({ container, content, onHighlight, onLookup }) {
   let pending = null
 
-  const pop = h('div', { class: 'hl-pop', hidden: true, role: 'toolbar', 'aria-label': 'Resaltar la selección' },
+  const pop = h('div', { class: 'hl-pop', hidden: true, role: 'toolbar', 'aria-label': 'Acciones de selección' },
     COLORS.map(color => h('button', {
       class: `hl-dot is-${color.id}`,
       title: `Resaltar en ${color.label}`,
       'aria-label': `Resaltar en ${color.label}`,
       onclick: () => pick(color.id)
-    }))
+    })),
+    h('button', { class: 'hl-define', text: 'Definir', onclick: () => lookup() })
   )
   container.append(pop)
 
@@ -77,6 +79,25 @@ export function attachHighlighter ({ container, content, onHighlight }) {
     window.getSelection()?.removeAllRanges()
     hide()
   }
+
+  function lookup () {
+    if (!pending) return hide()
+    const word = pending.quote.trim()
+    const rect = pop.getBoundingClientRect()
+    hide()
+    if (/^[\p{L}'’-]{1,200}$/u.test(word)) onLookup?.({ word, rect })
+  }
+
+  content.addEventListener('dblclick', () => {
+    setTimeout(() => {
+      const selection = window.getSelection()
+      const word = selection?.toString().trim() ?? ''
+      if (!/^[\p{L}'’-]{1,200}$/u.test(word) || !selection.rangeCount) return
+      const rect = selection.getRangeAt(0).getBoundingClientRect()
+      hide()
+      onLookup?.({ word, rect })
+    }, 0)
+  })
 
   document.addEventListener('mouseup', onMouseUp)
   document.addEventListener('mousedown', event => {

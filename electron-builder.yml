@@ -1,6 +1,6 @@
 appId: com.lector.app
 productName: Lector
-copyright: ''
+copyright: Copyright © 2026 gomezacero and Lector contributors
 
 directories:
   output: dist
@@ -14,6 +14,10 @@ files:
   - electron/**/*
   - src/**/*
   - package.json
+  - LICENSE
+  - PRIVACY.md
+  - CODE_SIGNING_POLICY.md
+  - THIRD_PARTY_NOTICES.md
   # Los .map solo sirven para depurar y pesan mas que el propio codigo.
   - '!**/*.map'
   # Canvas nativo de Skia: entra como dependencia de pdf.js para usarlo desde
@@ -37,10 +41,12 @@ files:
   - '!node_modules/tesseract.js-core/tesseract-core-simd.*'
   - '!node_modules/tesseract.js-core/tesseract-core-relaxedsimd.*'
   # El modelo de layout NO se empaqueta todavia: el ONNX disponible es AGPL y
-  # esta aplicacion es MIT. La integracion se enciende sola cuando el modelo
-  # esta presente; sin el, las heuristicas mandan como siempre.
+  # no forma parte de la distribucion oficial. La integracion se enciende sola
+  # cuando el modelo esta presente; sin el, las heuristicas mandan como siempre. onnxruntime se
+  # conserva porque tambien ejecuta la voz espanola offline incluida.
   - '!vendor/layout/**'
-  - '!node_modules/onnxruntime-web/**'
+  - '!node_modules/onnxruntime-web/**/*.map'
+  - '!node_modules/onnxruntime-web/{docs,lib,types}/**'
 
 # La interfaz es solo en espanol: los ~100 locales de Chromium eran 47 MB de
 # paquete. en-US se queda porque es el de reserva de Chromium.
@@ -56,3 +62,15 @@ portable:
   # Un unico ejecutable, sin instalacion ni accesos directos.
   artifactName: Lector.exe
   requestExecutionLevel: user
+
+mac:
+  target:
+    - dmg
+  artifactName: Lector-${version}-${arch}.${ext}
+  category: public.app-category.books
+
+linux:
+  target:
+    - AppImage
+  artifactName: Lector-${version}-${arch}.${ext}
+  category: Office

@@ -93,3 +93,19 @@ body[data-theme='sepia'] {
   --read-fg: #362d24;
   --shadow: 0 12px 32px rgba(90, 70, 40, 0.18);
 }
+
+body[data-theme='contrast'] {
+  --bg: #000000;
+  --surface: #080808;
+  --surface-hover: #1a1a1a;
+  --surface-raised: #000000;
+  --border: #777777;
+  --border-strong: #ffffff;
+  --fg: #ffffff;
+  --fg-muted: #e6e6e6;
+  --accent: #ffe500;
+  --accent-hover: #fff06a;
+  --accent-fg: #000000;
+  --read-fg: #ffffff;
+  --shadow: 0 0 0 2px #ffffff;
+}

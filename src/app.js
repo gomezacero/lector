@@ -1,8 +1,7 @@
 // Arranque y cableado. Aqui no vive ninguna regla propia: solo se conectan la
 // biblioteca, el lector, los ajustes y las notas, y se decide que se ve.
 
-import { buildBook, CACHE_VERSION } from '/src/pdf/pipeline.js'
-import { buildBookInWorker } from '/src/pdf/ingestClient.js'
+import { CACHE_VERSION } from '/src/pdf/pipeline.js'
 import { migrateBook, validateBook, reanchor, textOf } from '/src/pdf/migrate.js'
 import { blockAtOffset, percentAt, chapterAtOffset } from '/src/reader/progress.js'
 import { createReader } from '/src/reader/reader.js'
@@ -10,6 +9,7 @@ import { createRegionReader } from '/src/reader/regionReader.js'
 import { attachNavigation } from '/src/reader/navigation.js'
 import { createScrubber } from '/src/reader/scrubber.js'
 import { createPace } from '/src/reader/pace.js'
+import { createReadingRhythm } from '/src/reader/readingRhythm.js'
 import { attachHighlighter } from '/src/reader/highlighter.js'
 import { exportNotesMarkdown } from '/src/notes/exportNotes.js'
 import { createSettings } from '/src/settings/settings.js'
@@ -25,10 +25,27 @@ import { createBookSheet } from '/src/library/bookSheet.js'
 import { makeCover } from '/src/pdf/pageRender.js'
 import { createOcrRun } from '/src/ocr/ocrRun.js'
 import { createLayoutRun, layoutAvailable } from '/src/layout/layoutRun.js'
+import { createPdfIngestor } from '/src/document/pdfIngestor.js'
+import { assertReaderController } from '/src/reader/readerContract.js'
+import { createBackgroundTaskCoordinator } from '/src/app/backgroundTaskCoordinator.js'
+import { createBookSessionController } from '/src/app/bookSessionController.js'
+import { createAppShellController } from '/src/app/appShellController.js'
+import { applyShortcutLabels } from '/src/platform/shortcuts.js'
+import { createBookSearchTask } from '/src/search/bookSearch.js'
+import { createSearchPanel } from '/src/search/searchPanel.js'
+import { createCommandRegistry } from '/src/input/commands.js'
+import { createDictionaryProvider } from '/src/dictionary/dictionaryProvider.js'
+import { createDictionaryPopover } from '/src/dictionary/dictionaryPopover.js'
+import { createSpeechController } from '/src/speech/speechController.js'
+import { createOfflineSpeechPort } from '/src/speech/offlineSpeechPort.js'
+import { createGamepadAdapter } from '/src/input/gamepad.js'
+import { createWellbeingController } from '/src/wellbeing/wellbeingController.js'
+import { createBreakPrompt } from '/src/wellbeing/breakPrompt.js'
+import { createStudyRecorder } from '/src/study/studyRecorder.js'
+import { createStudyPanel } from '/src/study/studyPanel.js'
+import { featureEnabled } from '/src/app/featureFlags.js'
 
 const $ = id => document.getElementById(id)
-const HUD_IDLE_MS = 2200
-
 const el = {
   body: document.body,
   stage: $('stage'),
@@ -41,6 +58,11 @@ const el = {
   hudPage: $('hud-page'),
   hudProgress: $('hud-progress'),
   hudEta: $('hud-eta'),
+  hudRhythm: $('hud-rhythm'),
+  hudBack: $('hud-back'),
+  hudSpeech: $('hud-speech'),
+  hudSpeechPrev: $('hud-speech-prev'),
+  hudSpeechNext: $('hud-speech-next'),
   chapterMenu: $('chapter-menu'),
   hudMode: $('hud-mode'),
   hudBookmark: $('hud-bookmark'),
@@ -54,19 +76,35 @@ let readers = null // { flow, page }
 let reader = null // el que esta en uso
 let settingsPanel = null
 let notesView = null
+let searchView = null
+let searchIndex = null
+let dictionary = null
+let speech = null
+let speechPort = null
+let gamepad = null
+let wellbeing = null
+let breakPrompt = null
+let studyRecorder = null
+let studyLastOffset = null
 let scrubber = null
 let pace = null
 let savedCpm = 0
+let rhythm = null
+let rhythmAdvance = false
 let notes = null
 let entries = []
-let current = null // entrada de biblioteca del libro abierto
-let openedBook = null // { book, path } del libro en pantalla
-let lastOffset = 0 // ultimo punto de lectura, para conservarlo al cambiar de vista
 let bookSheet = null
-let pendingSave = null // ultima escritura en la biblioteca, para no leerla antes de tiempo
-let hudTimer = null
-let ocrRun = null // reconocimiento en marcha del libro abierto
-let layoutRun = null // analisis de layout en marcha del libro abierto
+let session = null
+const backgroundTasks = createBackgroundTaskCoordinator()
+const commands = createCommandRegistry()
+const shellController = createAppShellController({
+  body: el.body,
+  hud: el.hud,
+  chapterMenu: el.chapterMenu
+})
+const documentIngestor = createPdfIngestor({
+  onWorkerFallback: err => window.lector.log.error(`ingesta sin worker: ${err.message}`)
+})
 
 // --- Avisos y carga --------------------------------------------------------
 
@@ -207,7 +245,7 @@ async function openLoaded (loaded, entry, { sheet = false } = {}) {
     // que re-maquetar ni imagen que hojear. Un escaneado si sigue adelante,
     // en modo pagina.
     if (!readable(book)) {
-      el.body.dataset.view = 'library'
+      shellController.showView('library')
       toast('Este PDF no contiene ni texto ni páginas que mostrar. No se puede leer con esta aplicación.', 7000)
       return
     }
@@ -218,7 +256,7 @@ async function openLoaded (loaded, entry, { sheet = false } = {}) {
       toast(`Ojo: ${book.stats.suspectPages === 1 ? 'una página trae' : `${book.stats.suspectPages} páginas traen`} texto dudoso; si algo se lee raro, prueba la vista de página.`, 6000)
     }
 
-    current = {
+    const nextEntry = {
       id: loaded.id,
       path: loaded.path,
       title: book.title,
@@ -234,11 +272,11 @@ async function openLoaded (loaded, entry, { sheet = false } = {}) {
       reading: known?.reading ?? {},
       missing: false
     }
-    entries = await window.lector.library.upsert(current)
+    entries = await window.lector.library.upsert(nextEntry)
 
-    notes = createNotesStore(loaded.id)
-    await notes.load()
-    openedBook = {
+    const nextNotes = createNotesStore(loaded.id)
+    await nextNotes.load()
+    const nextDocument = {
       book,
       path: loaded.path,
       bytes: loaded.bytes,
@@ -247,21 +285,38 @@ async function openLoaded (loaded, entry, { sheet = false } = {}) {
       layouts: await window.lector.layout.read(loaded.id)
     }
 
+    // Ctrl+O tambien funciona mientras se lee. Antes de sustituir las
+    // referencias de la sesion, vaciamos todo lo que pertenece al libro
+    // anterior; asi una nota o un progreso tardio no viajan al siguiente.
+    if (session.entry) {
+      backgroundTasks.endSession()
+      speech?.stop()
+      if (reader?.isOpen) await reader.close()
+      await Promise.all([session.flush(), notes?.flush?.(), settings.flush()])
+      await window.lector.app.flush()
+    }
+    notes = nextNotes
+    session.open(nextEntry, nextDocument)
+    backgroundTasks.beginSession(loaded.id)
+
 
     // La ficha solo aparece la primera vez: reabrir un libro conocido lleva
     // directo al punto de lectura, que es lo que se quiere casi siempre.
-    if (sheet || !current.readingMode) {
+    if (sheet || !session.entry.readingMode) {
       hideLoading()
-      el.body.dataset.view = 'sheet'
-      bookSheet.render(book, { entry: current, title: current.progress ? 'Seguir leyendo' : 'Empezar a leer' })
+      shellController.showView('sheet')
+      bookSheet.render(book, {
+        entry: session.entry,
+        title: session.entry.progress ? 'Seguir leyendo' : 'Empezar a leer'
+      })
       return
     }
 
     await enterReader()
   } catch (err) {
-    console.error(err)
+    console.error(err?.stack ?? err)
     toast(`No se pudo procesar el PDF: ${err.message}`, 6000)
-    el.body.dataset.view = 'library'
+    shellController.showView('library')
   } finally {
     hideLoading()
   }
@@ -278,9 +333,9 @@ async function openLoaded (loaded, entry, { sheet = false } = {}) {
  * inservibles para quien venga detras.
  */
 async function drawCoverOf (book) {
-  if (!book?.bytes || !current) return
+  if (!book?.bytes || !session?.entry) return
   try {
-    await makeCover(new Uint8Array(book.bytes), current.id)
+    await makeCover(new Uint8Array(book.bytes), session.entry.id)
   } catch (err) {
     console.warn('no se pudo dibujar la portada:', err.message)
   }
@@ -338,13 +393,7 @@ async function loadOrBuild (loaded) {
  * (PDF corrupto) no se reintenta: seria el mismo error otra vez.
  */
 async function ingest (bytes, options) {
-  try {
-    return await buildBookInWorker(bytes, options)
-  } catch (err) {
-    if (err?.name !== 'WorkerUnavailable') throw err
-    window.lector.log.error(`ingesta sin worker: ${err.message}`)
-    return buildBook(bytes, options)
-  }
+  return documentIngestor.ingest(bytes, options)
 }
 
 // Se puede leer si trae texto o, al menos, paginas que ensenar tal cual.
@@ -388,7 +437,7 @@ async function reanchorStored (id, oldBook, book, known) {
       note.char = Math.max(0, note.offset - (book.blocks[note.block]?.start ?? 0))
       if (span != null) note.end = Math.min(note.offset + span, book.chars)
     }
-    await window.lector.notes.write(id, stored)
+    await window.lector.notes.replace(id, stored)
   }
 }
 
@@ -409,11 +458,12 @@ function setOcrChip (text) {
  * sin preguntar, y al terminar el libro se reconstruye sin perder el punto.
  */
 async function maybeStartOcr ({ forced = false } = {}) {
-  const book = openedBook?.book
-  if (!book || ocrRun || !current) return
+  const book = session?.document?.book
+  const entry = session?.entry
+  if (!book || backgroundTasks.has('ocr') || !entry) return
   if (!((book.stats?.scannedPages ?? 0) + (book.stats?.suspectPages ?? 0) > 0)) return
 
-  const stored = await window.lector.ocr.read(current.id)
+  const stored = await window.lector.ocr.read(entry.id)
   // Sin paginas por intentar no hay nada que reconocer: lo ya reconocido lo
   // aplico loadOrBuild al abrir. Arrancar un run vacio acababa en un onDone
   // inmediato que reconstruia el libro (con su aviso) en cada apertura.
@@ -421,12 +471,12 @@ async function maybeStartOcr ({ forced = false } = {}) {
   const resumed = Object.keys(stored?.pages ?? {}).length > 0
 
   if (forced) {
-    if (current.ocrDeclined) {
-      current = { ...current, ocrDeclined: false }
-      entries = await window.lector.library.upsert({ id: current.id, ocrDeclined: false })
+    if (entry.ocrDeclined) {
+      session.patchEntry({ ocrDeclined: false })
+      entries = await window.lector.library.upsert({ id: entry.id, ocrDeclined: false })
     }
   } else {
-    if (current.ocrDeclined) return
+    if (entry.ocrDeclined) return
     if (!resumed) {
       const confirmed = await confirmAction({
         title: '¿Reconocer el texto de este libro?',
@@ -438,59 +488,62 @@ async function maybeStartOcr ({ forced = false } = {}) {
         confirmLabel: 'Reconocer el texto'
       })
       if (!confirmed) {
-        current = { ...current, ocrDeclined: true }
-        entries = await window.lector.library.upsert({ id: current.id, ocrDeclined: true })
+        session.patchEntry({ ocrDeclined: true })
+        entries = await window.lector.library.upsert({ id: entry.id, ocrDeclined: true })
         return
       }
     }
   }
 
-  const id = current.id
-  ocrRun = createOcrRun({
+  const id = entry.id
+  const token = backgroundTasks.token()
+  const ocrRun = createOcrRun({
     id,
     book,
-    bytes: openedBook.bytes,
+    bytes: session.document.bytes,
     onProgress: (done, total) => setOcrChip(`Reconociendo texto… ${done}/${total}`),
-    onDone: () => finishOcr(id),
-    onError: err => {
+    onDone: backgroundTasks.guard(token, () => finishOcr(id)),
+    onError: backgroundTasks.guard(token, err => {
       console.error(err)
-      ocrRun = null
       setOcrChip(null)
       toast(`El reconocimiento falló: ${err.message}`, 6000)
-    }
+    })
   })
   setOcrChip('Reconociendo texto…')
   wakeHud()
-  void ocrRun.start()
+  void backgroundTasks.start('ocr', ocrRun, token)
 }
 
 /** Con todo reconocido, el libro se reconstruye ya con su texto. */
 async function finishOcr (id) {
-  ocrRun = null
   setOcrChip(null)
   // Si el libro ya no esta abierto, no se pierde nada: loadOrBuild aplica el
   // OCR guardado en la proxima apertura.
-  if (!openedBook || current?.id !== id) return
+  if (!session?.document || session.entry?.id !== id) return
 
   showLoading('Aplicando el texto reconocido…')
   try {
-    const previous = openedBook.book
+    const previous = session.document.book
     const ocr = await window.lector.ocr.read(id)
-    const book = await ingest(openedBook.bytes, { ocrItemsByPage: ocr?.pages })
+    const book = await ingest(session.document.bytes, { ocrItemsByPage: ocr?.pages })
     await window.lector.book.writeCache(id, book)
     // El progreso provisional (pagina a pagina) cae en el primer bloque de la
     // misma pagina del texto nuevo; las notas, por su cita o su pagina.
-    await reanchorStored(id, previous, book, current)
+    await reanchorStored(id, previous, book, session.entry)
     await notes.load()
 
-    openedBook.book = book
-    current = { ...current, title: book.title, scanned: isScanned(book) }
+    session.setDocument({ ...session.document, book })
+    session.patchEntry({ title: book.title, scanned: isScanned(book) })
     entries = await window.lector.library.upsert({
-      id, title: current.title, scanned: current.scanned, progress: current.progress
+      id,
+      title: session.entry.title,
+      scanned: session.entry.scanned,
+      progress: session.entry.progress
     })
 
     if (el.body.dataset.view === 'reader') {
-      await applyMode(resolveMode(book, current.readingMode), book, current.progress, openedBook.bytes)
+      await applyMode(resolveMode(book, session.entry.readingMode), book,
+        session.entry.progress, session.document.bytes)
       notesView.render(notes.all, book)
     }
     toast('Texto reconocido: ya puedes leer este libro línea a línea.', 6000)
@@ -508,88 +561,115 @@ async function finishOcr (id) {
  * segundos, no minutos, y el resultado solo mejora las paradas.
  */
 async function maybeStartLayout () {
-  const book = openedBook?.book
-  if (!book || layoutRun || ocrRun || !current) return
+  const book = session?.document?.book
+  if (!book || backgroundTasks.has('layout') || backgroundTasks.has('ocr') || !session.entry) return
 
   const pages = (book.pageRoles ?? [])
     .map((role, page) => role === 'opener' ? page : -1)
     .filter(page => page >= 0)
-    .filter(page => !openedBook.layouts?.pages?.[page])
+    .filter(page => !session.document.layouts?.pages?.[page])
   if (!pages.length) return
   if (!await layoutAvailable()) return
 
-  const id = current.id
-  layoutRun = createLayoutRun({
+  const id = session.entry.id
+  const token = backgroundTasks.token()
+  const layoutRun = createLayoutRun({
     id,
-    bytes: openedBook.bytes,
+    bytes: session.document.bytes,
     pages,
     onProgress: (done, total) => setOcrChip(`Analizando páginas… ${done}/${total}`),
-    onDone: stored => finishLayout(id, stored),
-    onError: err => {
+    onDone: backgroundTasks.guard(token, stored => finishLayout(id, stored)),
+    onError: backgroundTasks.guard(token, err => {
       // El modelo es un extra: si falla, las heuristicas siguen mandando.
       console.warn('layout:', err.message)
-      layoutRun = null
       setOcrChip(null)
-    }
+    })
   })
-  void layoutRun.start()
+  void backgroundTasks.start('layout', layoutRun, token)
 }
 
 /** Con las cajas listas, la vista de pagina reconstruye sus paradas. */
 async function finishLayout (id, stored) {
-  layoutRun = null
   setOcrChip(null)
-  if (!openedBook || current?.id !== id) return
+  if (!session?.document || session.entry?.id !== id) return
 
-  openedBook.layouts = stored
+  session.setDocument({ ...session.document, layouts: stored })
   // Solo la vista de pagina usa las cajas; el flujo no se toca. Se recoloca
   // en el mismo offset: las paradas cambian, el punto de lectura no.
   if (el.body.dataset.view === 'reader' && el.body.dataset.mode === 'page') {
     reader.setLayouts?.(stored)
-    await reader.open(openedBook.book, { offset: lastOffset }, notes, openedBook.bytes)
+    await reader.open(session.document.book, { offset: session.offset }, notes, session.document.bytes)
     reader.refreshStatus()
   }
 }
 
 async function backToLibrary () {
   // Lo reconocido hasta ahora queda guardado y se reanuda al reabrir.
-  ocrRun?.cancel()
-  ocrRun = null
-  layoutRun?.cancel()
-  layoutRun = null
+  backgroundTasks.endSession()
+  speech?.stop()
+  rhythm?.stop()
+  wellbeing?.stop()
   setOcrChip(null)
-  if (reader?.isOpen) reader.close()
+  if (reader?.isOpen) {
+    await reader.close()
+  }
   // El cierre guarda el punto de lectura; sin esperarlo, la estanteria se
   // repinta con los datos de antes y el progreso parece no haberse movido.
-  await pendingSave
+  await Promise.all([session.flush(), notes?.flush?.(), settings.flush()])
+  await window.lector.app.flush()
   // Con el lector ya cerrado, el hilo esta libre para dibujar la portada.
-  await drawCoverOf(openedBook)
-  openedBook = null
+  await drawCoverOf(session.document)
   // Fuera de un libro mandan los ajustes globales otra vez.
   settings.useBook({})
-  showPanel(null)
+  showPanel(null, { persist: false })
   closeChapterMenu()
   scrubber?.setBook(null)
+  searchIndex?.cancel()
+  searchIndex = null
+  dictionary?.close()
   // Un aviso de la lectura no tiene sentido ya en la estanteria.
   el.toast.hidden = true
   clearTimeout(toastTimer)
-  current = null
+  session.clear()
   notes = null
-  el.body.dataset.view = 'library'
+  shellController.showView('library')
   await refreshLibrary()
 }
 
 /** De la ficha al lector, con los ajustes que ese libro tenga guardados. */
 async function enterReader () {
-  const { book, bytes } = openedBook
-  settings.useBook(current.reading)
+  const { book, bytes } = session.document
+  settings.useBook(session.entry.reading)
+  pace?.reset()
+  rhythm?.stop()
+  rhythm?.configure({
+    mode: settings.get('rhythmMode') ?? 'guided',
+    targetWpm: settings.get('readingTargetWpm') ?? 180
+  })
 
   try {
-    el.body.dataset.view = 'reader'
+    shellController.showView('reader')
     // El maquetado necesita que la vista ya este visible para medir bien.
     await nextFrame()
-    await applyMode(resolveMode(book, current.readingMode), book, current.progress, bytes)
+    await applyMode(resolveMode(book, session.entry.readingMode), book, session.entry.progress, bytes)
+    searchIndex?.cancel()
+    searchIndex = null
+    const searchToken = backgroundTasks.token()
+    const searchTask = createBookSearchTask(book, backgroundTasks.guard(searchToken, index => {
+      searchIndex = index
+    }))
+    void backgroundTasks.start('search-index', searchTask, searchToken)
     notesView.render(notes.all, book)
+    const initialStats = settings.get('collectReadingStats')
+      ? await window.lector.stats.read(session.entry.id)
+      : null
+    wellbeing?.start({
+      interval: settings.get('breakInterval'),
+      collect: settings.get('collectReadingStats'),
+      initialStats
+    })
+    const savedPanel = settings.get('lastPanel')
+    if (['settings', 'notes', 'search'].includes(savedPanel)) showPanel(savedPanel, { persist: false })
     wakeHud()
     // Con el lector ya en pantalla: el reconocimiento y el analisis de
     // layout son de fondo.
@@ -599,14 +679,17 @@ async function enterReader () {
     // Sin esto, un fallo al abrir deja la pantalla en blanco sin decir nada.
     console.error(err)
     toast(`No se pudo abrir el libro: ${err.message}`, 6000)
-    el.body.dataset.view = 'library'
+    shellController.showView('library')
   }
 }
 
 // --- Modos de lectura ------------------------------------------------------
 
 async function applyMode (mode, book, progress, bytes) {
-  if (reader?.isOpen) reader.close()
+  if (speech?.isActive) speech.stop()
+  if (reader?.isOpen) {
+    await reader.close()
+  }
 
   // Linea y frase comparten lector: solo cambia por que avanza el foco.
   reader = isFlowMode(mode) ? readers.flow : readers.page
@@ -614,8 +697,11 @@ async function applyMode (mode, book, progress, bytes) {
   el.hudMode.textContent = MODES[mode].label
   el.hudMode.title = `${MODES[mode].hint}. Pulsa o usa V para cambiar de vista.`
 
-  reader.setFocusShape(settings.all)
-  reader.setLayouts?.(openedBook?.layouts ?? null)
+  reader.setFocusSettings(settings.all)
+  const presentation = isFlowMode(mode) ? (settings.get('presentationMode') ?? 'continuous') : 'continuous'
+  el.body.dataset.presentation = presentation
+  reader.setPresentation(presentation)
+  reader.setLayouts?.(session?.document?.layouts ?? null)
   await reader.open(book, progress, notes, bytes, mode === 'sentence' ? 'sentence' : 'line')
   // La primera muestra tras abrir o cambiar de vista no debe cruzar saltos.
   pace?.reset()
@@ -625,7 +711,7 @@ async function applyMode (mode, book, progress, bytes) {
 
 /** Cambia de vista sin perder el punto de lectura. */
 async function switchMode (next) {
-  if (!reader?.isOpen || !openedBook || next === el.body.dataset.mode) return
+  if (!reader?.isOpen || !session?.document || next === el.body.dataset.mode) return
 
   showLoading('Cambiando de vista…')
   try {
@@ -633,7 +719,7 @@ async function switchMode (next) {
     // Los bytes siguen en memoria desde la apertura (openDocument trabaja
     // sobre una copia): releer el archivo y recalcular su hash por cada
     // pulsacion de V eran cientos de ms de disco para nada.
-    await applyMode(next, openedBook.book, { offset: lastOffset }, openedBook.bytes)
+    await applyMode(next, session.document.book, reader.getLocator(), session.document.bytes)
   } finally {
     hideLoading()
   }
@@ -642,7 +728,7 @@ async function switchMode (next) {
 async function toggleMode () {
   // Un escaneado sin OCR no tiene texto que re-maquetar: V no lleva a ninguna
   // parte y conviene decir por que en vez de no hacer nada.
-  if (openedBook?.book?.provisional) {
+  if (session?.document?.book?.provisional) {
     toast('Este libro es un escaneado sin texto reconocido: solo se puede hojear la página original.', 5000)
     return
   }
@@ -660,26 +746,14 @@ async function toggleMode () {
  * por IPC, y arrastrando llegan decenas por segundo). El plazo es el mismo que
  * el de los ajustes globales en settings.js.
  */
-let bookSaveTimer = null
 function saveBookSettings (reading) {
-  if (!current) return
-  current = { ...current, reading, readingMode: reading.readingMode ?? current.readingMode }
-  // Capturado ahora: si el libro se cierra antes de que venza el plazo, se
-  // guarda igualmente lo suyo y no lo del siguiente.
-  const payload = { id: current.id, reading: current.reading, readingMode: current.readingMode }
-  clearTimeout(bookSaveTimer)
-  bookSaveTimer = setTimeout(() => window.lector.library.upsert(payload), 400)
+  session?.scheduleReading(reading)
 }
 
 // --- HUD -------------------------------------------------------------------
 
 function wakeHud () {
-  el.hud.classList.remove('is-idle')
-  clearTimeout(hudTimer)
-  hudTimer = setTimeout(() => {
-    // Con el indice abierto el HUD se queda: es el contexto del menu.
-    if (el.chapterMenu.hidden) el.hud.classList.add('is-idle')
-  }, HUD_IDLE_MS)
+  shellController.wakeHud()
 }
 
 // --- Paneles ---------------------------------------------------------------
@@ -687,32 +761,51 @@ function wakeHud () {
 /**
  * Abre un panel y cierra el otro. Con un panel abierto la columna de texto se
  * aparta para no quedar debajo, asi que el estado tiene que estar centralizado.
- * @param {'settings'|'notes'|null} which null los cierra todos
+ * @param {'settings'|'notes'|'search'|null} which null los cierra todos
  */
-function showPanel (which) {
-  const target = which && !panelIsOpen(which) ? which : null
-
-  settingsPanel[target === 'settings' ? 'open' : 'close']()
-  notesView[target === 'notes' ? 'open' : 'close']()
-  el.body.classList.toggle('has-panel', target !== null)
-  if (target) wakeHud()
+function showPanel (which, { persist = true } = {}) {
+  const active = shellController.showPanel(which)
+  for (const [name, id] of [['settings', 'hud-settings'], ['notes', 'hud-notes'], ['search', 'hud-search']]) {
+    const button = $(id)
+    const selected = active === name
+    button?.classList.toggle('is-on', selected)
+    button?.setAttribute('aria-pressed', String(selected))
+  }
+  // Persistir el estado efectivo, no la opcion solicitada: al pulsar de nuevo
+  // el mismo boton el panel se cierra y no debe reaparecer al abrir el libro.
+  if (persist && session?.entry) settings.update({ lastPanel: active ?? '' })
+  syncRhythmSuspension()
+  return active
 }
 
-const panelIsOpen = which => which === 'settings' ? settingsPanel.isOpen : notesView.isOpen
+const panelIsOpen = which => shellController.panelIsOpen(which)
 
 function onStatus (status) {
   el.hudChapter.textContent = status.chapter
-  el.hudChapter.disabled = (openedBook?.book?.chapters?.length ?? 0) < 2
+  el.hudChapter.disabled = (session?.document?.book?.chapters?.length ?? 0) < 2
   el.hudPage.textContent = status.page ? `p. ${status.page}` : ''
   el.hudPage.hidden = !status.page
   el.hudProgress.textContent = percent(status.percent)
+  el.hudProgress.hidden = settings?.get('showProgress') === false
+  el.hudBack.hidden = !session?.canReturn
+  searchView?.refresh()
   updateEta(status)
+  updateRhythm(status)
+  if (settings?.get('showEta') === false) el.hudEta.hidden = true
   el.hudBookmark.classList.toggle('is-on', status.marked)
   el.hudBookmark.setAttribute('aria-pressed', String(Boolean(status.marked)))
-  lastOffset = status.offset
+  el.hudBookmark.textContent = status.marked ? 'Quitar marca' : 'Marcar'
+  el.hudBookmark.title = status.marked
+    ? 'Quitar la marca de esta línea (M)'
+    : 'Marcar esta línea (M)'
+  session?.setOffset(status.offset)
   scrubber?.setOffset(status.offset)
   // El punto de lectura exacto, para poder comprobarlo desde fuera.
   el.body.dataset.offset = String(status.offset)
+  wellbeing?.activity()
+  wellbeing?.boundary()
+  if (studyRecorder?.active && studyLastOffset != null && status.offset < studyLastOffset) studyRecorder.regression()
+  studyLastOffset = status.offset
 }
 
 /**
@@ -721,11 +814,11 @@ function onStatus (status) {
  * guarda con los ajustes para no empezar de cero en la proxima sesion.
  */
 function updateEta (status) {
-  const book = openedBook?.book
+  const book = session?.document?.book
   el.hudEta.hidden = true
   if (!book || book.provisional || status.chapterIndex == null) return
 
-  pace?.record(status.offset, Date.now())
+  if (!rhythmAdvance) pace?.record(status.offset, Date.now())
 
   const chapter = book.chapters[status.chapterIndex]
   const end = chapter ? (book.blocks[chapter.end]?.start ?? book.chars) : book.chars
@@ -744,31 +837,76 @@ function updateEta (status) {
   }
 }
 
+function updateRhythm (status) {
+  const excerpt = reader?.getCurrentExcerpt?.()
+  const book = session?.document?.book
+  if (!excerpt?.text || !book) return rhythm?.stop()
+  const block = book.blocks[excerpt.block]
+  rhythm?.enter({
+    key: `${status.offset}:${excerpt.block}:${excerpt.char}`,
+    text: excerpt.text,
+    heading: block?.type === 'heading'
+  })
+}
+
+function syncRhythmSuspension () {
+  if (!rhythm) return
+  const panelOpen = Boolean(settingsPanel?.isOpen || notesView?.isOpen || searchView?.isOpen)
+  rhythm.setSuspended(panelOpen || document.hidden || !document.hasFocus() || Boolean(speech?.isActive))
+}
+
 // --- Indice de capitulos -----------------------------------------------------
 
 /** Despliega la lista de capitulos sobre el HUD; el actual, senalado. */
 function toggleChapterMenu () {
   if (!el.chapterMenu.hidden) return closeChapterMenu()
 
-  const book = openedBook?.book
+  const book = session?.document?.book
   if (!book || book.chapters.length < 2) return
 
-  const current = chapterAtOffset(book, lastOffset)
-  el.chapterMenu.replaceChildren(...book.chapters.map((chapter, i) =>
-    h('button', {
-      class: i === current ? 'is-on' : '',
+  const current = chapterAtOffset(book, session.offset)
+  const items = []
+  let lastPart = null
+  book.chapters.forEach((chapter, i) => {
+    if (chapter.part && chapter.part !== lastPart) {
+      items.push(h('div', { class: 'chapter-part', role: 'presentation', text: chapter.part }))
+      lastPart = chapter.part
+    }
+    items.push(h('button', {
+      class: [i === current ? 'is-on' : '', chapter.kind ? 'is-auxiliary' : '']
+        .filter(Boolean)
+        .join(' '),
+      dataset: { kind: chapter.kind ?? 'chapter' },
       role: 'menuitem',
       text: chapter.title,
       onclick: () => {
         closeChapterMenu()
-        reader.goToOffset(book.blocks[chapter.start]?.start ?? 0)
+        navigateExplicit({ offset: book.blocks[chapter.start]?.start ?? 0 }, 'chapter')
         wakeHud()
       }
-    })
-  ))
+    }))
+  })
+  el.chapterMenu.replaceChildren(...items)
   el.chapterMenu.hidden = false
   el.hudChapter.setAttribute('aria-expanded', 'true')
   el.chapterMenu.querySelector('.is-on')?.scrollIntoView({ block: 'center' })
+  wakeHud()
+}
+
+function navigateExplicit (locator, origin) {
+  if (!reader?.isOpen) return
+  session.rememberReturnPoint(reader.getLocator(), origin)
+  reader.goToLocator(locator)
+  el.hudBack.hidden = !session.canReturn
+  searchView?.refresh()
+}
+
+function returnToPreviousLocator () {
+  const locator = session?.takeReturnPoint()
+  if (!locator || !reader?.isOpen) return
+  reader.goToLocator(locator)
+  el.hudBack.hidden = !session.canReturn
+  searchView?.refresh()
   wakeHud()
 }
 
@@ -780,21 +918,21 @@ function closeChapterMenu () {
 // --- Marcadores ------------------------------------------------------------
 
 function toggleBookmark () {
-  const line = reader.currentLine()
+  const line = reader.getCurrentExcerpt()
   if (!line || !notes) return
 
   // El HUD dice "marcado" mirando el ancla exacta (tras saltar a una nota
   // puede caer a mitad de linea), mientras la linea empieza en otro offset:
   // se miran los dos, o M crearia un duplicado de un marcador que ya se
   // ensena como puesto.
-  const existing = notes.find(line.offset) ?? notes.find(lastOffset)
+  const existing = notes.findBookmark(line) ?? notes.findBookmark(session.offset)
   if (existing) {
     notes.remove(existing.id)
-    reader.markBlock(existing.block, notes.markedBlocks.has(existing.block))
+    reader.refreshBookmarks?.()
     toast('Marcador quitado')
   } else {
     notes.add({ offset: line.offset, block: line.block, char: line.char, quote: line.context })
-    reader.markBlock(line.block, notes.markedBlocks.has(line.block))
+    reader.refreshBookmarks?.()
     toast('Línea marcada')
   }
 
@@ -812,7 +950,7 @@ async function exportNotes () {
   const markdown = exportNotesMarkdown(book, notes.all)
   if (!markdown) return
 
-  const name = `${(current?.title ?? 'notas').replace(/[\\/:*?"<>|]/g, '')} — notas.md`
+  const name = `${(session?.entry?.title ?? 'notas').replace(/[\\/:*?"<>|]/g, '')} — notas.md`
   const saved = await window.lector.notes.export(name, markdown)
   if (saved) toast(`Notas guardadas en ${saved}`, 6000)
 }
@@ -822,6 +960,11 @@ async function exportNotes () {
 const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => resolve()))
 
 async function start () {
+  session = createBookSessionController({ library: window.lector.library })
+  $('hud-search').hidden = !featureEnabled('search')
+  $('hud-dictionary').hidden = !featureEnabled('dictionary')
+  el.hudSpeech.hidden = !featureEnabled('speech')
+  applyShortcutLabels()
   // Arrastrar un deslizador de cuerpo o ancho dispara decenas de cambios por
   // segundo. El CSS ya se aplico (settings.apply), asi que la pantalla responde
   // al momento; lo que se agrupa es la re-medida de lineas, que es lo caro.
@@ -832,18 +975,106 @@ async function start () {
       clearTimeout(relayoutTimer)
       relayoutTimer = setTimeout(() => reader?.relayout(), 120)
     },
-    onChange: next => reader?.setFocusShape(next),
+    onChange: next => {
+      reader?.setFocusSettings(next)
+      rhythm?.configure({ mode: next.rhythmMode, targetWpm: next.readingTargetWpm })
+      gamepad?.setEnabled(next.gamepadEnabled)
+      gamepad?.setMapping({
+        next: next.gamepadNextButton, previous: next.gamepadPreviousButton,
+        pageNext: next.gamepadPageNextButton, pagePrevious: next.gamepadPagePreviousButton
+      })
+      if (el.hudProgress) el.hudProgress.hidden = next.showProgress === false
+      if (next.showEta === false && el.hudEta) el.hudEta.hidden = true
+      wellbeing?.configure({ interval: next.breakInterval, collect: next.collectReadingStats })
+    },
     onBookChange: saveBookSettings
   })
 
   // El ritmo aprendido en otras sesiones es el punto de partida.
   savedCpm = settings.get('paceCpm') ?? 0
   pace = createPace(savedCpm)
+  rhythm = createReadingRhythm({
+    onProgress: state => {
+      el.hudRhythm.hidden = !state.visible
+      if (!state.visible) return
+      el.hudRhythm.style.setProperty('--rhythm-progress', `${Math.round(state.progress * 100)}%`)
+      el.hudRhythm.dataset.paused = String(state.paused)
+      // La velocidad permanece visible incluso al pausar o abrir Ajustes: así
+      // el lector puede comprobar que el deslizador sí se aplicó.
+      el.hudRhythm.textContent = `${Math.round(state.wpm)} ppm`
+      const action = state.paused ? 'Reanudar' : 'Pausar'
+      el.hudRhythm.title = `${action} el ritmo · unidad estimada a ${Math.round(state.wpm)} palabras por minuto`
+      el.hudRhythm.setAttribute('aria-label', `${action} la guía de ritmo`)
+    },
+    onAdvance: () => {
+      if (!reader?.isOpen) return
+      rhythmAdvance = true
+      try { reader.move(1) } finally { rhythmAdvance = false }
+      wakeHud()
+    }
+  })
+  rhythm.configure({
+    mode: settings.get('rhythmMode') ?? 'guided',
+    targetWpm: settings.get('readingTargetWpm') ?? 180
+  })
+  if (settings.get('fullscreen')) await window.lector.app.setFullscreen(true)
+  window.lector.onFullscreen(value => settings.update({ fullscreen: value }))
+  speechPort = createOfflineSpeechPort()
+  speech = createSpeechController({
+    port: speechPort,
+    onLocator: locator => reader?.goToLocator(locator, { animate: false }),
+    onState: ({ state, error }) => {
+      const active = state !== 'idle'
+      el.hudSpeech.textContent = state === 'speaking' ? 'Pausar' : state === 'paused' ? 'Continuar' : 'Escuchar'
+      el.hudSpeech.classList.toggle('is-on', active)
+      el.hudSpeechPrev.hidden = !active
+      el.hudSpeechNext.hidden = !active
+      reader?.setSpeechActive?.(active)
+      syncRhythmSuspension()
+      if (error) toast(error.message, 5000)
+    }
+  })
+  breakPrompt = createBreakPrompt({
+    onPause: milliseconds => wellbeing.pauseFor(milliseconds),
+    onPostpone: () => wellbeing.postpone(5),
+    onDisable: () => settings.update({ breakInterval: 0 })
+  })
+  wellbeing = createWellbeingController({
+    onBreak: () => {
+      speech?.pause()
+      breakPrompt.open()
+    },
+    onStats: data => {
+      if (!settings.get('collectReadingStats') || !session?.entry) return
+      void window.lector.stats.write(session.entry.id, data)
+    }
+  })
+  if (window.lector.devStudy) {
+    studyRecorder = createStudyRecorder()
+    createStudyPanel({
+      recorder: studyRecorder,
+      onCondition: condition => {
+        const mode = condition === 'sentence' ? 'sentence' : 'flow'
+        const presentation = condition === 'paged' ? 'paged' : 'continuous'
+        settings.update({
+          focusEnabled: condition !== 'full',
+          readingMode: mode,
+          presentationMode: presentation
+        })
+        void switchMode(mode).then(() => {
+          el.body.dataset.presentation = presentation
+          reader?.setPresentation(presentation)
+        })
+        studyLastOffset = reader?.getLocator?.().offset ?? null
+      },
+      onExport: sessions => window.lector.study.export({ version: 1, sessions })
+    })
+  }
 
   bookSheet = createBookSheet({
     onStart: async mode => {
-      current = { ...current, readingMode: mode }
-      saveBookSettings({ ...current.reading, readingMode: mode })
+      session.patchEntry({ readingMode: mode })
+      saveBookSettings({ ...session.entry.reading, readingMode: mode })
       entries = await window.lector.library.list()
       await enterReader()
     },
@@ -859,37 +1090,56 @@ async function start () {
     contentDim: el.contentDim,
     onStatus,
     onSave: progress => {
-      if (!current) return
-      current = { ...current, progress }
-      pendingSave = window.lector.library.upsert({
-        id: current.id, progress, lastOpenedAt: current.lastOpenedAt
-      })
+      if (!session.entry) return
+      return session.saveProgress(progress)
     }
   }
-  readers = { flow: createReader(wiring), page: createRegionReader(wiring) }
+  readers = {
+    flow: assertReaderController(createReader(wiring)),
+    page: assertReaderController(createRegionReader(wiring))
+  }
   reader = readers.flow
+  gamepad = createGamepadAdapter({
+    commands,
+    mapping: {
+      next: settings.get('gamepadNextButton') ?? 0,
+      previous: settings.get('gamepadPreviousButton') ?? 1,
+      pageNext: settings.get('gamepadPageNextButton') ?? 5,
+      pagePrevious: settings.get('gamepadPagePreviousButton') ?? 4
+    }
+  })
 
   settingsPanel = createSettingsPanel({
     settings,
     currentMode: () => el.body.dataset.mode ?? 'flow',
-    onReadingMode: choice => switchMode(resolveMode(openedBook?.book, choice)),
+    onReadingMode: choice => switchMode(resolveMode(session?.document?.book, choice)),
+    onPresentation: choice => {
+      el.body.dataset.presentation = choice
+      reader?.setPresentation(choice)
+    },
     onClose: () => showPanel(null),
     // El boton de OCR: visible mientras el libro tenga paginas que reconocer
     // y no haya ya una pasada en marcha.
     canRecognize: () => {
-      const stats = openedBook?.book?.stats
-      return Boolean(stats && !ocrRun &&
+      const stats = session?.document?.book?.stats
+      return Boolean(stats && !backgroundTasks.has('ocr') &&
         (stats.scannedPages ?? 0) + (stats.suspectPages ?? 0) > 0)
     },
-    onRecognize: () => { showPanel(null); void maybeStartOcr({ forced: true }) }
+    onRecognize: () => { showPanel(null); void maybeStartOcr({ forced: true }) },
+    speechVoices: () => speechPort.voices(),
+    onClearVocabulary: () => session?.entry && window.lector.vocabulary.clear(session.entry.id),
+    onClearStats: () => {
+      wellbeing?.resetStats()
+      return session?.entry && window.lector.stats.clear(session.entry.id)
+    }
   })
   notesView = createNotesView({
     onClose: () => showPanel(null),
-    onGo: note => { reader.goToOffset(note.offset); wakeHud() },
+    onGo: note => { navigateExplicit(note, 'note'); wakeHud() },
     onDelete: id => {
       const note = notes.all.find(n => n.id === id)
       notes.remove(id)
-      if (note) reader.markBlock(note.block, notes.markedBlocks.has(note.block))
+      if (note?.kind !== 'highlight') reader.refreshBookmarks?.()
       reader.refreshHighlights?.()
       reader.refreshStatus()
       notesView.render(notes.all, reader.book)
@@ -897,13 +1147,43 @@ async function start () {
     onEdit: (id, text) => notes.setText(id, text),
     onExport: exportNotes
   })
+  searchView = createSearchPanel({
+    onClose: () => showPanel(null),
+    canBack: () => Boolean(session?.canReturn),
+    onBack: returnToPreviousLocator,
+    onSearch: query => {
+      const book = session?.document?.book
+      return (searchIndex?.search(query) ?? []).map(result => ({
+        ...result,
+        chapterTitle: book?.chapters?.[result.chapter]?.title
+      }))
+    },
+    onGo: result => { navigateExplicit(result.locator, 'search'); wakeHud() }
+  })
+  const dictionaryProvider = createDictionaryProvider()
+  dictionary = createDictionaryPopover({
+    provider: dictionaryProvider,
+    preferredLanguage: () => navigator.language?.toLowerCase().startsWith('en') ? 'en' : 'es',
+    onRemember: (entry, word) => {
+      if (!settings.get('vocabularyHistory') || !session?.entry) return
+      void window.lector.vocabulary.add(session.entry.id, {
+        word,
+        lemma: entry.lemma,
+        language: entry.language,
+        lookedUpAt: Date.now(),
+        locator: reader.getLocator()
+      })
+    }
+  })
+  shellController.registerPanels(settingsPanel, notesView, searchView)
 
   // Seleccionar texto ofrece resaltarlo con un color.
   attachHighlighter({
     container: $('view-reader'),
     content: el.contentSharp,
+    onLookup: ({ word, rect }) => dictionary.lookup(word, rect),
     onHighlight: ({ startBlock, startChar, endBlock, endChar, quote, color }) => {
-      const book = openedBook?.book
+      const book = session?.document?.book
       if (!book || !notes) return
       const start = (book.blocks[startBlock]?.start ?? 0) + startChar
       const end = (book.blocks[endBlock]?.start ?? 0) + endChar
@@ -916,26 +1196,28 @@ async function start () {
     }
   })
   scrubber = createScrubber({
-    onGo: offset => { reader.goToOffset(offset); wakeHud() }
+    onGo: offset => { reader.goToLocator({ offset }); wakeHud() }
   })
   scrubber.setBook(null)
-  $('view-reader').append(scrubber.element, settingsPanel.element, notesView.element)
+  $('view-reader').append(scrubber.element, settingsPanel.element, notesView.element, searchView.element)
 
   attachNavigation(el.stage, {
-    move: delta => { reader.move(delta); wakeHud() },
-    page: direction => { reader.page(direction); wakeHud() },
+    move: delta => { commands.run('reader.move', delta); wakeHud() },
+    page: direction => { commands.run('reader.page', direction); wakeHud() },
     jump: where => { reader.jump(where); wakeHud() },
     chapter: direction => { reader.chapter(direction); wakeHud() },
     bookmark: toggleBookmark,
     mode: toggleMode,
     escape: () => {
       if (!el.chapterMenu.hidden) closeChapterMenu()
-      else if (settingsPanel.isOpen || notesView.isOpen) showPanel(null)
+      else if (settingsPanel.isOpen || notesView.isOpen || searchView.isOpen) showPanel(null)
       else if (reader.isOpen) backToLibrary()
     }
   })
 
   el.stage.addEventListener('mousemove', wakeHud)
+  el.stage.addEventListener('pointerdown', () => wellbeing.activity())
+  window.addEventListener('keydown', () => wellbeing.activity())
   el.hud.addEventListener('mouseenter', wakeHud)
 
   // Al cambiar el tamano de la ventana cambian los saltos de linea.
@@ -949,6 +1231,33 @@ async function start () {
   $('hud-library').addEventListener('click', backToLibrary)
   $('hud-settings').addEventListener('click', () => showPanel('settings'))
   $('hud-notes').addEventListener('click', () => showPanel('notes'))
+  $('hud-search').addEventListener('click', () => showPanel('search'))
+  $('hud-dictionary').addEventListener('click', () => dictionary.openManual())
+  el.hudRhythm.addEventListener('click', () => {
+    rhythm.togglePause()
+    wakeHud()
+  })
+  const toggleSpeech = () => {
+    if (!reader?.isOpen || !session?.document) return
+    if (speech.state === 'speaking') return speech.pause()
+    if (speech.state === 'paused') return speech.resume()
+    const requested = settings.get('speechLanguage') ?? 'auto'
+    const excerpt = reader.getCurrentExcerpt()?.text?.toLowerCase() ?? ''
+    const detected = /\b(the|and|of|to|was|were)\b/.test(excerpt) ? 'en' : 'es'
+    const language = requested === 'auto' ? detected : requested
+    const voices = speechPort.voices().filter(voice => voice.lang?.toLowerCase().startsWith(language))
+    if (!voices.length) return toast('No hay una voz local disponible para este idioma.', 5000)
+    speech.start(session.document.book, reader.getLocator(), {
+      language,
+      rate: settings.get('speechRate') ?? 1,
+      voice: settings.get(language === 'es' ? 'speechVoiceEs' : 'speechVoiceEn') || voices[0].name,
+      sleepTimer: settings.get('speechTimer') ?? 'off'
+    })
+  }
+  el.hudSpeech.addEventListener('click', toggleSpeech)
+  el.hudSpeechPrev.addEventListener('click', () => speech.previous())
+  el.hudSpeechNext.addEventListener('click', () => speech.next())
+  el.hudBack.addEventListener('click', returnToPreviousLocator)
   el.hudMode.addEventListener('click', toggleMode)
   el.hudBookmark.addEventListener('click', toggleBookmark)
   el.hudChapter.addEventListener('click', toggleChapterMenu)
@@ -964,11 +1273,36 @@ async function start () {
     'open-pdf': pickAndOpen,
     library: backToLibrary,
     settings: () => { if (reader.isOpen) showPanel('settings') },
-    notes: () => { if (reader.isOpen) showPanel('notes') }
+    notes: () => { if (reader.isOpen) showPanel('notes') },
+    search: () => { if (reader.isOpen) showPanel('search') }
   })
+
+  commands.register('reader.search', () => { if (reader.isOpen) showPanel('search') })
+  commands.register('reader.back', returnToPreviousLocator)
+  commands.register('reader.move', delta => reader?.move(delta))
+  commands.register('reader.page', direction => reader?.page(direction))
+  commands.register('speech.toggle', toggleSpeech)
+  gamepad.setEnabled(settings.get('gamepadEnabled'))
+  window.addEventListener('keydown', event => {
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'f') {
+      event.preventDefault()
+      commands.run('reader.search')
+    } else if (event.altKey && !event.ctrlKey && !event.metaKey && event.key === 'ArrowLeft') {
+      event.preventDefault()
+      commands.run('reader.back')
+    } else if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === ' ') {
+      event.preventDefault()
+      commands.run('speech.toggle')
+    }
+  })
+  globalThis.speechSynthesis?.addEventListener?.('voiceschanged', () => settingsPanel.refresh())
+  window.addEventListener('focus', syncRhythmSuspension)
+  window.addEventListener('blur', syncRhythmSuspension)
+  document.addEventListener('visibilitychange', syncRhythmSuspension)
 
   // El almacen avisa si tuvo que apartar un fichero danado: hay que decirlo.
   window.lector.onStorageWarning(message => toast(message, 8000))
+  window.lector.onNotice(message => toast(message, 8000))
 
   // Lo que se escape a cualquier catch acaba en el log de userData; empaquetada,
   // la consola del renderer no la ve nadie.
@@ -977,8 +1311,33 @@ async function start () {
   window.addEventListener('unhandledrejection', event =>
     window.lector.log.error(`unhandledrejection: ${event.reason?.stack ?? event.reason}`))
 
-  // Guardar el punto de lectura aunque se cierre la ventana de golpe.
-  window.addEventListener('beforeunload', () => { if (reader.isOpen) reader.close() })
+  // El proceso principal retiene el cierre hasta que estos cuatro almacenes
+  // confirman sus escrituras. beforeunload queda como ultimo repuesto si el
+  // sistema operativo destruye la ventana sin pasar por ese protocolo.
+  let closeInProgress = false
+  const flushApplication = async () => {
+    if (closeInProgress) return
+    closeInProgress = true
+    backgroundTasks.cancelAll()
+    speech?.stop()
+    wellbeing?.stop()
+    try {
+      if (reader?.isOpen) await reader.close()
+      await Promise.all([session.flush(), notes?.flush?.(), settings.flush()])
+      await window.lector.app.flush()
+    } finally {
+      window.lector.app.closeReady()
+    }
+  }
+  window.lector.onBeforeClose(() => { void flushApplication() })
+  window.addEventListener('beforeunload', () => {
+    if (reader?.isOpen) void reader.flush()
+    void session.flush()
+    void notes?.flush?.()
+    void settings.flush()
+    shellController.destroy()
+    gamepad?.destroy()
+  })
 
   await refreshLibrary()
 

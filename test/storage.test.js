@@ -67,6 +67,23 @@ describe('escrituras concurrentes', () => {
     const list = await store.readLibrary()
     expect(list.map(b => b.id).sort()).toEqual([ID_A, ID_B])
   })
+
+  it('serializa operaciones de notas del mismo libro', async () => {
+    const note = {
+      id: '0-1', offset: 0, block: 0, char: 0,
+      quote: 'hola', text: '', createdAt: 1
+    }
+    await store.addNote(ID_A, note)
+    await Promise.all([
+      store.editNote(ID_A, note.id, 'comentario'),
+      store.addNote(ID_A, { ...note, id: '5-2', offset: 5 })
+    ])
+    await store.flushWrites()
+
+    const notes = await store.readNotes(ID_A)
+    expect(notes).toHaveLength(2)
+    expect(notes.find(saved => saved.id === note.id)?.text).toBe('comentario')
+  })
 })
 
 describe('validacion de id', () => {
@@ -99,7 +116,50 @@ describe('validacion de id', () => {
   })
 
   it('un id valido funciona de extremo a extremo', async () => {
-    await store.writeBookCache(ID_A, { version: 1, text: 'hola' })
-    expect(await store.readBookCache(ID_A)).toEqual({ version: 1, text: 'hola' })
+    const book = {
+      version: 10,
+      title: 'Hola',
+      author: '',
+      pageCount: 1,
+      chars: 4,
+      blocks: [],
+      chapters: [],
+      pageSizes: [{ w: 600, h: 800 }],
+      pageRoles: [null],
+      pageKinds: ['text'],
+      bodyStart: 0,
+      stats: {}
+    }
+    await store.writeBookCache(ID_A, book)
+    expect(await store.readBookCache(ID_A)).toEqual(book)
+  })
+})
+
+describe('validacion de contratos persistidos', () => {
+  it('rechaza estructuras y ajustes que no pertenecen al contrato', async () => {
+    await expect(store.saveLibraryProgress(ID_A, { offset: -1 })).rejects.toThrow(/progreso/)
+    await expect(store.writeSettings({ servidor: 'https://example.com' })).rejects.toThrow(/ajuste/)
+    await expect(store.writeSettings({ motion: 'mareo' })).rejects.toThrow(/motion/)
+    await expect(store.writeSettings({ breakInterval: 1 })).rejects.toThrow(/breakInterval/)
+    await expect(store.writeSettings({ speechLanguage: 'fr' })).rejects.toThrow(/speechLanguage/)
+    await expect(store.writeSettings({ customBackground: 'red' })).rejects.toThrow(/customBackground/)
+    await expect(store.writeNotes(ID_A, [{ id: '', offset: 0, block: 0 }])).rejects.toThrow(/nota/)
+    await expect(store.writeOcr(ID_A, { version: 1, pages: [] })).rejects.toThrow(/OCR/)
+    await expect(store.writeBookCache(ID_A, { version: 10 })).rejects.toThrow(/cache/)
+  })
+
+  it('RX-DICT-005 limita vocabulario y RX-BREAK-003 valida estadisticas', async () => {
+    await store.addVocabulary(ID_A, {
+      word: 'novela', lemma: 'novela', language: 'es', lookedUpAt: 1, locator: { offset: 3 }
+    })
+    expect(await store.readVocabulary(ID_A)).toHaveLength(1)
+    await expect(store.addVocabulary(ID_A, {
+      word: 'x', lemma: 'x', language: 'xx', lookedUpAt: 1
+    })).rejects.toThrow(/idioma/)
+
+    await store.writeReadingStats(ID_A, { activeMs: 1000, sessions: 1, breaks: 0 })
+    expect(await store.readReadingStats(ID_A)).toMatchObject({ activeMs: 1000 })
+    await store.clearReadingStats(ID_A)
+    expect(await store.readReadingStats(ID_A)).toBeNull()
   })
 })

@@ -124,6 +124,25 @@ describe('toSentenceUnits', () => {
     expect(segunda.bottom).toBe(120)
   })
 
+  it('divide una frase literaria muy larga en bandas de hasta cuatro renglones', () => {
+    const longText = 'Una sola frase deliberadamente extensa que atraviesa muchos renglones sin detenerse hasta el punto final.'
+    const longLines = Array.from({ length: 9 }, (_, i) => ({
+      block: 0,
+      start: Math.floor(longText.length * i / 9),
+      end: Math.floor(longText.length * (i + 1) / 9),
+      top: i * 30,
+      bottom: (i + 1) * 30
+    }))
+
+    const units = toSentenceUnits(longLines, [{ text: longText, start: 0 }])
+    expect(units).toHaveLength(3)
+    expect(units.map(unit => (unit.bottom - unit.top) / 30)).toEqual([4, 4, 1])
+    expect(units[0].start).toBe(0)
+    expect(units.at(-1).end).toBe(longText.length)
+    expect(units[1].start).toBe(units[0].end)
+    expect(units[2].start).toBe(units[1].end)
+  })
+
   it('las unidades se solapan en el renglon compartido', () => {
     const [primera, segunda] = toSentenceUnits(lines, blocks)
 

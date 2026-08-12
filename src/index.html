@@ -29,7 +29,7 @@
 
   <!-- Lector -->
   <section class="view view-reader" id="view-reader" aria-label="Lector">
-    <div class="stage" id="stage">
+    <div class="stage" id="stage" tabindex="0">
       <!-- Dos capas con contenido identico: al compartir layout se alinean solas.
            El blur vive en la capa (alta como la pantalla), no en el texto completo. -->
       <div class="page-layer page-layer-dim" id="layer-dim" aria-hidden="true">
@@ -40,19 +40,44 @@
       </div>
     </div>
 
-    <div class="hud" id="hud">
-      <button class="hud-btn" id="hud-library" title="Biblioteca (Ctrl+L)">Biblioteca</button>
-      <button class="hud-chapter" id="hud-chapter" title="Índice de capítulos"
-              aria-haspopup="menu" aria-expanded="false"></button>
-      <span class="hud-ocr" id="hud-ocr" hidden></span>
-      <span class="hud-page" id="hud-page" hidden></span>
-      <span class="hud-progress" id="hud-progress"></span>
-      <span class="hud-eta" id="hud-eta" hidden title="Para terminar el capítulo, a tu ritmo"></span>
-      <button class="hud-btn" id="hud-mode" title="Cambiar de vista (V)">Flujo</button>
-      <button class="hud-btn" id="hud-bookmark" title="Marcar esta línea (M)" aria-pressed="false">Marcar</button>
-      <button class="hud-btn" id="hud-notes" title="Notas (Ctrl+B)">Notas</button>
-      <button class="hud-btn" id="hud-settings" title="Ajustes (Ctrl+,)">Ajustes</button>
-    </div>
+    <nav class="hud" id="hud" aria-label="Controles de lectura">
+      <div class="hud-group hud-group-location">
+        <button class="hud-btn hud-library" id="hud-library" title="Volver a la biblioteca (Ctrl+L)">
+          <span class="hud-glyph" aria-hidden="true">‹</span><span class="hud-label">Biblioteca</span>
+        </button>
+        <button class="hud-chapter" id="hud-chapter" title="Índice de capítulos"
+                aria-haspopup="menu" aria-expanded="false"></button>
+        <span class="hud-ocr" id="hud-ocr" hidden></span>
+        <span class="hud-location-meta" aria-label="Posición de lectura">
+          <span class="hud-page" id="hud-page" hidden></span>
+          <span class="hud-progress" id="hud-progress"></span>
+          <span class="hud-eta" id="hud-eta" hidden title="Para terminar el capítulo, a tu ritmo"></span>
+          <button class="hud-rhythm" id="hud-rhythm" hidden type="button"
+                  title="Pausar la guía de ritmo" aria-label="Pausar la guía de ritmo">Ritmo</button>
+        </span>
+      </div>
+
+      <div class="hud-group hud-group-navigation">
+        <button class="hud-btn" id="hud-back" title="Volver a donde estabas (Alt+←)" hidden>
+          <span class="hud-glyph" aria-hidden="true">←</span><span class="hud-label">Volver</span>
+        </button>
+        <button class="hud-btn hud-mode" id="hud-mode" title="Cambiar de vista (V)">Flujo</button>
+      </div>
+
+      <div class="hud-group hud-group-tools" aria-label="Herramientas">
+        <button class="hud-btn" id="hud-search" title="Buscar en el libro (Ctrl+F)" aria-pressed="false">Buscar</button>
+        <button class="hud-btn" id="hud-dictionary" title="Diccionario offline">Diccionario</button>
+        <span class="hud-speech-controls">
+          <button class="hud-btn hud-step" id="hud-speech-prev" title="Frase anterior" hidden aria-label="Frase anterior">‹</button>
+          <button class="hud-btn" id="hud-speech" title="Escuchar con una voz local">Escuchar</button>
+          <button class="hud-btn hud-step" id="hud-speech-next" title="Frase siguiente" hidden aria-label="Frase siguiente">›</button>
+        </span>
+        <span class="hud-divider" aria-hidden="true"></span>
+        <button class="hud-btn" id="hud-bookmark" title="Marcar esta línea (M)" aria-pressed="false">Marcar</button>
+        <button class="hud-btn" id="hud-notes" title="Notas (Ctrl+B)" aria-pressed="false">Notas</button>
+        <button class="hud-btn hud-settings" id="hud-settings" title="Ajustes (Ctrl+,)" aria-pressed="false">Ajustes</button>
+      </div>
+    </nav>
 
     <!-- El indice de capitulos se despliega sobre el HUD -->
     <div class="chapter-menu" id="chapter-menu" hidden role="menu" aria-label="Capítulos"></div>

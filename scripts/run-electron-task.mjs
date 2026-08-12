@@ -15,7 +15,7 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const [task, arg] = process.argv.slice(2)
 
 if (!task) {
-  console.error('Uso: node scripts/run-electron-task.mjs <smoke|ingest> [argumento]')
+  console.error('Uso: node scripts/run-electron-task.mjs <smoke|ingest|read|visual|study|tts> [argumento]')
   process.exit(2)
 }
 

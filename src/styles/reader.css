@@ -24,6 +24,14 @@
   contain: strict;
 }
 
+body[data-presentation='paged'] .page-layer {
+  clip-path: inset(var(--read-vmargin, 48px) 0);
+}
+
+body[data-presentation='paged'] .page-content {
+  transition: none;
+}
+
 .page-layer {
   position: absolute;
   inset: 0;
@@ -118,11 +126,14 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
   transition: transform var(--focus-ms, 200ms) cubic-bezier(0.33, 1, 0.68, 1);
   will-change: transform;
 
-  font-family: var(--read-font, 'Sitka Text'), Georgia, serif;
+  font-family: var(--read-font, 'Source Serif 4'), 'Source Serif 4', Georgia, serif;
   font-size: var(--read-size, 20px);
+  font-weight: var(--read-weight, 400);
   line-height: var(--read-leading, 1.75);
   color: var(--read-fg);
   text-align: var(--read-align, left);
+  word-spacing: var(--read-word-spacing, 0em);
+  letter-spacing: var(--read-letter-spacing, 0em);
   text-wrap: pretty;
   hyphens: none;
 }
@@ -136,9 +147,22 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
 }
 
 .page-content p {
-  margin: 0 0 0.85em;
+  margin: 0 0 var(--read-paragraph, 0.85em);
   orphans: 2;
   widows: 2;
+}
+
+/* Las novelas compuestas por sangria no deben adquirir el ritmo entrecortado
+   de una pagina web. La ingesta reconoce ese sistema editorial; aqui se
+   conserva: parrafos seguidos, sangria visible y primera linea limpia tras el
+   titulo del capitulo. Los bloques auxiliares mantienen sus reglas propias. */
+.page-content[data-paragraph-style='indent'] p:not([data-role]):not([data-section]) {
+  margin-bottom: 0;
+  text-indent: 1.35em;
+}
+.page-content[data-paragraph-style='indent'] h2 + p:not([data-role]):not([data-section]),
+.page-content[data-paragraph-style='indent'] p:first-child:not([data-role]):not([data-section]) {
+  text-indent: 0;
 }
 
 .page-content h2 {
@@ -150,10 +174,51 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
 }
 .page-content h2:first-child { margin-top: 0; }
 
-/* Un marcador se ve como una barra discreta al margen del bloque, sea un
-   parrafo, un titulo o una figura recortada. */
-.page-content [data-marked] {
-  box-shadow: -14px 0 0 -11px var(--accent);
+/* Los capitulos numerados de una novela merecen una apertura serena, no el
+   aspecto de un subtitulo tecnico. */
+.page-content h2[data-heading='ordinal'] {
+  margin: 2.8em 0 1.8em;
+  text-align: center;
+  font-size: 1.08em;
+  font-weight: 600;
+  letter-spacing: .16em;
+}
+.page-content h2[data-heading='ordinal']::after {
+  content: '';
+  display: block;
+  width: 26px;
+  height: 1px;
+  margin: 1em auto 0;
+  background: color-mix(in srgb, currentColor 42%, transparent);
+}
+
+/* Dedicatorias y epigrafes conservan aire y centralidad aunque el PDF no les
+   haya dado un rol explicito. */
+.page-content[data-chapter-kind='frontmatter'] [data-section='frontmatter'] {
+  max-width: 28em;
+  margin-right: auto;
+  margin-left: auto;
+  text-align: center;
+  text-indent: 0;
+}
+.page-content[data-chapter-kind='frontmatter'] [data-section='frontmatter'] + [data-section='frontmatter'] {
+  margin-top: -.55em;
+}
+
+/* El marcador sigue al renglon exacto. Es un punto en el margen, no una barra
+   que haga parecer marcado todo el parrafo. Se duplica en las dos capas para
+   seguir visible a ambos lados de la mascara de foco. */
+.reader-bookmark-marker {
+  position: absolute;
+  left: -18px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--surface) 72%, transparent);
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 /* --- Lo que no es para leer seguido -------------------------------------- */
@@ -234,6 +299,20 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
 .hl-dot.is-green { background: #6ebe82; }
 .hl-dot.is-blue { background: #6ea0e6; }
 .hl-dot:hover { transform: scale(1.15); }
+.hl-define { border: 0; background: transparent; color: var(--accent); cursor: pointer; }
+
+.dictionary-pop {
+  position: fixed; z-index: 80; width: min(330px, calc(100vw - 24px));
+  max-height: min(420px, calc(100vh - 24px)); overflow: auto;
+  padding: 14px; border: 1px solid var(--border-strong); border-radius: 12px;
+  background: var(--surface-raised); color: var(--fg); box-shadow: var(--shadow);
+}
+.dictionary-pop[hidden] { display: none; }
+.dictionary-head { display: flex; gap: 8px; }
+.dictionary-head input { flex: 1; min-width: 0; padding: 8px; background: var(--surface); color: var(--fg); border: 1px solid var(--border-strong); border-radius: 7px; }
+.dictionary-content h3 { margin: 14px 0 4px; font-family: var(--read-font); font-size: 20px; }
+.dictionary-content ol { padding-left: 22px; line-height: 1.5; }
+.dictionary-pos, .dictionary-pronunciation, .dictionary-forms, .dictionary-empty { color: var(--fg-muted); font-size: 12px; }
 
 /* El punto que identifica un resaltado en la lista de notas. */
 .note-foot-where { display: flex; align-items: center; gap: 6px; }
@@ -254,32 +333,68 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
 
 .hud {
   position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: 54px;
+  left: 18px; right: 34px; bottom: 14px;
+  min-height: 52px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 16px;
+  gap: 7px;
+  padding: 6px;
   font-size: 12.5px;
   color: var(--fg-muted);
-  background: linear-gradient(to top, var(--bg) 42%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px color-mix(in srgb, #000 18%, transparent);
+  backdrop-filter: blur(16px);
   opacity: 1;
-  transition: opacity 320ms ease, right 220ms cubic-bezier(0.33, 1, 0.68, 1);
+  z-index: 25;
+  transition: opacity 320ms ease, right 220ms cubic-bezier(0.33, 1, 0.68, 1), transform 180ms ease;
 }
 /* Se aparta sola mientras se lee y vuelve al mover el raton. */
-.hud.is-idle { opacity: 0; pointer-events: none; }
+.hud.is-idle { opacity: 0; pointer-events: none; transform: translateY(5px); }
+
+.hud-group {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.hud-group-location { flex: 1 1 auto; }
+.hud-group-navigation,
+.hud-group-tools {
+  flex: 0 0 auto;
+  padding-left: 5px;
+  border-left: 1px solid var(--border);
+}
+.hud-group-tools { overflow-x: auto; scrollbar-width: none; }
+.hud-group-tools::-webkit-scrollbar { display: none; }
+.hud-speech-controls { display: flex; align-items: center; }
+.hud-divider { width: 1px; height: 20px; margin: 0 3px; background: var(--border); }
 
 .hud-btn {
   border: none;
   background: transparent;
   color: var(--fg-muted);
-  padding: 7px 12px;
-  border-radius: 7px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 9px;
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  white-space: nowrap;
+  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
-.hud-btn:hover { background: var(--surface); color: var(--fg); }
-.hud-btn.is-on { color: var(--accent); }
+.hud-btn:hover { background: var(--surface-hover); color: var(--fg); }
+.hud-btn.is-on,
+.hud-btn[aria-pressed='true'] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 34%, transparent);
+}
+.hud-btn:disabled { opacity: .45; cursor: default; }
+.hud-glyph { margin-right: 5px; font-size: 17px; line-height: 0; vertical-align: -1px; }
+.hud-library { padding-left: 8px; }
+.hud-mode { color: var(--fg); font-weight: 600; }
+.hud-step { min-width: 26px; padding-inline: 6px; font-size: 17px; }
+.hud-settings { font-weight: 600; }
 
 /* El titulo del capitulo es tambien la puerta del indice: un boton discreto. */
 .hud-chapter {
@@ -289,7 +404,7 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: center;
-  padding: 7px 8px;
+  padding: 7px 10px;
   border: none;
   background: transparent;
   color: inherit;
@@ -304,65 +419,140 @@ body[data-mode='page'][data-theme='sepia'] .page-image { filter: sepia(0.35) bri
 .hud-eta,
 .hud-progress { font-variant-numeric: tabular-nums; }
 
+.hud-rhythm {
+  --rhythm-progress: 0%;
+  position: relative;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 5px 5px;
+  color: inherit;
+  background: linear-gradient(90deg, var(--accent) var(--rhythm-progress), var(--border) 0)
+    left bottom / 100% 2px no-repeat;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  border-radius: 5px;
+}
+.hud-rhythm::before {
+  content: '⏸';
+  font-size: .78em;
+  line-height: 1;
+  color: var(--accent);
+}
+.hud-rhythm[data-paused='true'] { opacity: .82; }
+.hud-rhythm[data-paused='true']::before { content: '▶'; }
+.hud-rhythm:hover { background-color: color-mix(in srgb, var(--accent) 10%, transparent); }
+.hud-rhythm:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+
+.hud-location-meta {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  color: var(--fg-muted);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+.hud-location-meta > :not(:last-child)::after {
+  content: '·';
+  margin-left: 7px;
+  color: var(--border-strong);
+}
+
 /* --- Barra de desplazamiento del libro ------------------------------------ */
 
-/* Carril fino en el borde derecho: discreto de lejos, comodo al acercarse.
-   La zona sensible es mas ancha que el dibujo, para poder atinarle. */
+/* Carril de orientación, no una regla. El dibujo ocupa cuatro píxeles y la
+   zona sensible es más ancha para que siga siendo fácil de arrastrar. */
 .scrubber {
   position: absolute;
-  top: 14px;
-  bottom: 66px; /* deja libre el HUD */
-  right: 0;
+  top: 30px;
+  bottom: 92px; /* deja libre el HUD flotante */
+  right: 13px;
   width: 18px;
   cursor: pointer;
-  z-index: 20;
+  z-index: 24;
+  border: 0;
+  background: transparent;
+  opacity: .46;
+  transition: opacity 150ms ease;
 }
 .scrubber[hidden] { display: none; }
+.scrubber:hover,
+.scrubber:focus-visible,
+.scrubber.is-dragging {
+  opacity: 1;
+}
+.scrubber:focus-visible { outline: none; }
 
-/* El carril dibujado: se engorda al pasar por encima o arrastrar. */
+/* Base neutra y progreso de color. */
 .scrubber::before {
   content: '';
   position: absolute;
-  top: 0; bottom: 0;
-  right: 5px;
-  width: 3px;
-  border-radius: 2px;
-  background: var(--border);
-  transition: width 120ms ease, right 120ms ease;
+  inset: 0 auto 0 7px;
+  width: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border-strong) 58%, transparent);
 }
-.scrubber:hover::before,
-.scrubber.is-dragging::before { width: 7px; right: 3px; }
+
+.scrubber-fill {
+  position: absolute;
+  top: 0;
+  left: 7px;
+  width: 4px;
+  max-height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent) 72%, white), var(--accent));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 22%, transparent);
+  pointer-events: none;
+}
 
 .scrubber-thumb {
   position: absolute;
-  right: 2px;
-  width: 9px;
-  height: 22px;
-  margin-top: -11px;
-  border-radius: 5px;
-  background: var(--fg-muted);
-  transition: background 120ms ease;
+  left: 1px;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--surface-raised);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 65%, var(--border-strong)),
+    0 3px 10px color-mix(in srgb, #000 24%, transparent);
+  transition: transform 120ms ease, box-shadow 120ms ease;
 }
 .scrubber:hover .scrubber-thumb,
-.scrubber.is-dragging .scrubber-thumb { background: var(--accent); }
+.scrubber:focus-visible .scrubber-thumb,
+.scrubber.is-dragging .scrubber-thumb {
+  transform: scale(1.16);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent),
+    0 3px 12px color-mix(in srgb, #000 28%, transparent);
+}
 
-/* Donde empieza cada capitulo. */
+/* Los capítulos son puntos discretos: orientan sin convertir el carril en una
+   escala graduada. */
 .scrubber-ticks i {
   position: absolute;
-  right: 4px;
-  width: 5px;
-  height: 2px;
-  border-radius: 1px;
-  background: var(--border-strong);
+  left: 7px;
+  width: 4px;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--fg-muted) 72%, var(--surface-raised));
+  box-shadow: 0 0 0 1px var(--surface-raised);
 }
 
 .scrubber-bubble {
   position: absolute;
-  right: 22px;
+  right: 28px;
   transform: translateY(-50%);
   max-width: 300px;
-  padding: 5px 10px;
-  border-radius: 8px;
+  padding: 7px 11px;
+  border-radius: 9px;
   background: var(--surface-raised);
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow);
@@ -397,6 +587,19 @@ body.has-panel .scrubber { opacity: 0; pointer-events: none; }
 }
 .chapter-menu[hidden] { display: none; }
 
+.chapter-part {
+  margin: 8px 8px 4px;
+  padding: 9px 4px 6px;
+  border-top: 1px solid var(--border);
+  color: var(--fg-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: .065em;
+  text-transform: uppercase;
+}
+.chapter-part:first-child { margin-top: 0; border-top: 0; }
+
 .chapter-menu button {
   display: block;
   width: 100%;
@@ -415,6 +618,16 @@ body.has-panel .scrubber { opacity: 0; pointer-events: none; }
 }
 .chapter-menu button:hover { background: var(--surface-hover); }
 .chapter-menu button.is-on { color: var(--accent); font-weight: 600; }
+.chapter-menu button.is-auxiliary {
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+.chapter-menu button[data-kind="supplement"] {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 8px 8px;
+}
 
 /* Aviso discreto de que el reconocimiento de texto sigue trabajando. */
 .hud-ocr {
@@ -427,47 +640,99 @@ body.has-panel .scrubber { opacity: 0; pointer-events: none; }
 
 .panel {
   position: absolute;
-  top: 0; right: 0; bottom: 0;
-  width: 336px;
+  top: 10px; right: 10px; bottom: 10px;
+  width: min(392px, calc(100vw - 20px));
   background: var(--surface-raised);
-  border-left: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: 16px;
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 220ms cubic-bezier(0.33, 1, 0.68, 1);
   z-index: 30;
+  overflow: hidden;
 }
-.panel.is-open { transform: translateX(0); }
+.panel[hidden] { display: none; }
+.panel.is-open { animation: panel-enter 180ms cubic-bezier(0.33, 1, 0.68, 1); }
+@keyframes panel-enter {
+  from { opacity: 0; transform: translateX(16px) scale(.99); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
 
 /* Con un panel abierto la columna se aparta en vez de quedar tapada. Es un
    desplazamiento, no un cambio de ancho: los saltos de linea no se tocan y no
    hay que volver a medir. Nunca tanto como para salirse por la izquierda. */
 body.has-panel {
-  --panel-shift: min(168px, max(0px, (100vw - var(--read-width, 640px)) / 2 - 24px));
+  --panel-shift: min(196px, max(0px, (100vw - var(--read-width, 640px)) / 2 - 34px));
 }
-body.has-panel .hud { right: 336px; }
+body.has-panel .hud { right: 420px; }
 
 .panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px 14px;
+  min-height: 72px;
+  padding: 14px 16px 13px 20px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
 }
-.panel-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.panel-title { min-width: 0; display: grid; gap: 2px; }
+.panel-eyebrow {
+  color: var(--fg-muted);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.panel-head h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.panel-head-actions { display: flex; align-items: center; gap: 6px; }
+.panel-action {
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+  font-size: 11.5px;
+}
+.panel-action:hover:not(:disabled) { background: var(--surface-hover); color: var(--fg); }
+.panel-action:disabled { opacity: .45; cursor: default; }
 .panel-close {
-  border: none; background: transparent; color: var(--fg-muted);
-  width: 28px; height: 28px; border-radius: 6px; cursor: pointer; line-height: 1;
+  border: 1px solid var(--border); background: var(--surface); color: var(--fg);
+  width: 34px; height: 34px; border-radius: 9px; cursor: pointer; line-height: 1;
+  font-size: 20px;
 }
-.panel-close:hover { background: var(--surface-hover); color: var(--fg); }
+.panel-close:hover { background: var(--surface-hover); border-color: var(--border); color: var(--fg); }
 
-.panel-body { flex: 1; overflow-y: auto; padding: 18px 20px 28px; }
+.panel-body { flex: 1; overflow-y: auto; padding: 20px 22px 30px; overscroll-behavior: contain; }
+.settings-panel .panel-body { padding: 0 0 28px; }
+
+.panel-empty {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+}
+.panel-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 44px; height: 44px;
+  margin-bottom: 4px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 23px;
+  background: var(--surface);
+}
+.panel-empty h3 { margin: 0; font-size: 14px; }
 
 /* --- Controles de ajustes ------------------------------------------------ */
 
-.field { margin-bottom: 20px; }
+.field { margin-bottom: 18px; }
 .field-label {
   display: flex;
   justify-content: space-between;
@@ -485,6 +750,11 @@ body.has-panel .hud { right: 336px; }
   line-height: 1.5;
   color: var(--fg-muted);
 }
+.field-note.is-warning { color: var(--warning); }
+.custom-theme { padding: 10px; margin-bottom: 18px; border: 1px solid var(--border); border-radius: 9px; }
+.custom-theme .field { margin-bottom: 10px; }
+.gamepad-map { display: grid; gap: 8px; width: 100%; }
+.gamepad-map label { display: grid; grid-template-columns: 1fr 110px; align-items: center; gap: 8px; }
 
 .field select {
   width: 100%;
@@ -540,6 +810,41 @@ body.has-panel .hud { right: 336px; }
   padding-top: 16px;
   margin-top: 8px;
 }
+
+.settings-section {
+  border-bottom: 1px solid var(--border);
+}
+.settings-section > summary {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 20px;
+  cursor: pointer;
+  list-style: none;
+  transition: background 120ms ease;
+}
+.settings-section > summary::-webkit-details-marker { display: none; }
+.settings-section > summary:hover { background: var(--surface-hover); }
+.settings-section-heading { min-width: 0; display: grid; gap: 3px; }
+.settings-section-heading strong { color: var(--fg); font-size: 13px; font-weight: 600; }
+.settings-section-heading small {
+  overflow: hidden;
+  color: var(--fg-muted);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-section-chevron {
+  color: var(--fg-muted);
+  font-size: 17px;
+  transition: transform 150ms ease;
+}
+.settings-section[open] .settings-section-chevron { transform: rotate(180deg); }
+.settings-section-body { padding: 7px 20px 4px; }
+.settings-section-body > .field:last-child { margin-bottom: 15px; }
+.settings-message { margin: 4px 0 18px; color: var(--fg-muted); font-size: 12px; line-height: 1.55; }
 .panel-hint kbd {
   font-family: inherit;
   font-size: 11px;
@@ -548,6 +853,43 @@ body.has-panel .hud { right: 336px; }
   border-radius: 4px;
   padding: 1px 5px;
 }
+
+/* --- Búsqueda ------------------------------------------------------------ */
+.search-box { position: relative; }
+.search-input {
+  width: 100%; padding: 12px 42px 12px 13px; border: 1px solid var(--border-strong);
+  border-radius: 10px; background: var(--surface); color: var(--fg); font: inherit;
+}
+.search-input:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+.search-clear {
+  position: absolute;
+  top: 50%; right: 7px;
+  width: 30px; height: 30px;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+  font-size: 18px;
+}
+.search-clear:hover { background: var(--surface-hover); color: var(--fg); }
+.search-clear[hidden] { display: none; }
+.search-summary { color: var(--fg-muted); font-size: 11.5px; margin: 11px 2px 16px; }
+.search-results { display: grid; gap: 8px; }
+.search-result {
+  display: grid; gap: 7px; width: 100%; padding: 12px 13px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+  color: var(--fg); text-align: left; cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+.search-result:hover, .search-result:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--border));
+  background: var(--surface-hover);
+  transform: translateX(-2px);
+}
+.search-context { font-family: var(--read-font); line-height: 1.45; }
+.search-where { color: var(--fg-muted); font-size: 11px; }
 
 /* --- Notas --------------------------------------------------------------- */
 
@@ -562,7 +904,7 @@ body.has-panel .hud { right: 336px; }
 }
 .note:hover { border-color: var(--border-strong); background: var(--surface-hover); }
 .note-quote {
-  font-family: var(--read-font, 'Sitka Text'), Georgia, serif;
+  font-family: var(--read-font, 'Source Serif 4'), 'Source Serif 4', Georgia, serif;
   font-size: 13.5px;
   line-height: 1.55;
   margin: 0 0 8px;
@@ -591,7 +933,8 @@ body.has-panel .hud { right: 336px; }
 }
 .note-del:hover { background: var(--danger); color: #fff; }
 
-.notes-empty { color: var(--fg-muted); font-size: 13px; line-height: 1.6; }
+.notes-empty { max-width: 270px; margin: 0; color: var(--fg-muted); font-size: 12.5px; line-height: 1.65; }
+.notes-empty kbd { padding: 1px 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
 
 .note-editor textarea {
   width: 100%;
@@ -608,3 +951,22 @@ body.has-panel .hud { right: 336px; }
 }
 .note-editor textarea:focus { outline: none; border-color: var(--accent); }
 .note-editor-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+@media (max-width: 1180px) {
+  body.has-panel { --panel-shift: 0px; }
+  body.has-panel .hud { right: 34px; }
+  .hud-group-location { min-width: 180px; }
+  .hud-label { display: none; }
+  .hud-glyph { margin-right: 0; }
+  .hud-library { min-width: 34px; }
+}
+
+@media (max-width: 820px) {
+  .hud { left: 8px; right: 8px; bottom: 8px; }
+  body.has-panel .hud { right: 8px; }
+  .hud-group-location { min-width: 120px; }
+  .hud-location-meta,
+  .hud-group-navigation { display: none; }
+  .panel { inset: 8px; width: auto; }
+  .scrubber { right: 5px; }
+}

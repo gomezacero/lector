@@ -93,11 +93,23 @@ describe('createSettings', () => {
     // El cuerpo fue al libro: el global sigue siendo el punto de partida.
     expect(saved.fontSize).toBe(20)
   })
+
+  it('flush no pierde un cambio si se cierra antes del debounce', async () => {
+    const settings = createSettings(BASE)
+    settings.update({ theme: 'sepia' })
+
+    await settings.flush()
+
+    expect(write).toHaveBeenCalledOnce()
+    expect(write).toHaveBeenCalledWith(expect.objectContaining({ theme: 'sepia' }))
+  })
 })
 
 describe('READING_KEYS', () => {
   it('declara exactamente lo que viaja con cada libro', () => {
     expect([...READING_KEYS].sort()).toEqual(
-      ['columnWidth', 'fontSize', 'lineHeight', 'pageStop', 'pageZoom', 'readingMode'])
+      ['columnWidth', 'fontFamily', 'fontSize', 'fontWeight', 'lastPanel',
+        'letterSpacing', 'lineHeight', 'pageStop', 'pageZoom', 'paragraphSpacing', 'presentationMode',
+        'readingMode', 'textAlign', 'typographyPreset', 'verticalMargin', 'wordSpacing'])
   })
 })

@@ -159,6 +159,9 @@ export function stripFurniture (lines, pageHeight, pageCount, metrics = null) {
     if (line.figure) return true
     const zone = zoneOf(line, pageHeight)
     if (!zone) return true
+    // Los folios inferiores pueden ir en un cuerpo mayor que la prosa en
+    // digitalizaciones OCR. Siguen siendo folios, no títulos de capítulo.
+    if (zone === 'foot' && isFolio(line.text)) return false
     if (looksLikeTitle(line, metrics)) return true
     if (furniture.has(`${zone}|${normalize(line.text)}`)) return false
     // Un folio no se repite nunca igual, asi que hay que reconocerlo por forma.

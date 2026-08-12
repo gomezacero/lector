@@ -12,8 +12,8 @@ import { logLine } from './log.js'
 //   books/<id>.layout.json-> cajas del modelo de layout, pagina a pagina
 //   covers/<id>.jpg       -> portada ya dibujada para la estanteria
 //
-// Los seis ficheros por libro se borran juntos en removeLibraryEntry. Al
-// anadir un septimo hay que anadirlo alli.
+// Todos los ficheros por libro se borran juntos en removeLibraryEntry. Al
+// anadir otro artefacto hay que incorporarlo alli, al uso y al respaldo.
 //
 // Los de OCR y layout sobreviven a las subidas de version del cache a
 // proposito: volver a procesar el libro relee lo ya reconocido y analizado en
@@ -21,6 +21,8 @@ import { logLine } from './log.js'
 
 const userData = () => app.getPath('userData')
 const booksDir = () => path.join(userData(), 'books')
+const MAX_JSON_CHARS = 256 * 1024 * 1024
+const MAX_NOTES = 100_000
 
 // Los id son 32 hex (sha256 recortado, electron/main.js). Llegan del renderer
 // por IPC y acaban en path.join: cualquier otra cosa —un ../, mayusculas, un
@@ -72,16 +74,49 @@ export const DEFAULT_SETTINGS = {
   fontSize: 20,
   lineHeight: 1.75,
   columnWidth: 640,
+  presentationMode: 'continuous',
+  typographyPreset: 'novel',
+  paragraphSpacing: 0.85,
+  wordSpacing: 0,
+  letterSpacing: 0,
+  fontWeight: 400,
+  verticalMargin: 48,
 
   // Apagarla deja el texto entero y sin desenfoque, para leer de corrido.
   focusEnabled: true,
   theme: 'dark',
-  fontFamily: 'Sitka Text',
+  fontFamily: 'Source Serif 4',
   blurAmount: 2.4,
   dimOpacity: 0.34,
   focusLines: 1,
   falloffLines: 1.6,
   textAlign: 'left',
+  motion: 'system',
+  uiScale: 100,
+  showProgress: true,
+  showEta: true,
+  // La guía muestra cuánto tiempo suele necesitar esta unidad. Sólo 'auto'
+  // mueve el foco por sí sola; nunca se activa automáticamente.
+  rhythmMode: 'guided',
+  readingTargetWpm: 180,
+  customBackground: '',
+  customForeground: '',
+  customAccent: '',
+  speechRate: 1,
+  speechLanguage: 'auto',
+  speechVoiceEs: '',
+  speechVoiceEn: '',
+  speechTimer: 'off',
+  breakInterval: 0,
+  collectReadingStats: false,
+  vocabularyHistory: false,
+  gamepadEnabled: false,
+  gamepadNextButton: 0,
+  gamepadPreviousButton: 1,
+  gamepadPageNextButton: 5,
+  gamepadPagePreviousButton: 4,
+  fullscreen: false,
+  lastPanel: '',
   // Velocidad de lectura medida (caracteres por minuto). No sale en el panel:
   // la aplicacion la aprende sola y la usa para estimar lo que queda.
   paceCpm: 0
@@ -129,11 +164,32 @@ async function readJson (file, fallback) {
 // recorre estos directorios buscandolo.
 let tmpCounter = 0
 
-async function writeJson (file, data) {
+// Toda escritura de un mismo recurso va en fila. library.json ya tenia una
+// cola para proteger su leer-modificar-escribir; esta segunda capa cubre
+// tambien notas, ajustes, OCR, layout y cache.
+const fileQueues = new Map()
+
+function withFileLock (file, fn) {
+  const previous = fileQueues.get(file) ?? Promise.resolve()
+  const run = previous.catch(() => {}).then(fn)
+  fileQueues.set(file, run)
+  run.finally(() => {
+    if (fileQueues.get(file) === run) fileQueues.delete(file)
+  }).catch(() => {})
+  return run
+}
+
+function serializeJson (data) {
+  const raw = JSON.stringify(data)
+  if (raw.length > MAX_JSON_CHARS) throw new Error('datos demasiado grandes para guardar')
+  return raw
+}
+
+async function writeJsonUnlocked (file, data) {
   await fs.mkdir(path.dirname(file), { recursive: true })
   const tmp = `${file}.${process.pid}-${++tmpCounter}.tmp`
   try {
-    await fs.writeFile(tmp, JSON.stringify(data), 'utf8')
+    await fs.writeFile(tmp, serializeJson(data), 'utf8')
     await fs.rename(tmp, file)
   } catch (err) {
     // El rename fallido deja el temporal escrito; se recoge aqui porque su
@@ -141,6 +197,22 @@ async function writeJson (file, data) {
     await fs.rm(tmp, { force: true }).catch(() => {})
     throw err
   }
+}
+
+const writeJson = (file, data) => withFileLock(file, () => writeJsonUnlocked(file, data))
+
+async function updateJson (file, fallback, update) {
+  return withFileLock(file, async () => {
+    const current = await readJson(file, fallback)
+    const next = await update(current)
+    await writeJsonUnlocked(file, next)
+    return next
+  })
+}
+
+/** Espera todas las escrituras iniciadas, incluso las que fallaron. */
+export async function flushWrites () {
+  await Promise.allSettled([...fileQueues.values(), libraryQueue])
 }
 
 /** Los temporales de un id, incluidos los del esquema viejo de nombre fijo. */
@@ -192,6 +264,7 @@ export async function readLibrary () {
 
 export async function upsertLibraryEntry (entry) {
   assertId(entry?.id)
+  assertLibraryEntry(entry)
   return withLibraryLock(async () => {
     const list = await readLibrary()
     const i = list.findIndex(b => b.id === entry.id)
@@ -200,6 +273,18 @@ export async function upsertLibraryEntry (entry) {
     await writeJson(path.join(userData(), 'library.json'), list)
     return list
   })
+}
+
+export async function saveLibraryProgress (id, progress, lastOpenedAt) {
+  assertId(id)
+  assertProgress(progress)
+  return upsertLibraryEntry({ id, progress, ...(finite(lastOpenedAt) ? { lastOpenedAt } : {}) })
+}
+
+export async function updateBookReading (id, reading, readingMode) {
+  assertId(id)
+  assertReading(reading, readingMode)
+  return upsertLibraryEntry({ id, reading, readingMode })
 }
 
 /**
@@ -220,8 +305,11 @@ export async function removeLibraryEntry (id) {
     bytes += await removeFile(path.join(booksDir(), `${id}.notes.json`))
     bytes += await removeFile(path.join(booksDir(), `${id}.ocr.json`))
     bytes += await removeFile(path.join(booksDir(), `${id}.layout.json`))
+    bytes += await removeFile(path.join(booksDir(), `${id}.vocabulary.json`))
+    bytes += await removeFile(path.join(booksDir(), `${id}.stats.json`))
     bytes += await removeFile(coverPath(id))
-    bytes += await removeTemporaries(booksDir(), [`${id}.json.`, `${id}.notes.json.`, `${id}.ocr.json.`, `${id}.layout.json.`])
+    bytes += await removeTemporaries(booksDir(), [`${id}.json.`, `${id}.notes.json.`,
+      `${id}.ocr.json.`, `${id}.layout.json.`, `${id}.vocabulary.json.`, `${id}.stats.json.`])
 
     const entries = await withLibraryLock(async () => {
       const kept = (await readLibrary()).filter(b => b.id !== id)
@@ -350,6 +438,8 @@ export async function bookUsage (id) {
     path.join(booksDir(), `${id}.json`),
     path.join(booksDir(), `${id}.ocr.json`),
     path.join(booksDir(), `${id}.layout.json`),
+    path.join(booksDir(), `${id}.vocabulary.json`),
+    path.join(booksDir(), `${id}.stats.json`),
     coverPath(id)
   ]) {
     try {
@@ -365,20 +455,217 @@ export async function bookUsage (id) {
 const bookFile = (id, suffix) => { assertId(id); return path.join(booksDir(), `${id}${suffix}`) }
 
 export const readBookCache = async id => readJson(bookFile(id, '.json'), null)
-export const writeBookCache = async (id, book) => writeJson(bookFile(id, '.json'), book)
+export const writeBookCache = async (id, book) => {
+  assertBook(book)
+  return writeJson(bookFile(id, '.json'), book)
+}
 
 export const readNotes = async id => readJson(bookFile(id, '.notes.json'), [])
-export const writeNotes = async (id, notes) => writeJson(bookFile(id, '.notes.json'), notes)
+export const writeNotes = async (id, notes) => {
+  assertNotes(notes)
+  return writeJson(bookFile(id, '.notes.json'), notes)
+}
+
+export async function addNote (id, note) {
+  assertNote(note)
+  const file = bookFile(id, '.notes.json')
+  return updateJson(file, [], current => {
+    const notes = Array.isArray(current) ? current : []
+    if (!notes.some(saved => saved.id === note.id)) notes.push(note)
+    assertNotes(notes)
+    return notes.sort((a, b) => a.offset - b.offset)
+  })
+}
+
+export async function editNote (id, noteId, text) {
+  assertShortString(noteId, 'id de nota', 200)
+  assertShortString(text, 'texto de nota', 100_000, true)
+  const file = bookFile(id, '.notes.json')
+  return updateJson(file, [], current => {
+    const notes = Array.isArray(current) ? current : []
+    const note = notes.find(saved => saved.id === noteId)
+    if (note) note.text = text
+    assertNotes(notes)
+    return notes
+  })
+}
+
+export async function removeNote (id, noteId) {
+  assertShortString(noteId, 'id de nota', 200)
+  const file = bookFile(id, '.notes.json')
+  return updateJson(file, [], current =>
+    (Array.isArray(current) ? current : []).filter(note => note.id !== noteId))
+}
 
 export const readOcr = async id => readJson(bookFile(id, '.ocr.json'), null)
-export const writeOcr = async (id, data) => writeJson(bookFile(id, '.ocr.json'), data)
+export const writeOcr = async (id, data) => {
+  assertPageStore(data, 'OCR')
+  return writeJson(bookFile(id, '.ocr.json'), data)
+}
 
 export const readLayout = async id => readJson(bookFile(id, '.layout.json'), null)
-export const writeLayout = async (id, data) => writeJson(bookFile(id, '.layout.json'), data)
+export const writeLayout = async (id, data) => {
+  assertPageStore(data, 'layout')
+  return writeJson(bookFile(id, '.layout.json'), data)
+}
+
+export const readVocabulary = async id => readJson(bookFile(id, '.vocabulary.json'), [])
+export async function addVocabulary (id, item) {
+  assertVocabularyItem(item)
+  const file = bookFile(id, '.vocabulary.json')
+  return updateJson(file, [], current => {
+    const items = (Array.isArray(current) ? current : [])
+      .filter(saved => !(saved.word === item.word && saved.language === item.language))
+    items.unshift(item)
+    const limited = items.slice(0, 500)
+    for (const saved of limited) assertVocabularyItem(saved)
+    return limited
+  })
+}
+export const clearVocabulary = async id => writeJson(bookFile(id, '.vocabulary.json'), [])
+
+export const readReadingStats = async id => readJson(bookFile(id, '.stats.json'), null)
+export const writeReadingStats = async (id, data) => {
+  assertReadingStats(data)
+  return writeJson(bookFile(id, '.stats.json'), data)
+}
+export const clearReadingStats = async id => removeFile(bookFile(id, '.stats.json'))
 
 export async function readSettings () {
   const saved = await readJson(path.join(userData(), 'settings.json'), {})
   return { ...DEFAULT_SETTINGS, ...saved }
 }
 
-export const writeSettings = s => writeJson(path.join(userData(), 'settings.json'), s)
+export const writeSettings = async s => {
+  assertSettings(s)
+  return writeJson(path.join(userData(), 'settings.json'), s)
+}
+
+const finite = value => typeof value === 'number' && Number.isFinite(value)
+const plainObject = value => Boolean(value && typeof value === 'object' && !Array.isArray(value))
+
+function assertShortString (value, label, max, allowEmpty = false) {
+  if (typeof value !== 'string' || value.length > max || (!allowEmpty && !value.length)) {
+    throw new TypeError(`${label} invalido`)
+  }
+}
+
+function assertLibraryEntry (entry) {
+  if (!plainObject(entry)) throw new TypeError('entrada de biblioteca invalida')
+  for (const key of ['title', 'author', 'path']) {
+    if (entry[key] != null) assertShortString(entry[key], key, key === 'path' ? 32_768 : 2_000, true)
+  }
+  if (entry.progress != null) assertProgress(entry.progress)
+  if (entry.reading != null || entry.readingMode != null) assertReading(entry.reading ?? {}, entry.readingMode)
+}
+
+function assertProgress (progress) {
+  if (!plainObject(progress) || !finite(progress.offset) || progress.offset < 0) {
+    throw new TypeError('progreso invalido')
+  }
+  if (progress.percent != null && (!finite(progress.percent) || progress.percent < 0 || progress.percent > 1)) {
+    throw new TypeError('porcentaje invalido')
+  }
+}
+
+const READING_MODES = new Set(['auto', 'flow', 'sentence', 'page', null, undefined])
+function assertReading (reading, mode) {
+  if (!plainObject(reading) || !READING_MODES.has(mode)) throw new TypeError('ajustes de libro invalidos')
+  for (const value of Object.values(reading)) {
+    if (!['string', 'number', 'boolean'].includes(typeof value) || (typeof value === 'number' && !finite(value))) {
+      throw new TypeError('valor de lectura invalido')
+    }
+  }
+  if (reading.presentationMode != null && !['continuous', 'paged'].includes(reading.presentationMode)) {
+    throw new TypeError('presentacion de lectura invalida')
+  }
+  if (reading.typographyPreset != null &&
+      !['compact', 'novel', 'relaxed', 'legible', 'custom'].includes(reading.typographyPreset)) {
+    throw new TypeError('preset tipografico invalido')
+  }
+  if (reading.lastPanel != null && !['', 'settings', 'notes', 'search'].includes(reading.lastPanel)) {
+    throw new TypeError('panel de lectura invalido')
+  }
+}
+
+function assertBook (book) {
+  if (!plainObject(book) || !Number.isInteger(book.version) || !Array.isArray(book.blocks) ||
+      !Array.isArray(book.chapters) || !Number.isInteger(book.pageCount) || !finite(book.chars)) {
+    throw new TypeError('cache de libro invalida')
+  }
+}
+
+function assertNote (note) {
+  if (!plainObject(note) || !finite(note.offset) || note.offset < 0 || !Number.isInteger(note.block)) {
+    throw new TypeError('nota invalida')
+  }
+  assertShortString(note.id, 'id de nota', 200)
+  assertShortString(note.quote ?? '', 'cita', 2_000, true)
+  assertShortString(note.text ?? '', 'texto de nota', 100_000, true)
+}
+
+function assertNotes (notes) {
+  if (!Array.isArray(notes) || notes.length > MAX_NOTES) throw new TypeError('lista de notas invalida')
+  for (const note of notes) assertNote(note)
+}
+
+function assertPageStore (data, label) {
+  if (!plainObject(data) || !Number.isInteger(data.version) || !plainObject(data.pages)) {
+    throw new TypeError(`${label} invalido`)
+  }
+}
+
+function assertVocabularyItem (item) {
+  if (!plainObject(item) || !finite(item.lookedUpAt)) throw new TypeError('entrada de vocabulario invalida')
+  assertShortString(item.word, 'palabra', 200)
+  assertShortString(item.lemma, 'lema', 200)
+  if (!['es', 'en'].includes(item.language)) throw new TypeError('idioma de vocabulario invalido')
+  if (item.locator != null) assertProgress(item.locator)
+}
+
+function assertReadingStats (data) {
+  if (!plainObject(data) || !finite(data.activeMs) || data.activeMs < 0 ||
+      !Number.isInteger(data.sessions) || data.sessions < 0 ||
+      !Number.isInteger(data.breaks) || data.breaks < 0) {
+    throw new TypeError('estadisticas de lectura invalidas')
+  }
+}
+
+function assertSettings (settings) {
+  if (!plainObject(settings)) throw new TypeError('ajustes invalidos')
+  const allowed = new Set(Object.keys(DEFAULT_SETTINGS))
+  for (const [key, value] of Object.entries(settings)) {
+    if (!allowed.has(key) || !['string', 'number', 'boolean'].includes(typeof value) ||
+        (typeof value === 'number' && !finite(value))) throw new TypeError(`ajuste invalido: ${key}`)
+  }
+  if (settings.motion != null && !['system', 'reduce', 'full'].includes(settings.motion)) {
+    throw new TypeError('ajuste invalido: motion')
+  }
+  if (settings.theme != null && !['dark', 'light', 'sepia', 'contrast', 'custom'].includes(settings.theme)) {
+    throw new TypeError('ajuste invalido: theme')
+  }
+  if (settings.uiScale != null && (settings.uiScale < 100 || settings.uiScale > 200)) {
+    throw new TypeError('ajuste invalido: uiScale')
+  }
+  if (settings.speechRate != null && (settings.speechRate < 0.7 || settings.speechRate > 2)) {
+    throw new TypeError('ajuste invalido: speechRate')
+  }
+  if (settings.rhythmMode != null && !['off', 'guided', 'auto'].includes(settings.rhythmMode)) {
+    throw new TypeError('ajuste invalido: rhythmMode')
+  }
+  if (settings.readingTargetWpm != null &&
+      (settings.readingTargetWpm < 40 || settings.readingTargetWpm > 500)) {
+    throw new TypeError('ajuste invalido: readingTargetWpm')
+  }
+  if (settings.speechLanguage != null && !['auto', 'es', 'en'].includes(settings.speechLanguage)) {
+    throw new TypeError('ajuste invalido: speechLanguage')
+  }
+  if (settings.breakInterval != null && ![0, 20, 30, 40].includes(settings.breakInterval)) {
+    throw new TypeError('ajuste invalido: breakInterval')
+  }
+  for (const key of ['customBackground', 'customForeground', 'customAccent']) {
+    if (settings[key] != null && settings[key] !== '' && !/^#[0-9a-f]{6}$/i.test(settings[key])) {
+      throw new TypeError(`ajuste invalido: ${key}`)
+    }
+  }
+}

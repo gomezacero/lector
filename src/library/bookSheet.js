@@ -36,7 +36,7 @@ export function createBookSheet ({ onStart, onCancel }) {
       h('dl', { class: 'sheet-facts' },
         fact('Páginas', number(book.pageCount)),
         fact('Palabras', number(book.stats?.words ?? 0)),
-        fact('Capítulos', number(book.chapters?.length ?? 0)),
+        fact('Capítulos', number(book.chapters?.filter(chapter => !chapter.kind).length ?? 0)),
         book.stats?.figures ? fact('Figuras', number(book.stats.figures)) : null
       ),
 

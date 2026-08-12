@@ -13,6 +13,7 @@
 // es puro, asi que la migracion de la v9 puede apoyarse en el.
 
 import { splitLongChapters, rechapterFromDates } from './chapters.js'
+import { refineBookPresentation } from './presentation.js'
 
 // Cuanto texto se guarda junto al offset para poder re-anclarlo. Corto no
 // distingue frases parecidas; largo se rompe con cualquier cambio menor de
@@ -43,7 +44,10 @@ const MIGRATIONS = {
   8: book => ({ book: { ...book, version: 9, chapters: splitLongChapters(book.chapters ?? []) } }),
   // v10 recapitula los diarios: si el cache no tiene estructura real y sus
   // bloques traen fechas-entrada, esas pasan a ser los capitulos. En sitio.
-  9: book => ({ book: rechapterFromDates(book) })
+  9: book => ({ book: rechapterFromDates(book) }),
+  // v11 corrige identidad y secciones editoriales usando datos que el Book ya
+  // contiene. Los caracteres y sus offsets permanecen byte por byte.
+  10: book => ({ book: refineBookPresentation(book, { version: 11 }) })
 }
 
 /**
@@ -88,6 +92,11 @@ export function validateBook (book) {
   }
 
   if (Array.isArray(book.blocks)) {
+    if (book.bodyEnd !== undefined &&
+        (!Number.isInteger(book.bodyEnd) || book.bodyEnd < 0 || book.bodyEnd > book.blocks.length)) {
+      problems.push('bodyEnd no es un limite de bloque valido')
+    }
+
     // Los offsets son el ancla de todo lo guardado: si no son la suma exacta
     // de los textos, el progreso y las notas senalarian cualquier otra frase.
     let chars = 0

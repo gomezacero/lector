@@ -9,12 +9,31 @@
 
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
   pull_request:
 
 jobs:
+  contracts-and-unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -37,7 +56,19 @@ jobs:
       - name: Arranque de la aplicación
         run: xvfb-run -a npm run smoke
 
+      - name: Recorrido de lectura
+        run: xvfb-run -a npm run e2e:read
+
+      - name: Experiencia de lectura SDD
+        run: xvfb-run -a npm run e2e:experience
+
+      - name: Temas y tamaños de ventana
+        run: xvfb-run -a npm run e2e:visual
+
       - run: npm test
+
+      - name: Comprobar contratos
+        run: npm run typecheck
 
       # Aviso, no bloqueo: un CVE nuevo en una dependencia no debe parar el
       # trabajo, pero sí quedar a la vista en cada ejecución.

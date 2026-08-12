@@ -46,6 +46,9 @@ export function createPace (initialCpm = 0) {
     reset () { last = null },
 
     get cpm () { return cpm },
+    // Seis caracteres por palabra (cinco letras y un espacio) es una media
+    // suficientemente estable para traducir el historial antiguo sin migrar.
+    get wpm () { return cpm > 0 ? cpm / 6 : 0 },
     get ready () { return samples >= MIN_SAMPLES && cpm > 0 },
 
     /** Minutos estimados para esos caracteres, o null si aun no es fiable. */

@@ -4,10 +4,13 @@ import { promises as fs, rmSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as store from './storage.js'
+import { createRepositories } from './repositories.js'
+import { isExternalUrl, isPathInside } from './security.js'
 import { logLine } from './log.js'
 import { attachErrorLog, runDevTask, startUrlFor } from './devtasks.js'
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const repositories = createRepositories(store)
 
 // Empaquetada, la aplicacion es una GUI sin consola: un fallo que solo llegue
 // a stderr no lo ve nadie. Todo lo no capturado queda en userData/logs.
@@ -32,6 +35,8 @@ const MIME = {
   '.mjs': 'text/javascript',
   '.css': 'text/css',
   '.json': 'application/json',
+  '.onnx': 'application/octet-stream',
+  '.data': 'application/octet-stream',
   '.woff2': 'font/woff2',
   '.svg': 'image/svg+xml',
   '.map': 'application/json',
@@ -77,6 +82,8 @@ function registerAppProtocol () {
 }
 
 let mainWindow = null
+let closeReady = false
+let closeFallback = null
 
 // El arnes de desarrollo ejecuta JavaScript arbitrario en el renderer y borra
 // datos: en la aplicacion empaquetada solo se activa con la segunda senal
@@ -112,6 +119,9 @@ if (devTask) {
 }
 
 function createWindow () {
+  closeReady = false
+  if (closeFallback) clearTimeout(closeFallback)
+  closeFallback = null
   mainWindow = new BrowserWindow({
     width: 1180,
     height: 860,
@@ -123,7 +133,9 @@ function createWindow () {
     webPreferences: {
       preload: path.join(projectRoot, 'electron', 'preload.cjs'),
       // Las tareas de desarrollo abren un PDF concreto sin pasar por el dialogo.
-      additionalArguments: (devTask === 'read' || devTask === 'home') && devTaskArg ? [`--lector-dev-open=${devTaskArg}`] : [],
+      additionalArguments: ['read', 'home', 'study', 'visual'].includes(devTask) && devTaskArg
+        ? [`--lector-dev-open=${devTaskArg}`, ...(devTask === 'study' ? ['--lector-study'] : [])]
+        : [],
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -135,9 +147,11 @@ function createWindow () {
     if (!devTask) return mainWindow.show()
     // Una ventana oculta no se compone: capturePage devolveria un fotograma
     // viejo. Se muestra sin robar el foco solo cuando la tarea hace capturas.
-    if (devTask === 'read' || devTask === 'home') mainWindow.showInactive()
+    if (devTask === 'read' || devTask === 'home' || devTask === 'visual') mainWindow.showInactive()
   })
   mainWindow.loadURL(startUrlFor(devTask, devTaskArg))
+  mainWindow.on('enter-full-screen', () => send('app:fullscreen', true))
+  mainWindow.on('leave-full-screen', () => send('app:fullscreen', false))
 
   if (devTask) {
     attachErrorLog(mainWindow)
@@ -146,7 +160,7 @@ function createWindow () {
 
   // Los enlaces externos van al navegador, nunca abren ventanas de Electron.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url)
+    if (isExternalUrl(url)) shell.openExternal(url)
     return { action: 'deny' }
   })
 
@@ -155,13 +169,28 @@ function createWindow () {
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (url.startsWith('app://')) return
     event.preventDefault()
-    if (/^https?:/.test(url)) shell.openExternal(url)
+    if (isExternalUrl(url)) shell.openExternal(url)
   })
 
   // La aplicacion no usa camara, microfono, geolocalizacion ni notificaciones:
   // denegarlo todo hace verificable la promesa de "no toca nada del sistema".
   mainWindow.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => {
     callback(false)
+  })
+
+  // El renderer vacia progreso, notas y ajustes antes de que se destruya su
+  // contexto. Un segundo intento, ya confirmado, cierra de verdad.
+  mainWindow.on('close', event => {
+    if (closeReady || devTask) return
+    event.preventDefault()
+    send('app:before-close')
+    // Un renderer colgado no puede convertir el boton de cerrar en una trampa.
+    if (!closeFallback) {
+      closeFallback = setTimeout(() => {
+        closeReady = true
+        mainWindow?.close()
+      }, 8000)
+    }
   })
 }
 
@@ -177,6 +206,8 @@ function buildMenu () {
         { label: 'Abrir PDF...', accelerator: 'CmdOrCtrl+O', click: () => send('menu:open-pdf') },
         { label: 'Biblioteca', accelerator: 'CmdOrCtrl+L', click: () => send('menu:library') },
         { type: 'separator' },
+        { label: 'Exportar respaldo…', click: exportBackup },
+        { type: 'separator' },
         { role: 'quit', label: 'Salir' }
       ]
     },
@@ -185,8 +216,15 @@ function buildMenu () {
       submenu: [
         { label: 'Ajustes', accelerator: 'CmdOrCtrl+,', click: () => send('menu:settings') },
         { label: 'Notas y marcadores', accelerator: 'CmdOrCtrl+B', click: () => send('menu:notes') },
+        { label: 'Buscar en el libro', accelerator: 'CmdOrCtrl+F', click: () => send('menu:search') },
         { type: 'separator' },
         { role: 'togglefullscreen', label: 'Pantalla completa' }
+      ]
+    },
+    {
+      label: 'Ayuda',
+      submenu: [
+        { label: 'Exportar diagnóstico…', click: exportDiagnostics }
       ]
     },
     // Recargar y las DevTools son herramientas de quien desarrolla, no del
@@ -205,8 +243,10 @@ function buildMenu () {
 
 async function loadPdf (filePath) {
   const bytes = await fs.readFile(filePath)
+  const id = createHash('sha256').update(bytes).digest('hex').slice(0, 32)
+  allowedBookIds.add(id)
   return {
-    id: createHash('sha256').update(bytes).digest('hex').slice(0, 32),
+    id,
     path: filePath,
     fileName: path.basename(filePath),
     size: bytes.byteLength,
@@ -221,15 +261,105 @@ async function loadPdf (filePath) {
 // desarrollo cargan fixtures arbitrarios y trabajan sobre datos propios, por
 // eso quedan fuera de la restriccion.
 const pickedPdfPaths = new Set()
+const allowedBookIds = new Set()
 
 async function allowedPdfPath (filePath) {
   if (devTask) return true
   if (typeof filePath !== 'string') return false
   const resolved = path.resolve(filePath)
   if (pickedPdfPaths.has(resolved)) return true
-  const known = (await store.readLibrary()).some(b => b.path && path.resolve(b.path) === resolved)
+  const known = (await repositories.library.list()).some(b => b.path && path.resolve(b.path) === resolved)
   if (known) pickedPdfPaths.add(resolved)
   return known
+}
+
+async function assertAllowedEntryPath (entry) {
+  if (entry?.path) {
+    if (!(await allowedPdfPath(entry.path))) throw new Error('ruta de biblioteca no autorizada')
+    return
+  }
+  const exists = (await repositories.library.list()).some(saved => saved.id === entry?.id)
+  if (!exists) throw new Error('el libro no pertenece a la biblioteca')
+}
+
+async function assertAllowedBookId (id) {
+  if (allowedBookIds.has(id)) return
+  const exists = (await repositories.library.list()).some(saved => saved.id === id)
+  if (!exists) throw new Error('el libro no pertenece a la biblioteca')
+  allowedBookIds.add(id)
+}
+
+const backupStamp = () => new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').replace('Z', '')
+
+async function exportBackup () {
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    title: 'Dónde guardar el respaldo',
+    properties: ['openDirectory', 'createDirectory']
+  })
+  if (canceled || !filePaths[0]) return
+
+  const source = path.resolve(app.getPath('userData'))
+  const target = path.resolve(filePaths[0], `Lector-respaldo-${backupStamp()}`)
+  if (isPathInside(source, target)) {
+    send('app:notice', 'El respaldo debe guardarse fuera de los datos de Lector.')
+    return
+  }
+
+  try {
+    await repositories.flush()
+    await fs.mkdir(target, { recursive: true })
+    for (const name of ['library.json', 'settings.json', 'books', 'covers']) {
+      await fs.cp(path.join(source, name), path.join(target, name), { recursive: true }).catch(err => {
+        if (err.code !== 'ENOENT') throw err
+      })
+    }
+    await fs.writeFile(path.join(target, 'respaldo.json'), JSON.stringify({
+      format: 1,
+      appVersion: app.getVersion(),
+      createdAt: new Date().toISOString()
+    }, null, 2), 'utf8')
+    send('app:notice', `Respaldo guardado en ${target}`)
+  } catch (err) {
+    logLine('backup', err?.stack ?? err)
+    send('app:notice', `No se pudo crear el respaldo: ${err.message}`)
+  }
+}
+
+async function exportDiagnostics () {
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    title: 'Guardar diagnóstico de Lector',
+    defaultPath: `Lector-diagnostico-${backupStamp()}.json`,
+    filters: [{ name: 'JSON', extensions: ['json'] }]
+  })
+  if (canceled || !filePath) return
+
+  try {
+    await repositories.flush()
+    const library = await repositories.library.list()
+    const settings = await repositories.settings.read()
+    const logPath = path.join(app.getPath('userData'), 'logs', 'lector.log')
+    const log = await fs.readFile(logPath, 'utf8').catch(() => '')
+    const report = {
+      generatedAt: new Date().toISOString(),
+      application: { version: app.getVersion(), electron: process.versions.electron, node: process.versions.node },
+      platform: { name: process.platform, release: process.getSystemVersion(), arch: process.arch },
+      library: library.map(book => ({
+        id: book.id,
+        title: book.title,
+        fileName: book.path ? path.basename(book.path) : null,
+        pageCount: book.pageCount,
+        cacheVersion: book.version,
+        missing: Boolean(book.missing)
+      })),
+      settings,
+      log: log.slice(-200_000)
+    }
+    await fs.writeFile(filePath, JSON.stringify(report, null, 2), 'utf8')
+    send('app:notice', `Diagnóstico guardado en ${filePath}`)
+  } catch (err) {
+    logLine('diagnostics', err?.stack ?? err)
+    send('app:notice', `No se pudo exportar el diagnóstico: ${err.message}`)
+  }
 }
 
 function registerIpc () {
@@ -266,18 +396,55 @@ function registerIpc () {
     }
   }
 
-  ipcMain.handle('library:list', withWarnings(() => store.readLibrary()))
-  ipcMain.handle('library:upsert', (_e, entry) => store.upsertLibraryEntry(entry))
-  ipcMain.handle('library:remove', (_e, id) => store.removeLibraryEntry(id))
-  ipcMain.handle('library:usage', (_e, id) => store.bookUsage(id))
+  ipcMain.handle('library:list', withWarnings(() => repositories.library.list()))
+  ipcMain.handle('library:upsert', async (_e, entry) => {
+    await assertAllowedEntryPath(entry)
+    return repositories.library.upsert(entry)
+  })
+  ipcMain.handle('library:saveProgress', (_e, id, progress, lastOpenedAt) =>
+    repositories.library.saveProgress(id, progress, lastOpenedAt))
+  ipcMain.handle('library:updateReading', (_e, id, reading, readingMode) =>
+    repositories.library.updateReading(id, reading, readingMode))
+  ipcMain.handle('library:remove', (_e, id) => repositories.library.remove(id))
+  ipcMain.handle('library:usage', (_e, id) => repositories.library.usage(id))
 
-  ipcMain.handle('book:readCache', withWarnings((_e, id) => store.readBookCache(id)))
-  ipcMain.handle('book:writeCache', (_e, id, book) => store.writeBookCache(id, book))
-  ipcMain.handle('book:hasCover', (_e, id) => store.hasCover(id))
-  ipcMain.handle('book:writeCover', (_e, id, bytes) => store.writeCover(id, bytes))
+  ipcMain.handle('book:readCache', withWarnings(async (_e, id) => {
+    await assertAllowedBookId(id)
+    return repositories.books.read(id)
+  }))
+  ipcMain.handle('book:writeCache', async (_e, id, book) => {
+    await assertAllowedBookId(id)
+    return repositories.books.write(id, book)
+  })
+  ipcMain.handle('book:hasCover', async (_e, id) => {
+    await assertAllowedBookId(id)
+    return repositories.books.hasCover(id)
+  })
+  ipcMain.handle('book:writeCover', async (_e, id, bytes) => {
+    await assertAllowedBookId(id)
+    return repositories.books.writeCover(id, bytes)
+  })
 
-  ipcMain.handle('notes:read', withWarnings((_e, id) => store.readNotes(id)))
-  ipcMain.handle('notes:write', (_e, id, notes) => store.writeNotes(id, notes))
+  ipcMain.handle('notes:read', withWarnings(async (_e, id) => {
+    await assertAllowedBookId(id)
+    return repositories.notes.read(id)
+  }))
+  ipcMain.handle('notes:replace', async (_e, id, notes) => {
+    await assertAllowedBookId(id)
+    return repositories.notes.replace(id, notes)
+  })
+  ipcMain.handle('notes:add', async (_e, id, note) => {
+    await assertAllowedBookId(id)
+    return repositories.notes.add(id, note)
+  })
+  ipcMain.handle('notes:edit', async (_e, id, noteId, text) => {
+    await assertAllowedBookId(id)
+    return repositories.notes.edit(id, noteId, text)
+  })
+  ipcMain.handle('notes:remove', async (_e, id, noteId) => {
+    await assertAllowedBookId(id)
+    return repositories.notes.remove(id, noteId)
+  })
 
   // Exportar notas: se escribe SOLO donde el usuario elija en el dialogo.
   ipcMain.handle('notes:export', async (_e, suggestedName, markdown) => {
@@ -295,14 +462,75 @@ function registerIpc () {
     return filePath
   })
 
-  ipcMain.handle('ocr:read', (_e, id) => store.readOcr(id))
-  ipcMain.handle('ocr:write', (_e, id, data) => store.writeOcr(id, data))
+  ipcMain.handle('ocr:read', async (_e, id) => {
+    await assertAllowedBookId(id)
+    return repositories.ocr.read(id)
+  })
+  ipcMain.handle('ocr:write', async (_e, id, data) => {
+    await assertAllowedBookId(id)
+    return repositories.ocr.write(id, data)
+  })
 
-  ipcMain.handle('layout:read', (_e, id) => store.readLayout(id))
-  ipcMain.handle('layout:write', (_e, id, data) => store.writeLayout(id, data))
+  ipcMain.handle('layout:read', async (_e, id) => {
+    await assertAllowedBookId(id)
+    return repositories.layout.read(id)
+  })
+  ipcMain.handle('layout:write', async (_e, id, data) => {
+    await assertAllowedBookId(id)
+    return repositories.layout.write(id, data)
+  })
 
-  ipcMain.handle('settings:read', withWarnings(() => store.readSettings()))
-  ipcMain.handle('settings:write', (_e, s) => store.writeSettings(s))
+  ipcMain.handle('vocabulary:read', async (_e, id) => {
+    await assertAllowedBookId(id)
+    return repositories.vocabulary.read(id)
+  })
+  ipcMain.handle('vocabulary:add', async (_e, id, item) => {
+    await assertAllowedBookId(id)
+    return repositories.vocabulary.add(id, item)
+  })
+  ipcMain.handle('vocabulary:clear', async (_e, id) => {
+    await assertAllowedBookId(id)
+    return repositories.vocabulary.clear(id)
+  })
+  ipcMain.handle('stats:read', async (_e, id) => {
+    await assertAllowedBookId(id)
+    return repositories.stats.read(id)
+  })
+  ipcMain.handle('stats:write', async (_e, id, data) => {
+    await assertAllowedBookId(id)
+    return repositories.stats.write(id, data)
+  })
+  ipcMain.handle('stats:clear', async (_e, id) => {
+    await assertAllowedBookId(id)
+    return repositories.stats.clear(id)
+  })
+  ipcMain.handle('study:export', async (_e, data) => {
+    if (!devTask) throw new Error('el estudio solo esta disponible en tareas de desarrollo')
+    if (!data || typeof data !== 'object' || Array.isArray(data)) throw new TypeError('estudio invalido')
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Exportar estudio local',
+      defaultPath: `Lector-estudio-${backupStamp()}.json`,
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    })
+    if (canceled || !filePath) return null
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8')
+    return filePath
+  })
+
+  ipcMain.handle('settings:read', withWarnings(() => repositories.settings.read()))
+  ipcMain.handle('settings:write', (_e, s) => repositories.settings.write(s))
+  ipcMain.handle('app:flush', () => repositories.flush())
+  ipcMain.handle('app:isFullscreen', () => Boolean(mainWindow?.isFullScreen()))
+  ipcMain.handle('app:setFullscreen', (_e, value) => {
+    mainWindow?.setFullScreen(Boolean(value))
+    return Boolean(value)
+  })
+  ipcMain.on('app:closeReady', () => {
+    closeReady = true
+    if (closeFallback) clearTimeout(closeFallback)
+    closeFallback = null
+    mainWindow?.close()
+  })
 
   // Errores del renderer: la unica forma de que queden en el log del usuario.
   ipcMain.on('log:error', (_e, message) => {

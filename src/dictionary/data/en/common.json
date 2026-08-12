@@ -1,0 +1,6 @@
+{
+  "reader": {"lemma":"reader","partOfSpeech":"noun","definitions":["A person who reads or a device used to display readable material."],"forms":["readers"]},
+  "novel": {"lemma":"novel","partOfSpeech":"noun","definitions":["A long fictional narrative written in prose."],"forms":["novels"]},
+  "book": {"lemma":"book","partOfSpeech":"noun","definitions":["A written or printed work consisting of pages or its digital equivalent."],"forms":["books"]},
+  "read": {"lemma":"read","partOfSpeech":"verb","definitions":["To look at and understand written symbols."],"forms":["reads","reading"]}
+}

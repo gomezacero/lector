@@ -8,10 +8,14 @@
  * @param {Object} book
  * @param {{start:number, end:number}} chapter
  * @param {{sharp:HTMLElement, dim:HTMLElement}} layers
- * @param {Set<number>} markedBlocks bloques con marcador, para la barra al margen
  */
-export function renderChapter (book, chapter, { sharp, dim }, markedBlocks = new Set()) {
+export function renderChapter (book, chapter, { sharp, dim }) {
   const fragment = document.createDocumentFragment()
+
+  sharp.dataset.chapterKind = chapter.kind ?? 'content'
+  sharp.dataset.paragraphStyle = book.stats?.paragraphStyle ?? 'space'
+  dim.dataset.chapterKind = chapter.kind ?? 'content'
+  dim.dataset.paragraphStyle = book.stats?.paragraphStyle ?? 'space'
 
   for (let i = chapter.start; i < chapter.end; i++) {
     const block = book.blocks[i]
@@ -35,7 +39,10 @@ export function renderChapter (book, chapter, { sharp, dim }, markedBlocks = new
     // las notas. Tampoco hace falta: la lectura ya no arranca aqui, asi que
     // estos renglones solo se ven yendo a buscarlos.
     if (block.role) el.dataset.role = block.role
-    if (markedBlocks.has(i)) el.dataset.marked = ''
+    if (chapter.kind === 'frontmatter' && !block.role) el.dataset.section = 'frontmatter'
+    if (block.type === 'heading' && /^[IVXLCDM]+$/u.test(block.text.trim())) {
+      el.dataset.heading = 'ordinal'
+    }
     fragment.appendChild(el)
   }
 
@@ -65,16 +72,6 @@ function figureShell (block, index) {
   img.draggable = false
   el.appendChild(img)
   return el
-}
-
-/** Refleja en el DOM que un bloque tiene o deja de tener marcador. */
-export function setBlockMarked (layers, blockIndex, marked) {
-  for (const layer of [layers.sharp, layers.dim]) {
-    const el = layer.querySelector(`[data-block="${blockIndex}"]`)
-    if (!el) continue
-    if (marked) el.dataset.marked = ''
-    else delete el.dataset.marked
-  }
 }
 
 /** Capitulo al que pertenece un bloque. */

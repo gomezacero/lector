@@ -3,7 +3,7 @@
 // uno aquí mueve el punto de lectura y las notas de todos los libros.
 
 import { describe, it, expect } from 'vitest'
-import { blockAtOffset, chapterAtOffset, startOffset, percentAt, makeProgress } from '../src/reader/progress.js'
+import { blockAtOffset, chapterAtOffset, startOffset, percentAt, makeProgress, readingRange } from '../src/reader/progress.js'
 
 // Tres bloques de 10 caracteres (start 0, 11, 22; separador de 1) y el
 // primero es la cubierta: el cuerpo empieza en el segundo.
@@ -58,6 +58,13 @@ describe('startOffset y percentAt', () => {
     expect(percentAt(book, 33)).toBe(1)
     // La cubierta queda por detrás del arranque: nunca es negativo.
     expect(percentAt(book, 0)).toBe(0)
+  })
+
+  it('un indice editorial final queda fuera del porcentaje de la obra', () => {
+    const withIndex = { ...book, bodyEnd: 2 }
+    expect(readingRange(withIndex)).toEqual({ from: 11, to: 22 })
+    expect(percentAt(withIndex, 22)).toBe(1)
+    expect(percentAt(withIndex, 32)).toBe(1)
   })
 })
 

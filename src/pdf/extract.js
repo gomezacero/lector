@@ -6,12 +6,21 @@
 import * as pdfjsLib from '/node_modules/pdfjs-dist/build/pdf.mjs'
 import { extractDrawings, mergeDrawings } from './graphics.js'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/node_modules/pdfjs-dist/build/pdf.worker.mjs'
+const appUrl = path => new URL(path, globalThis.location?.href ?? 'app://lector/').href
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = appUrl('/node_modules/pdfjs-dist/build/pdf.worker.mjs')
 
 const RESOURCES = {
-  cMapUrl: '/node_modules/pdfjs-dist/cmaps/',
+  // Absolutas porque el pipeline también corre dentro de ingestWorker. PDF.js
+  // resuelve una ruta relativa consultando document.baseURI, que no existe en
+  // un Web Worker.
+  cMapUrl: appUrl('/node_modules/pdfjs-dist/cmaps/'),
   cMapPacked: true,
-  standardFontDataUrl: '/node_modules/pdfjs-dist/standard_fonts/'
+  standardFontDataUrl: appUrl('/node_modules/pdfjs-dist/standard_fonts/'),
+  // PDF.js 6 separa los decodificadores JPX/JBIG2/QCMS en WebAssembly. Sin
+  // esta ruta el texto sigue saliendo, pero las paginas escaneadas inundan la
+  // consola de avisos y sus imagenes no pueden renderizarse.
+  wasmUrl: appUrl('/node_modules/pdfjs-dist/wasm/')
 }
 
 export function openDocument (bytes) {
@@ -20,6 +29,10 @@ export function openDocument (bytes) {
     // quien nos paso los bytes se queda sin ellos y un segundo uso revienta.
     data: new Uint8Array(bytes),
     ...RESOURCES,
+    // La auto-detección de PDF.js consulta document.baseURI. La ingesta corre
+    // en un Web Worker, donde document no existe; al fijarlo, el worker interno
+    // obtiene los recursos app:// directamente sin pasar por esa detección.
+    useWorkerFetch: true,
     // La politica de seguridad de la ventana no permite eval; pdf.js lo detecta
     // y usa el camino alternativo para construir las fuentes.
     isEvalSupported: false

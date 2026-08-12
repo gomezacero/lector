@@ -4,7 +4,7 @@
 // pequeno y la medida rapida. Cruzar el final de un capitulo carga el siguiente
 // sin que el lector note la costura.
 
-import { renderChapter, setBlockMarked } from './layout.js'
+import { renderChapter } from './layout.js'
 import { paintHighlights, clearHighlights } from './highlights.js'
 import { buildLineIndex, offsetOfLine } from './lineIndex.js'
 import { createFocusController } from './focus.js'
@@ -12,6 +12,7 @@ import { makeProgress, chapterAtOffset, lineForOffset, percentAt, startOffset, b
 import { toSentenceUnits } from './sentences.js'
 import { createFigureClips } from './figureClips.js'
 import { createPageRenderer } from '../pdf/pageRender.js'
+import { offsetFromLocator } from './readerContract.js'
 
 const SAVE_DELAY = 900
 
@@ -26,6 +27,13 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
   let unit = 'line' // 'line' o 'sentence': por que avanza el foco
   let clips = null // recortes de figura; solo existe si el libro trae figuras
   let clipToken = 0 // invalida los recortes en vuelo al cambiar de capitulo
+  let presentation = 'continuous'
+  let visualLines = []
+  const listeners = new Set()
+
+  const publish = event => {
+    for (const listener of listeners) listener(event)
+  }
 
   // Donde esta leyendo, en caracteres. Es el dato canonico: la linea es solo su
   // representacion con los ajustes de ahora. Solo cambia cuando el lector se
@@ -36,7 +44,7 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
   function renderCurrentChapter () {
     const chapter = book.chapters[chapterIndex]
     if (!chapter) return
-    renderChapter(book, chapter, layers, notes?.markedBlocks ?? new Set())
+    renderChapter(book, chapter, layers)
     // Los rangos de resaltado mueren con el repintado: se vuelven a poner.
     paintHighlights(layers, book.blocks, chapter, notes?.all ?? [])
     measure()
@@ -69,16 +77,60 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
    * es del sentido, pero recortar a media linea cansaria la vista.
    */
   function measure () {
-    const lines = buildLineIndex(contentSharp)
-    focus.setLines(unit === 'sentence' ? toSentenceUnits(lines, book.blocks) : lines)
+    visualLines = buildLineIndex(contentSharp)
+    focus.setLines(unit === 'sentence' ? toSentenceUnits(visualLines, book.blocks) : visualLines)
+    paintBookmarks()
+  }
+
+  /**
+   * Un marcador pertenece a un rango de caracteres, no al parrafo entero.
+   * Se pinta como un punto en el margen del renglon que actualmente contiene
+   * ese caracter; al cambiar tipografia se vuelve a medir y permanece unido al
+   * mismo texto.
+   */
+  function paintBookmarks () {
+    for (const layer of [contentSharp, contentDim]) {
+      layer.querySelectorAll('.reader-bookmark-marker').forEach(node => node.remove())
+    }
+    if (!book || !visualLines.length) return
+
+    const chapter = book.chapters[chapterIndex]
+    const bookmarks = (notes?.all ?? []).filter(note =>
+      note.kind !== 'highlight' && note.block >= chapter.start && note.block < chapter.end)
+
+    for (const note of bookmarks) {
+      const index = lineForOffset(book, visualLines, note.offset)
+      const line = visualLines[index]
+      if (!line || line.block !== note.block) continue
+      const top = (line.top + line.bottom) / 2
+      for (const layer of [contentSharp, contentDim]) {
+        const marker = document.createElement('span')
+        marker.className = 'reader-bookmark-marker'
+        marker.dataset.noteId = note.id
+        marker.style.top = `${top}px`
+        marker.setAttribute('aria-hidden', 'true')
+        layer.appendChild(marker)
+      }
+    }
   }
 
   function currentOffset () {
     return offsetOfLine(focus.lines, book.blocks, focus.index)
   }
 
+  function locator () {
+    const excerpt = currentLine()
+    const block = book?.blocks[blockAtOffset(book, anchor)]
+    return {
+      offset: anchor,
+      ...(excerpt?.context ? { context: excerpt.context } : {}),
+      ...(block?.page != null ? { page: block.page } : {})
+    }
+  }
+
   function emitStatus () {
-    onStatus?.({
+    const excerpt = currentLine()
+    const status = {
       chapter: book.chapters[chapterIndex]?.title ?? '',
       chapterIndex,
       percent: percentAt(book, anchor),
@@ -88,8 +140,10 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
       page: book.blocks.length
         ? (book.blocks[blockAtOffset(book, anchor)]?.page ?? 0) + 1
         : null,
-      marked: Boolean(notes?.find(anchor))
-    })
+      marked: Boolean(notes?.findBookmark?.(excerpt) ?? notes?.findBookmark?.(anchor))
+    }
+    onStatus?.(status)
+    publish({ type: 'locator', locator: locator(), excerpt, status })
   }
 
   function scheduleSave () {
@@ -97,6 +151,13 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
     saveTimer = setTimeout(() => {
       if (book) onSave?.(makeProgress(book, anchor))
     }, SAVE_DELAY)
+  }
+
+  function flush () {
+    clearTimeout(saveTimer)
+    saveTimer = null
+    if (!book || !focus.lineCount) return Promise.resolve()
+    return Promise.resolve(onSave?.(makeProgress(book, anchor)))
   }
 
   /** Tras un movimiento deliberado, la linea nueva pasa a ser el ancla. */
@@ -156,6 +217,7 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
     return {
       block: line.block,
       char: line.start,
+      end: line.end,
       offset: (block?.start ?? 0) + line.start,
       text: block?.text.slice(line.start, line.end).trim() ?? '',
       // Una figura no tiene texto que citar: sin esto la nota sale como «».
@@ -186,20 +248,26 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
     },
 
     close () {
-      clearTimeout(saveTimer)
-      if (book && focus.lineCount) onSave?.(makeProgress(book, anchor))
+      const saved = flush()
       clearHighlights()
       clipToken++
       clips?.close()
       clips = null
       book = null
       notes = null
+      visualLines = []
       contentSharp.replaceChildren()
       contentDim.replaceChildren()
+      return saved
     },
 
     move,
-    page: direction => move(direction * focus.linesPerScreen()),
+    page: direction => {
+      if (presentation === 'paged') {
+        focus.moveTo(focus.movePage(direction))
+        afterMove()
+      } else move(direction * focus.linesPerScreen())
+    },
     jump: where => {
       if (where === 'start') goToOffset(0)
       else if (book) goToOffset(book.chars - 1)
@@ -207,6 +275,33 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
     chapter: direction => { if (book) crossChapter(direction) },
     goToOffset,
     currentLine,
+
+    // Interfaz comun nueva. Los alias anteriores siguen durante la migracion
+    // para que los consumidores existentes no tengan que cambiar de golpe.
+    goToLocator: (locator, options) => goToOffset(offsetFromLocator(locator), options),
+    getLocator: locator,
+    getCurrentExcerpt: currentLine,
+    subscribe (listener) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    setPresentation (next) {
+      presentation = next === 'paged' ? 'paged' : 'continuous'
+      focus.setPresentation(presentation)
+      stage.dataset.presentation = presentation
+      if (book) {
+        measure()
+        focus.moveTo(lineForOffset(book, focus.lines, anchor), { animate: false })
+        emitStatus()
+        publish({ type: 'layout', presentation, locator: locator() })
+      }
+    },
+    getCapabilities: () => ({ textSelection: true, reflowPagination: true, speech: true }),
+    setFocusSettings (settings) {
+      focus.setSettings(settings)
+      focus.refresh()
+    },
+    flush,
 
     /**
      * Rehace el indice de lineas tras un cambio de ajustes o de tamano de
@@ -218,6 +313,7 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
       measure()
       focus.moveTo(lineForOffset(book, focus.lines, anchor), { animate: false })
       emitStatus()
+      publish({ type: 'layout', presentation, locator: locator() })
     },
 
     setFocusShape (settings) {
@@ -225,7 +321,18 @@ export function createReader ({ stage, sharpLayer, contentSharp, contentDim, onS
       focus.refresh()
     },
 
-    markBlock: (blockIndex, marked) => setBlockMarked(layers, blockIndex, marked),
+    setSpeechActive (active) {
+      if (!book) return
+      unit = active ? 'sentence' : (document.body.dataset.mode === 'sentence' ? 'sentence' : 'line')
+      measure()
+      focus.moveTo(lineForOffset(book, focus.lines, anchor), { animate: false })
+      emitStatus()
+    },
+
+    // Alias temporal para consumidores antiguos. Ya no existe estado visual
+    // por bloque: cualquier cambio vuelve a pintar los marcadores por linea.
+    markBlock: () => paintBookmarks(),
+    refreshBookmarks: paintBookmarks,
 
     /** Tras crear o borrar un resaltado, sin repintar el capitulo entero. */
     refreshHighlights () {
