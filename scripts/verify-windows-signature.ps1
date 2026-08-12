@@ -13,6 +13,21 @@ param(
 $ErrorActionPreference = 'Stop'
 $failures = [System.Collections.Generic.List[string]]::new()
 
+function Get-Sha256Hex ([string] $LiteralPath) {
+  $stream = [System.IO.File]::OpenRead($LiteralPath)
+  try {
+    $algorithm = [System.Security.Cryptography.SHA256]::Create()
+    try {
+      $bytes = $algorithm.ComputeHash($stream)
+    } finally {
+      $algorithm.Dispose()
+    }
+  } finally {
+    $stream.Dispose()
+  }
+  return (-join ($bytes | ForEach-Object { $_.ToString('x2') }))
+}
+
 if ($RequireExpectedSubject -and [string]::IsNullOrWhiteSpace($ExpectedSubject)) {
   throw 'Falta WINDOWS_SIGNER_SUBJECT. Debe contener el Subject exacto del certificado autorizado para publicar Lector.'
 }
@@ -46,7 +61,7 @@ foreach ($requestedPath in $Path) {
     $failures.Add("$($resolvedPath.Path): la firma no contiene sello de tiempo verificable.")
   }
 
-  $hash = Get-FileHash -LiteralPath $resolvedPath.Path -Algorithm SHA256
+  $hash = Get-Sha256Hex $resolvedPath.Path
   Write-Host "Firma valida: $($resolvedPath.Path)"
   Write-Host "  Titular:    $subject"
   Write-Host "  Emisor:     $issuer"
@@ -54,7 +69,7 @@ foreach ($requestedPath in $Path) {
   if ($null -ne $signature.TimeStamperCertificate) {
     Write-Host "  Timestamp:  $($signature.TimeStamperCertificate.Subject)"
   }
-  Write-Host "  SHA-256:    $($hash.Hash)"
+  Write-Host "  SHA-256:    $hash"
 }
 
 if ($failures.Count -gt 0) {

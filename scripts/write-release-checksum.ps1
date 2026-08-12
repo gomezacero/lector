@@ -5,9 +5,20 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $resolvedPath = Resolve-Path -LiteralPath $Path -ErrorAction Stop
-$hash = Get-FileHash -LiteralPath $resolvedPath.Path -Algorithm SHA256
+$stream = [System.IO.File]::OpenRead($resolvedPath.Path)
+try {
+  $algorithm = [System.Security.Cryptography.SHA256]::Create()
+  try {
+    $hashBytes = $algorithm.ComputeHash($stream)
+  } finally {
+    $algorithm.Dispose()
+  }
+} finally {
+  $stream.Dispose()
+}
+$hash = -join ($hashBytes | ForEach-Object { $_.ToString('x2') })
 $checksumPath = "$($resolvedPath.Path).sha256"
-$line = "$($hash.Hash.ToLowerInvariant())  $([System.IO.Path]::GetFileName($resolvedPath.Path))`n"
+$line = "$hash  $([System.IO.Path]::GetFileName($resolvedPath.Path))`n"
 
 [System.IO.File]::WriteAllText(
   $checksumPath,
