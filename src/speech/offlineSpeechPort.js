@@ -1,4 +1,4 @@
-import { TtsSession } from '../../vendor/tts/runtime/piper-tts-web.js'
+import { TtsSession } from '../../node_modules/@mintplex-labs/piper-tts-web/dist/piper-tts-web.js'
 import { createWebSpeechPort } from './speechController.js'
 
 export const BUILTIN_SPANISH_VOICE = Object.freeze({

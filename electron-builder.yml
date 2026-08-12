@@ -31,6 +31,9 @@ files:
   # El OCR local: los idiomas van en vendor/ y el motor como dependencia. Del
   # paquete npm sobran los fuentes y el bundle UMD (se usa el ESM).
   - vendor/**/*
+  # El runtime JS viene del paquete npm fijado; en vendor sólo se guardan los
+  # modelos y datos descargados con checksum por scripts/prepare-vendor.mjs.
+  - '!vendor/tts/runtime/**'
   - '!node_modules/tesseract.js/{src,scripts,docs,examples,benchmarks}/**'
   - '!node_modules/tesseract.js/dist/tesseract.min.js'
   # Del nucleo WASM, solo las variantes LSTM: con OEM 1 (src/ocr/engine.js) el

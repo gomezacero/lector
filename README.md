@@ -173,16 +173,25 @@ extremo a extremo corre dentro de Electron.
 
 ### Dependencias vendorizadas
 
-`vendor/` no viaja con el repositorio (está en `.gitignore`) y hay que
-poblarlo aparte en un clon nuevo:
+Los recursos grandes de `vendor/` no viajan con el repositorio. Un clon nuevo
+los prepara así:
+
+```bash
+npm run vendor:prepare
+```
 
 - `vendor/tesseract/spa.traineddata.gz` y `eng.traineddata.gz` — los idiomas
   del OCR, descargados de [tessdata](https://github.com/naptha/tessdata)
   (los mismos que `tesseract.js` bajaría de la red en su uso normal).
+- `vendor/tts/voices/.../es_ES-davefx-medium.*` — la voz española offline.
 - `vendor/layout/` (opcional) — el modelo DocLayNet en ONNX con su
-  `config.json` y `preprocessor.json`. El modelo es **AGPL** y la aplicación
-  Se mantiene como recurso opcional, no se versiona ni se empaqueta; sólo se
-  usa si está instalado localmente.
+  `config.json` y `preprocessor.json`. Se mantiene como recurso opcional, no se
+  versiona ni se empaqueta; sólo se usa si está instalado localmente.
+
+OCR y voz proceden de revisiones inmutables y `vendor:prepare` valida cada
+descarga mediante SHA-256. Los builds de Windows ejecutan ese paso
+automáticamente. El modelo opcional de layout no se descarga ni forma parte de
+las versiones oficiales.
 
 ## Licencia y versiones oficiales
 
