@@ -186,6 +186,12 @@ La explicación completa está en [Arquitectura](docs/architecture.md),
 
 ## Desarrollo
 
+Los agentes y asistentes de código deben comenzar por
+[`AGENTS.md`](AGENTS.md). Claude usa [`CLAUDE.md`](CLAUDE.md) como punto de
+entrada, y los entornos compatibles con Agent Skills pueden invocar
+[`$develop-lector`](.agents/skills/develop-lector/SKILL.md). Los tres remiten a
+la misma arquitectura y al mismo SDD; no mantienen reglas paralelas.
+
 ### Requisitos
 
 - Node.js compatible con el `package-lock.json`

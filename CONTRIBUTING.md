@@ -4,6 +4,8 @@ Gracias por ayudar a construir una lectura digital más cómoda.
 
 ## Antes de proponer un cambio
 
+- Lee [`AGENTS.md`](AGENTS.md), que contiene las invariantes, el mapa del código,
+  la verificación proporcional y la definición de terminado del repositorio.
 - Abre o comenta una incidencia para cambios grandes de experiencia o
   arquitectura.
 - No incluyas libros, PDF con copyright, credenciales ni datos personales.

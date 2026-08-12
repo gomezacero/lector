@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lector Development"
+  short_description: "Develop and verify Lector safely"
+  default_prompt: "Use $develop-lector to implement and verify this change in Lector."
