@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-  [string] $Path = 'dist\Lector.exe'
+  [string] $Path = 'dist\Lector-Setup.exe'
 )
 
 $ErrorActionPreference = 'Stop'

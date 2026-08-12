@@ -95,11 +95,17 @@ y seguir exactamente en la misma frase.
 npm run build:win
 ```
 
-Genera `dist/Lector.exe`, el contenedor portable de un solo archivo. En equipos
-administrados que aplican Windows Defender Application Control, el ejecutable
-debe firmarse con un certificado de firma de código aceptado por la política de
-la organización. Este comando es para pruebas locales: un build correcto no
-significa que el archivo esté listo para distribuir.
+Genera `dist/Lector-Setup.exe`, el instalador recomendado. Instala Lector para
+el usuario actual, crea accesos directos y ofrece una desinstalación normal sin
+borrar la biblioteca, el progreso ni los ajustes. El portable queda como canal
+secundario y se genera con `npm run build:win:portable`; para construir ambos se
+usa `npm run build:win:all`.
+
+En equipos administrados que aplican Windows Defender Application Control,
+cualquier ejecutable debe firmarse con un certificado de firma de código
+aceptado por la política de la organización. Estos comandos son para pruebas
+locales: un build correcto no significa que el archivo esté listo para
+distribuir.
 
 La publicación usa una puerta distinta:
 
@@ -110,7 +116,7 @@ npm run release:win
 
 Ese comando detiene la entrega si falta la identidad de firma, la firma
 Authenticode no es válida, el titular no coincide o no existe sello de tiempo;
-al terminar genera también `dist/Lector.exe.sha256`. La elección entre
+al terminar genera también `dist/Lector-Setup.exe.sha256`. La elección entre
 certificado IV/OV y SignPath Foundation, el manejo seguro de la clave y el
 procedimiento completo están en
 [`docs/distribution/windows-code-signing.md`](docs/distribution/windows-code-signing.md).

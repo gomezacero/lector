@@ -58,12 +58,25 @@ electronLanguages:
   - en-US
 
 win:
-  target: portable
-  artifactName: Lector.exe
+  target: nsis
+
+nsis:
+  # Canal principal: instalador por usuario, con desinstalacion normal y sin
+  # borrar biblioteca, progreso ni ajustes al retirar la aplicacion.
+  artifactName: Lector-Setup.exe
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Lector
+  uninstallDisplayName: Lector
+  deleteAppDataOnUninstall: false
 
 portable:
-  # Un unico ejecutable, sin instalacion ni accesos directos.
-  artifactName: Lector.exe
+  # Canal secundario para quienes prefieran no instalar.
+  artifactName: Lector-Portable.exe
   requestExecutionLevel: user
 
 mac:

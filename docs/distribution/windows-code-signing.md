@@ -10,13 +10,16 @@ escrito su admisión como recursos abiertos no pertenecientes al código.
 
 ## Regla de publicación
 
-`npm run build:win` produce un portable para pruebas locales. No se publica.
+`npm run build:win` produce `dist/Lector-Setup.exe`, el instalador NSIS que será
+el canal principal. `npm run build:win:portable` produce el canal secundario
+`dist/Lector-Portable.exe`; `npm run build:win:all` crea ambos para pruebas. Un
+artefacto sin firma sólo es una vista previa y no se publica como estable.
 
 `npm run release:win` es la ruta de publicación local para un certificado
 integrado con `electron-builder`. Ejecuta contratos y pruebas, exige que el
 empaquetador encuentre una identidad de firma, valida la firma Authenticode y
 su sello de tiempo, comprueba el titular esperado y genera
-`dist/Lector.exe.sha256`. Si cualquiera de esos pasos falla, no existe una
+`dist/Lector-Setup.exe.sha256`. Si cualquiera de esos pasos falla, no existe una
 versión publicable. La ruta SignPath descrita más abajo incorporará las mismas
 comprobaciones en CI cuando la solicitud sea aprobada.
 
@@ -30,7 +33,7 @@ npm run release:win
 Para inspeccionar manualmente un artefacto ya generado:
 
 ```powershell
-Get-AuthenticodeSignature .\dist\Lector.exe | Format-List *
+Get-AuthenticodeSignature .\dist\Lector-Setup.exe | Format-List *
 npm run verify:signature
 ```
 
@@ -90,8 +93,9 @@ administrados, no para distribución pública.
 
 Como tercera vía de distribución, Microsoft Store vuelve a firmar gratuitamente
 los paquetes MSIX aceptados. Eso exige construir y mantener un paquete Store y
-no convierte el portable `Lector.exe` actual en un ejecutable público firmado;
-se evaluará como canal adicional, no como sustituto silencioso del portable.
+no convierte automáticamente el instalador NSIS actual en un ejecutable público
+firmado; se evaluará como canal adicional, no como sustituto silencioso del
+instalador descargable.
 
 ## Lista de salida
 
@@ -99,9 +103,11 @@ se evaluará como canal adicional, no como sustituto silencioso del portable.
 2. Ejecutar `npm ci` desde un checkout limpio.
 3. Ejecutar `npm run release:win` en el entorno autorizado para firmar.
 4. Confirmar que el titular coincide y el estado es `Valid`.
-5. Probar `dist/Lector.exe` en una máquina Windows limpia, sin certificados de
+5. Probar `dist/Lector-Setup.exe` en una máquina Windows limpia, sin certificados de
    desarrollo instalados.
-6. Publicar juntos `Lector.exe` y `Lector.exe.sha256` por HTTPS.
+6. Publicar juntos `Lector-Setup.exe` y `Lector-Setup.exe.sha256` por HTTPS. Si
+   también se publica el portable, debe llamarse `Lector-Portable.exe`, llevar
+   su propio checksum y mostrar el mismo estado de firma.
 7. Conservar el artefacto, hash, commit y registro de firma de esa versión.
 
 Una firma válida acredita editor e integridad. No garantiza que SmartScreen

@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
   [Parameter(Position = 0)]
-  [string[]] $Path = @('dist\Lector.exe'),
+  [string[]] $Path = @('dist\Lector-Setup.exe'),
 
   [string] $ExpectedSubject = $env:WINDOWS_SIGNER_SUBJECT,
 
