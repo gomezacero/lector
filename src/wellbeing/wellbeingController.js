@@ -2,6 +2,7 @@ const IDLE_MS = 90_000
 const SAVE_EVERY_MS = 30_000
 
 export function createWellbeingController ({ clock = globalThis, documentRef = globalThis.document, onBreak, onStats }) {
+  const now = () => typeof clock.now === 'function' ? clock.now() : Date.now()
   let intervalMinutes = 0
   let collectStats = false
   let stats = { activeMs: 0, sessions: 0, breaks: 0 }
@@ -21,13 +22,13 @@ export function createWellbeingController ({ clock = globalThis, documentRef = g
       ? { activeMs: initialStats.activeMs ?? 0, sessions: initialStats.sessions ?? 0, breaks: initialStats.breaks ?? 0 }
       : { activeMs: 0, sessions: 0, breaks: 0 }
     if (collectStats) stats.sessions++
-    lastTick = lastActivity = lastSave = Date.now()
+    lastTick = lastActivity = lastSave = now()
     timer = clock.setInterval(tick, 1000)
   }
 
-  function activity (at = Date.now()) { lastActivity = at }
+  function activity (at = now()) { lastActivity = at }
 
-  function tick (at = Date.now()) {
+  function tick (at = now()) {
     const delta = Math.max(0, Math.min(5000, at - lastTick))
     lastTick = at
     const active = !documentRef?.hidden && at >= pausedUntil && at - lastActivity <= IDLE_MS
@@ -51,7 +52,7 @@ export function createWellbeingController ({ clock = globalThis, documentRef = g
   }
 
   function pauseFor (milliseconds) {
-    pausedUntil = Date.now() + Math.max(0, milliseconds)
+    pausedUntil = now() + Math.max(0, milliseconds)
     stats.breaks++
     if (collectStats) onStats?.({ ...stats })
   }
@@ -74,7 +75,7 @@ export function createWellbeingController ({ clock = globalThis, documentRef = g
 
   function resetStats () {
     stats = { activeMs: 0, sessions: collectStats ? 1 : 0, breaks: 0 }
-    lastSave = Date.now()
+    lastSave = now()
   }
 
   return { start, stop, tick, activity, boundary, pauseFor, postpone, configure, resetStats, get stats () { return { ...stats } } }

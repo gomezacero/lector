@@ -4,9 +4,9 @@ import { createWellbeingController } from '../src/wellbeing/wellbeingController.
 describe('RX-BREAK-001 actividad y limites', () => {
   it('espera al limite de unidad antes de avisar', () => {
     const onBreak = vi.fn()
-    const clock = { setInterval: vi.fn(() => 1), clearInterval: vi.fn() }
+    const now = 1_000_000
+    const clock = { now: () => now, setInterval: vi.fn(() => 1), clearInterval: vi.fn() }
     const wellbeing = createWellbeingController({ clock, documentRef: { hidden: false }, onBreak })
-    const now = Date.now()
     wellbeing.start({ interval: 20 })
     wellbeing.activity(now)
     // Ticks acotados a cinco segundos: se simulan 240 para veinte minutos.
