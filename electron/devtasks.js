@@ -13,6 +13,23 @@ import path from 'node:path'
 
 const errors = []
 
+async function saveCapture (win, target) {
+  try {
+    const image = await win.webContents.capturePage()
+    await fs.writeFile(target, image.toPNG())
+    return image
+  } catch (error) {
+    // Algunos runners Linux sin compositor real devuelven UnknownVizError aun
+    // bajo Xvfb. Las aserciones DOM y de layout siguen ejecutándose; sólo se
+    // omite el PNG que es un artefacto de inspección, no una condición de éxito.
+    if (process.env.CI && String(error?.message ?? error).includes('UnknownVizError')) {
+      console.warn(`CAPTURA OMITIDA EN CI: ${path.basename(target)} (UnknownVizError)`)
+      return null
+    }
+    throw error
+  }
+}
+
 export function attachErrorLog (win) {
   win.webContents.on('console-message', event => {
     const level = ['debug', 'info', 'warning', 'error'][event.level] ?? 'info'
@@ -143,8 +160,7 @@ async function visualTask (win, projectRoot) {
       }
     })()`)
 
-    const image = await win.webContents.capturePage()
-    await fs.writeFile(path.join(shotDir, `visual-${variant.label}.png`), image.toPNG())
+    await saveCapture(win, path.join(shotDir, `visual-${variant.label}.png`))
     console.log(`${variant.label}: ${result.viewport.width}x${result.viewport.height}, ` +
       `columna ${result.content.width.toFixed(0)}px, ${result.medianChars} caracteres/renglon, ` +
       `interlineado ${(result.leading / result.fontSize).toFixed(2)}, contraste ${result.contrast.toFixed(2)}:1`)
@@ -379,8 +395,7 @@ async function homeTask (win, projectRoot) {
 
   const shotDir = path.join(projectRoot, 'test', 'screenshots')
   await fs.mkdir(shotDir, { recursive: true })
-  const image = await win.webContents.capturePage()
-  await fs.writeFile(path.join(shotDir, 'home.png'), image.toPNG())
+  await saveCapture(win, path.join(shotDir, 'home.png'))
 
   const state = await js(`
     (() => ({
@@ -475,8 +490,7 @@ async function confirmDialogCheck (win, shotDir) {
     return false
   }
 
-  await fs.writeFile(path.join(shotDir, 'confirmar-borrado.png'),
-    (await win.webContents.capturePage()).toPNG())
+  await saveCapture(win, path.join(shotDir, 'confirmar-borrado.png'))
 
   await js('document.querySelector("dialog.confirm .btn:not(.btn-danger)").click()')
   await wait(500)
@@ -683,8 +697,7 @@ async function readTask (win, projectRoot) {
   await fs.mkdir(shotDir, { recursive: true })
   let lastImage = null
   const shoot = async name => {
-    lastImage = await win.webContents.capturePage()
-    await fs.writeFile(path.join(shotDir, `${name}.png`), lastImage.toPNG())
+    lastImage = await saveCapture(win, path.join(shotDir, `${name}.png`))
   }
 
   // --- Abrir ---------------------------------------------------------------
